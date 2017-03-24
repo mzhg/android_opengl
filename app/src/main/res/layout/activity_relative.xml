@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/rl"
+    android:layout_width="match_parent" android:layout_height="match_parent" >
+    <ImageButton android:src="@drawable/ib_states" android:background="#00000000"
+                 android:layout_marginLeft="10dip" android:layout_marginTop="10dip"
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:id="@+id/ib_earth" android:contentDescription="@string/ib_earth" />
+    <ImageButton android:src="@drawable/ib2_states" android:background="#00000000"
+                 android:layout_below="@+id/ib_earth" android:layout_alignLeft="@+id/ib_earth"
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:id="@+id/ib_venus" android:contentDescription="@string/ib_venus" />
+    <ImageButton android:src="@drawable/ib3_states" android:background="#00000000"
+                 android:layout_below="@+id/ib_venus" android:layout_alignLeft="@+id/ib_earth"
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:id="@+id/ib_jupiter" android:contentDescription="@string/ib_jupiter" />
+       <TextView android:text="@string/planet_name_earth" android:textColor="#FFFFFF"
+                 android:layout_marginTop="30dip"
+                 android:layout_toRightOf="@+id/ib_earth" android:layout_alignTop="@+id/ib_earth"
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:textSize="20sp" android:textStyle="bold" android:id="@+id/tv1_earth" />
+       <TextView android:text="@string/planet_mass_earth" android:textColor="#FFFFFF"
+                 android:layout_above="@+id/tv1_earth" android:layout_alignLeft="@+id/tv1_earth"
+                 android:layout_marginBottom="-30dip"
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:textSize="16sp" android:visibility="gone" android:id="@+id/tv2_earth" />
+       <TextView android:text="@string/planet_grav_earth" android:textColor="#FFFFFF"
+                 android:layout_below="@+id/tv1_earth" android:layout_alignLeft="@+id/tv2_earth"           
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:textSize="16sp" android:visibility="gone" android:id="@+id/tv3_earth" />
+       <TextView android:text="@string/planet_name_venus" android:textColor="#FFFFFF"
+                 android:layout_marginTop="30dip"
+                 android:layout_toRightOf="@+id/ib_venus" android:layout_alignTop="@+id/ib_venus"
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:textSize="20sp" android:textStyle="bold" android:id="@+id/tv1_venus" />
+       <TextView android:text="@string/planet_mass_venus" android:textColor="#FFFFFF"
+                 android:layout_marginBottom="-30dip"
+                 android:layout_above="@+id/tv1_venus" android:layout_alignLeft="@+id/tv1_venus"           
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:textSize="16sp" android:visibility="gone" android:id="@+id/tv2_venus" />
+       <TextView android:text="@string/planet_grav_venus" android:textColor="#FFFFFF"
+                 android:layout_below="@+id/tv1_venus" android:layout_alignLeft="@+id/tv2_venus"           
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:textSize="16sp" android:visibility="gone" android:id="@+id/tv3_venus" />
+       <TextView android:text="@string/planet_name_jupiter" android:textColor="#FFFFFF"
+                 android:layout_marginTop="30dip"
+                 android:layout_toRightOf="@+id/ib_jupiter" android:layout_alignTop="@+id/ib_jupiter"
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:textSize="20sp" android:textStyle="bold" android:id="@+id/tv1_jupiter"/>
+       <TextView android:text="@string/planet_mass_jupiter" android:textColor="#FFFFFF"
+                 android:layout_marginBottom="-30dip"           
+                 android:layout_above="@+id/tv1_jupiter" android:layout_alignLeft="@+id/tv1_jupiter"
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:textSize="16sp" android:visibility="gone" android:id="@+id/tv2_jupiter" />
+       <TextView android:text="@string/planet_grav_jupiter" android:textColor="#FFFFFF"
+                 android:layout_below="@+id/tv1_jupiter" android:layout_alignLeft="@+id/tv2_jupiter"
+                 android:layout_width="wrap_content" android:layout_height="wrap_content"
+                 android:textSize="16sp" android:visibility="gone" android:id="@+id/tv3_jupiter" />
+</RelativeLayout>

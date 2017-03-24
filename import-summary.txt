@@ -1,0 +1,43 @@
+ECLIPSE ANDROID PROJECT IMPORT SUMMARY
+======================================
+
+Ignored Files:
+--------------
+The following files were *not* copied into the new Gradle project; you
+should evaluate whether these are still needed in your project and if
+so manually move them:
+
+* .hgignore
+* ic_launcher-web.png
+* proguard-project.txt
+
+Moved Files:
+------------
+Android Gradle projects use a different directory structure than ADT
+Eclipse projects. Here's how the projects were restructured:
+
+* AndroidManifest.xml => app\src\main\AndroidManifest.xml
+* assets\ => app\src\main\assets\
+* libs\lwjgl_utils.jar => app\libs\lwjgl_utils.jar
+* lint.xml => app\lint.xml
+* res\ => app\src\main\res\
+* src\ => app\src\main\java\
+* src\com\nvidia\developer\opengl\ui\NvUIAssetData.h => app\src\main\resources\com\nvidia\developer\opengl\ui\NvUIAssetData.h
+* src\jet\learning\renderscript\samples\helloworld.rs => app\src\main\rs\helloworld.rs
+* src\jet\learning\renderscript\samples\mono.rs => app\src\main\rs\mono.rs
+* src\jet\learning\renderscript\samples\saturation.rs => app\src\main\rs\saturation.rs
+
+Next Steps:
+-----------
+You can now build the project. The Gradle project needs network
+connectivity to download dependencies.
+
+Bugs:
+-----
+If for some reason your project does not build, and you determine that
+it is due to a bug or limitation of the Eclipse to Gradle importer,
+please file a bug at http://b.android.com with category
+Component-Tools.
+
+(This import summary is for your information only, and can be deleted
+after import once you are satisfied with the results.)

@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.oglsamples"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="11"
+        android:targetSdkVersion="18" />
+
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+    <uses-feature android:glEsVersion="0x00030001" android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name="jet.learning.opengl.android.base.MainActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+            android:name="jet.learning.opengl.samples.Mandelbro"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="Mandelbro" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+            android:name="jet.learning.opengl.samples.ComputeBasicGLSL"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="ComputeBasicGLSL" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.Toon"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="ToonSample" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.RadialBlur"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="RadialBlur" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.RadialBlur100"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="RadialBlur100" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.RadialBlurNV"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="RadialBlurNV" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.NightVision"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="NightVision" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.Fisheye"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="Fisheye" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.GaussionBlur"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="GaussionBlur" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.hdr.HDR"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="HDR" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.water.WaterDemo"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="WaterWave" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.LightStreaker"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="LightStreaker" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+         <activity
+            android:name="jet.learning.opengl.samples.Volumelines"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="Volumelines" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+         <activity
+            android:name="jet.learning.renderscript.samples.BaseicRenderScript"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="BaseicRenderScript" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+         <activity
+            android:name="jet.learning.renderscript.samples.HelloCompute"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="HelloCompute" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+         <activity
+            android:name="jet.learning.renderscript.samples.RenderScriptIntrinsic"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="RenderScriptIntrinsic" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+         <activity
+            android:name="jet.learning.android.examples.CompassActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="Compass" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+         <activity
+            android:name="jet.learning.android.examples.RenderViewActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="RenderView" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+         <activity
+            android:name="jet.learning.android.examples.ImageViewActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="ImageView" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+            android:name="jet.learning.android.examples.DateTimePickerActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="DateTimePicker" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+            android:name="jet.learning.android.examples.ScrollListViewActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="ScrollListView" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+            android:name="pro.android.ui.MainActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="UerInterface" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+        <activity 
+            android:name="pro.android.ui.DrawerActivity"
+            android:label="@string/drawer_layout"
+            />
+        
+         <activity 
+            android:name="pro.android.ui.GridActivity"
+            android:label="@string/grid_layout"
+            />
+         
+          <activity 
+            android:name="pro.android.ui.LinearActivity"
+            android:label="@string/linear_layout"
+            />
+          
+           <activity 
+            android:name="pro.android.ui.RelativeActivity"
+            android:label="@string/relative_layout"
+            />
+           
+            <activity 
+            android:name="pro.android.ui.SlidingPaneActivity"
+            android:label="@string/sliding_layout"
+            />
+            
+        <activity
+            android:name="pro.android.ui.ViewPagingActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="@string/paging_layout" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+         <activity
+            android:name="jet.learning.android.examples.GuideActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="GuideActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+        
+         <activity
+            android:name="jet.learning.android.examples.CirclePageActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:label="CirclePageActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

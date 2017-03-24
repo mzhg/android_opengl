@@ -1,0 +1,17 @@
+#version 100
+
+precision mediump float;
+
+varying float col1;   // color1
+varying vec4 tex0;   // TEXCOORD0
+varying vec4 tex1;   // TEXCOORD1
+
+uniform sampler2D texCoord0;
+
+void main()
+{
+    vec4 c0 = texture2D(texCoord0, tex0.xy);
+    vec4 c1 = texture2D(texCoord0, tex1.xy);
+    
+   gl_FragColor =  c0 *(1.0 - col1) + c1 * col1;
+}

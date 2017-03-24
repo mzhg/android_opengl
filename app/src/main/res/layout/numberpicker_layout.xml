@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal"
+        android:paddingLeft="3.0dip" >
+
+        <NumberPicker
+            android:id="@+id/np_date"
+            android:layout_width="120.0dip"
+            android:layout_height="wrap_content"
+            android:button="@null" />
+        
+        <NumberPicker
+                android:id="@+id/np_hour"
+                android:layout_width="50.0dip"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5.0dip" />
+
+		<TextView
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:layout_gravity="center"
+               android:text=":"
+               android:textSize="20.0sp" />
+
+       <NumberPicker
+           android:id="@+id/np_minute"
+           android:layout_width="50.0dip"
+           android:layout_height="wrap_content" />
+    </LinearLayout>
+
+</LinearLayout>
