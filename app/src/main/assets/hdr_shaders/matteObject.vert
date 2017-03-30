@@ -1,14 +1,16 @@
-attribute vec3 PosAttribute;
-attribute vec3 myNormal;
-attribute vec2 uvTexCoord;
+#version 300 es
+
+in vec3 PosAttribute;
+in vec3 myNormal;
+in vec2 uvTexCoord;
 
 uniform mat4 viewProjMatrix;
 uniform mat4 ModelMatrix;
 uniform vec3 eyePos;
-varying vec4 Position;
-varying vec3 Normal;
-varying vec3 IncidentVector;
-varying vec2 texcoord;
+out vec4 Position;
+out vec3 Normal;
+out vec3 IncidentVector;
+out vec2 texcoord;
 void main()
 {
    vec4 P = ModelMatrix * vec4(PosAttribute, 1.0);

@@ -14,7 +14,7 @@ public class TextureBlitProgram extends SimpleOpenGLProgram {
     private int attribTexcoord;
 
     public  void init(){
-        NvGLSLProgram program = NvGLSLProgram.createFromFiles("hdr_shaders/quad.vert", "hdr_shaders/blit.frag");
+        NvGLSLProgram program = NvGLSLProgram.createFromFiles("hdr_shaders/quad_es3.vert", "hdr_shaders/blit.frag");
 
         program.enable();
         program.setUniform1i("uSourceTex", 0);

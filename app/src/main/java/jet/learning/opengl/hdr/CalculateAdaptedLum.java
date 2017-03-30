@@ -14,7 +14,7 @@ final class CalculateAdaptedLum extends SimpleOpenGLProgram {
 
     private int uElapsedTime;
     public void init(){
-        NvGLSLProgram program = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "hdr_shaders/CalculateAdaptedLum.frag");
+        NvGLSLProgram program = NvGLSLProgram.createFromFiles("hdr_shaders/quad_es3.vert", "hdr_shaders/CalculateAdaptedLum.frag");
 
         program.enable();
         program.setUniform1i("currentImage", 0);

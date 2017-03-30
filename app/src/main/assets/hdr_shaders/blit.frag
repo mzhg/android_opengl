@@ -31,13 +31,16 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 //----------------------------------------------------------------------------------
-#version 100
+#version 300 es
 
 precision highp float;
 
 uniform sampler2D uSourceTex;
 
-varying vec2 a_texCoord;
+in vec2 a_texCoord;
+
+out vec4 gl_FragColor;
+#define texture2D(x, y) texture(x, y)
 
 void main(void)
 {

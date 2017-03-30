@@ -77,10 +77,6 @@ final class COpenGLRenderer {
         dropRadius = 4.0f / 128.0f;
     }
 
-    private int dropRadiusLoc = -1;
-    private int positionLoc = -1;
-    private int cameraPositionLoc = -1;
-
     boolean Init(){
         String poolSkyCubeMapFileNames[] = {"water_resources/right.jpg", "water_resources/left.jpg", "water_resources/bottom.jpg",
                                             "water_resources/top.jpg", "water_resources/front.jpg", "water_resources/back.jpg"};

@@ -23,7 +23,7 @@ final class TonemapProgram extends SimpleOpenGLProgram{
     }
 
     public void init(boolean low_hdr){
-        NvGLSLProgram program = NvGLSLProgram.createFromFiles("hdr_shaders/quad.vert",
+        NvGLSLProgram program = NvGLSLProgram.createFromFiles("hdr_shaders/quad_es3.vert",
                 low_hdr ? "hdr_shaders/low_tonemap.frag":"hdr_shaders/tonemapping.frag");
 
         program.enable();

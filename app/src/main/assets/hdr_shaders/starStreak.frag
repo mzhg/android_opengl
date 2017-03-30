@@ -1,11 +1,15 @@
+#version 300 es
 precision highp float;
 uniform vec4 colorCoeff[4];
-varying vec2 TexCoord1;
-varying vec2 TexCoord2;
-varying vec2 TexCoord3;
-varying vec2 TexCoord4;
+in vec2 TexCoord1;
+in vec2 TexCoord2;
+in vec2 TexCoord3;
+in vec2 TexCoord4;
 
 uniform sampler2D sampler;
+
+out vec4 gl_FragColor;
+#define texture2D(x, y) texture(x, y)
 
 void main()
 {

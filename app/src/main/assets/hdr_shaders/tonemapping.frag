@@ -1,6 +1,6 @@
-
+#version 300 es
 precision highp float;
-varying vec2 a_texCoord;
+in vec2 a_texCoord;
 uniform sampler2D   sceneTex;
 uniform sampler2D   blurTex;
 uniform sampler2D   lumTex;
@@ -15,6 +15,9 @@ const float D = 0.20;
 const float E = 0.02;
 const float F = 0.30;
 const float W = 11.2;
+
+out vec4 gl_FragColor;
+#define texture2D(x, y) texture(x, y)
 
 vec3 filmicTonemapping(vec3 x)
 {

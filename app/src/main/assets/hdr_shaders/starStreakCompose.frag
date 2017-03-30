@@ -1,10 +1,15 @@
+#version 300 es
 precision highp float;
-varying vec2 TexCoord;
+in vec2 TexCoord;
 uniform vec4 coeff;
 uniform sampler2D sampler1;
 uniform sampler2D sampler2;
 uniform sampler2D sampler3;
 uniform sampler2D sampler4;
+
+out vec4 gl_FragColor;
+#define texture2D(x, y) texture(x, y)
+
 void main()
 {
   vec4 color1 = max(texture2D(sampler1, TexCoord), texture2D(sampler2, TexCoord));

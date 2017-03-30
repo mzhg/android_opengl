@@ -11,7 +11,7 @@ import jet.learning.opengl.common.SimpleOpenGLProgram;
 public class CalculateLuminance extends SimpleOpenGLProgram {
 
     public void init(){
-        NvGLSLProgram program = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "hdr_shaders/CalculateLuminance.frag");
+        NvGLSLProgram program = NvGLSLProgram.createFromFiles("hdr_shaders/quad_es3.vert", "hdr_shaders/CalculateLuminance.frag");
 
         program.enable();
         program.setUniform1i("inputImage", 0);

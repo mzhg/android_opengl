@@ -17,7 +17,7 @@ final class GlareComposeProgram extends SimpleOpenGLProgram{
     private int u_mixCoeff;
 
     public void init(){
-        NvGLSLProgram program = NvGLSLProgram.createFromFiles("hdr_shaders/quad.vert", "hdr_shaders/glareCompose.frag");
+        NvGLSLProgram program = NvGLSLProgram.createFromFiles("hdr_shaders/quad_es3.vert", "hdr_shaders/glareCompose.frag");
 
         program.enable();
         program.setUniform1i("sampler1", 0);

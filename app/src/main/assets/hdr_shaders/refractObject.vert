@@ -1,12 +1,13 @@
-attribute vec3 PosAttribute;
-attribute vec3 myNormal;
+#version 300 es
+in vec3 PosAttribute;
+in vec3 myNormal;
 
 uniform mat4 viewProjMatrix;   
 uniform vec3 eyePos;
 
-varying vec4 Position;
-varying vec3 Normal;
-varying vec3 IncidentVector;
+out vec4 Position;
+out vec3 Normal;
+out vec3 IncidentVector;
 
 void main()
 {

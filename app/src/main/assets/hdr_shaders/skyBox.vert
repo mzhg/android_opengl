@@ -1,7 +1,9 @@
-attribute vec3 PosAttribute;
+#version 300 es
+
+in vec3 PosAttribute;
 uniform mat4 viewMatrix;
 uniform mat4 ProjMatrix;
-varying vec3 TexCoord;
+out vec3 TexCoord;
 
 void main()
 {

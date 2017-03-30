@@ -1,10 +1,12 @@
-attribute vec3 PosAttribute;
-attribute vec2 TexAttribute;
+#version 300 es
+in vec3 PosAttribute;
+in vec2 TexAttribute;
 uniform vec4 scalar;
-varying vec2 TexCoord1;
-varying vec2 TexCoord2;
-varying vec2 TexCoord3;
-varying vec2 TexCoord4;
+
+out vec2 TexCoord1;
+out vec2 TexCoord2;
+out vec2 TexCoord3;
+out vec2 TexCoord4;
 void main()
 {
   TexCoord1 = (TexAttribute - 0.5) * scalar[0] + 0.5;

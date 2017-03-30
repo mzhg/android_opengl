@@ -17,7 +17,7 @@ public class HDRGaussionBlurProgram extends SimpleOpenGLProgram {
     public static final float[] std_weights = {0.42f,0.25f,0.15f,0.10f};
 
     public  HDRGaussionBlurProgram(int img_width, int img_height, boolean vertical, float weight){
-        CharSequence vert_src = NvAssetLoader.readText("hdr_shaders/quad.vert");
+        CharSequence vert_src = NvAssetLoader.readText("hdr_shaders/quad_es3.vert");
         float []weights = generateGaussianWeights(weight);
         int width = (int)(3.0/weight);
         CharSequence frag_src = generate1DConvolutionFP_filter(weights, width, vertical, true, img_width, img_height);
@@ -113,11 +113,11 @@ public class HDRGaussionBlurProgram extends SimpleOpenGLProgram {
         StringBuilder ost = new StringBuilder(200);
 //	    std.ostringstream ost;
 //	    ost <<
-        ost.append("#version 100\n");
+        ost.append("#version 300 es\n");
         ost.append("precision highp float;\n");
         ost.append("uniform sampler2D TexSampler;\n");
-        ost.append("varying vec2 a_texCoord;\n");
-//        ost.append("out vec4 OutColor;\n");
+        ost.append("in vec2 a_texCoord;\n");
+        ost.append("out vec4 gl_FragColor;\n");
         ost.append("void main()\n");
         ost.append("{\n");
         ost.append("vec4 sum = vec4(0);\n");
@@ -139,7 +139,7 @@ public class HDRGaussionBlurProgram extends SimpleOpenGLProgram {
 //			ost << ", " << szBuffer << ");\n";
             ost.append(", ").append(String.format("%f", y_offset)).append(");\n");
 //			ost << "sum += texture2D(TexSampler, texcoord).rgb*" << szBuffer << ";\n";
-            ost.append("sum += texture2D(TexSampler, texcoord)*").append(String.format("%f", weight)).append(";\n");
+            ost.append("sum += texture(TexSampler, texcoord)*").append(String.format("%f", weight)).append(";\n");
         }
 
 //	    ost <<

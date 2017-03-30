@@ -1,7 +1,8 @@
+#version 300 es
 precision highp float;
-varying vec4 Position;
-varying vec3 Normal;
-varying vec3 IncidentVector;
+in vec4 Position;
+in vec3 Normal;
+in vec3 IncidentVector;
 
 uniform samplerCube envMap;
 uniform vec3 emission;
@@ -9,6 +10,10 @@ uniform vec4 color;
 
 const float eta=0.7;
 const float deta=-0.006;
+
+out vec4 gl_FragColor;
+#define texture2D(x, y) texture(x, y)
+#define textureCube(x, y) texture(x, y)
 
 float my_fresnel(vec3 I, vec3 N, float power,  float scale,  float bias)
 {

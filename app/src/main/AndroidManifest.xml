@@ -25,6 +25,53 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="jet.learning.opengl.android.base.OpenGLES1ExampleActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait"
+            android:label="OpenGL ES 1.0 Examples" >
+            <meta-data android:name="BuildVersion" android:value="0"></meta-data>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.action.sample" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.android.base.OpenGLES2ExampleActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait"
+            android:label="OpenGL ES 2.0 Examples" >
+            <meta-data android:name="BuildVersion" android:value="8"></meta-data>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.action.sample" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.android.base.OpenGLES3ExampleActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait"
+            android:label="OpenGL ES 3.0 Examples" >
+            <meta-data android:name="BuildVersion" android:value="18"></meta-data>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.action.sample" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.android.base.RenderscriptExampleActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait"
+            android:label="Renderscript Examples" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.action.sample" />
+            </intent-filter>
+        </activity>
         
         <activity
             android:name="jet.learning.opengl.samples.Mandelbro"
@@ -66,7 +113,7 @@
             android:label="RadialBlur" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="jet.learning.opengl.category.es2" />
+                <category android:name="jet.learning.opengl.category.es3" />
             </intent-filter>
         </activity>
 
@@ -132,7 +179,7 @@
             android:label="HDR" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="jet.learning.opengl.category.es2" />
+                <category android:name="jet.learning.opengl.category.es3" />
             </intent-filter>
         </activity>
 
@@ -143,7 +190,7 @@
             android:label="WaterWave" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="jet.learning.opengl.category.es2" />
+                <category android:name="jet.learning.opengl.category.es3" />
             </intent-filter>
         </activity>
 
@@ -176,7 +223,7 @@
             android:label="BaseicRenderScript" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="jet.learning.opengl.category.es2" />
+                <category android:name="jet.learning.opengl.category.rs" />
             </intent-filter>
         </activity>
         
@@ -187,7 +234,7 @@
             android:label="HelloCompute" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="jet.learning.opengl.category.es2" />
+                <category android:name="jet.learning.opengl.category.rs" />
             </intent-filter>
         </activity>
         
@@ -198,7 +245,7 @@
             android:label="RenderScriptIntrinsic" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="jet.learning.opengl.category.es2" />
+                <category android:name="jet.learning.opengl.category.rs" />
             </intent-filter>
         </activity>
         

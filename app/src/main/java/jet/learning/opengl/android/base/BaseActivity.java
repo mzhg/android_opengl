@@ -1,5 +1,15 @@
 package jet.learning.opengl.android.base;
 
+import android.app.ListActivity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
+
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,15 +17,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import android.app.ListActivity;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.ListView;
-import android.widget.SimpleAdapter;
 
 public abstract class BaseActivity extends ListActivity{
 
@@ -75,6 +76,20 @@ public abstract class BaseActivity extends ListActivity{
 			CharSequence labelSeq = info.loadLabel(pm);
 			String label = labelSeq != null ? labelSeq.toString()
 					: info.activityInfo.name;
+			String builVersion = info.activityInfo.metaData!=null ? info.activityInfo.metaData.getString("BuildVersion"):null;
+			if(builVersion != null)
+			{
+				int requestVersion = 0;
+				try {
+					requestVersion = Integer.parseInt(builVersion);
+				} catch (NumberFormatException e) {}
+
+				if(requestVersion > android.os.Build.VERSION.SDK_INT)
+				{
+					Log.i("BaseActivity", "The activity " + info.activityInfo.name + " requests high sdk version: " + requestVersion);
+					continue;
+				}
+			}
 
 			if (prefixWithSlash.length() == 0
 					|| label.startsWith(prefixWithSlash)) {
@@ -108,6 +123,8 @@ public abstract class BaseActivity extends ListActivity{
 	protected abstract String getAction();
 	
 	protected abstract String getCategory();
+
+	protected int requestOSVersion() { return 0;}
 
 	protected Intent activityIntent(String pkg, String componentName) {
 		Intent result = new Intent();
