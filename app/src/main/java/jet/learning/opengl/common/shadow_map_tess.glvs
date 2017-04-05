@@ -1,0 +1,48 @@
+#version 400
+
+uniform mat4 gWorld;
+uniform mat4 gWorldInvTranspose;
+uniform mat4 gViewProj;
+uniform mat4 gWorldViewProj;
+uniform mat4 gTexTransform;
+
+uniform float gMaxTessDistance;
+uniform float gMinTessDistance;
+uniform float gMinTessFactor;
+uniform float gMaxTessFactor;
+
+uniform vec3 uEyePosW;
+
+layout (location  = 0) in vec3 PosL;
+layout (location  = 1) in vec3 NormalL;
+layout (location  = 2) in vec2 Tex;
+
+out VertexOut
+{
+   vec3 NormalW;
+   vec2 Tex;
+   float TessFactor;
+   vec3 PosW;
+}vout;
+   
+void main()
+{
+   // Transform to world space space.
+   vout.PosW = (gWorld * vec4(PosL, 1.0)).xyz;
+   vout.NormalW = mat3(gWorldInvTranspose) * NormalL;
+   vout.Tex = (gTexTransform * vec4(Tex, 0.0, 1.0)).xy;
+   
+   // Transform to homogeneous clip space.
+   // gl_Position = gWorldViewProj * vec4(PosL, 1.0);
+   
+   float d = distance(vout.PosW, uEyePosW);
+
+	// Normalized tessellation factor. 
+	// The tessellation is 
+	//   0 if d >= gMinTessDistance and
+	//   1 if d <= gMaxTessDistance.  
+	float tess = clamp( (gMinTessDistance - d) / (gMinTessDistance - gMaxTessDistance), 0.0, 1.0);
+	
+	// Rescale [0,1] --> [gMinTessFactor, gMaxTessFactor].
+	vout.TessFactor = gMinTessFactor + tess*(gMaxTessFactor-gMinTessFactor);
+}

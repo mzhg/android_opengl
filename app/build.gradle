@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
+    compileSdkVersion 24
     buildToolsVersion "24.0.3"
 
     defaultConfig {
         applicationId "com.example.oglsamples"
         minSdkVersion    18
-        targetSdkVersion 22
+        targetSdkVersion 24
     }
 
     buildTypes {
@@ -19,6 +19,6 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:23.0.1'
+    compile 'com.android.support:support-v4:24.0.0'
     compile files('libs/lwjgl_utils.jar')
 }

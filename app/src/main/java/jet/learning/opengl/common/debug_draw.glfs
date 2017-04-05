@@ -1,0 +1,12 @@
+#version 400 core
+
+layout (location = 0) out vec4 fragColor;
+in vec2 TexW;
+
+uniform sampler2D gTexture;
+
+void main()
+{
+   vec4 c = texture(gTexture, TexW);
+   fragColor = vec4(c.rrr, 1.0f);
+}

@@ -89,15 +89,28 @@ public final class GLUtil {
 		return doubleBuffer;
 	}
 	
-	public static IntBuffer wrapi1(int i){
+	public static IntBuffer wrap(int i){
 		intBuffer.clear();
 		intBuffer.put(i).flip();
 		return intBuffer;
+	}
+
+	public static FloatBuffer wrap(float i){
+		floatBuffer.clear();
+		floatBuffer.put(i).flip();
+		return floatBuffer;
 	}
 	
 	public static FloatBuffer wrap(float[] data, int offset, int length){
 		FloatBuffer buffer = getCachedFloatBuffer(length);
 		buffer.put(data, offset, length).flip();
+		return buffer;
+	}
+
+	public static FloatBuffer wrap(float x, float y, float z, float w){
+		FloatBuffer buffer = getCachedFloatBuffer(4);
+		buffer.put(x).put(y).put(z).put(w);
+		buffer.flip();
 		return buffer;
 	}
 	
@@ -106,11 +119,15 @@ public final class GLUtil {
 		buffer.put(data, offset, length).flip();
 		return buffer;
 	}
+
+	public static FloatBuffer wrap(Vector4f[] data){
+		return wrap(data, 0, data.length);
+	}
 	
 	public static FloatBuffer wrap(Vector4f[] data, int offset, int length){
 	   FloatBuffer buf = GLUtil.getCachedFloatBuffer(length * 4);
-	   for(int i = offset; i < length; i++){
-		   data[i].store(buf);
+	   for(int i = 0; i < length; i++){
+		   data[i + offset].store(buf);
 	   }
 	   buf.flip();
 	   return buf;

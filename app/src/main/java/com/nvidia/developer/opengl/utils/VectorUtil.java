@@ -15,14 +15,6 @@ public class VectorUtil {
 	public static final Vector3f UNIT_Z = new Vector3f(0, 0, 1);
 	public static final Vector3f ZERO3 = new Vector3f(0, 0, 0);
 
-	public static final Vector3f UNIT_X_NEGA = new Vector3f(-1, 0, 0);
-	public static final Vector3f UNIT_Y_NEGA = new Vector3f(0, -1, 0);
-	public static final Vector3f UNIT_Z_NEGA = new Vector3f(0, 0, -1);
-
-	public static final Vector3f VEC_ZERO = new Vector3f();
-
-	public static final Matrix4f IDT = new Matrix4f();
-
 	public static void store(Matrix4f m, float[][] mat) {
 		mat[0][0] = m.m00;
 		mat[0][1] = m.m01;
@@ -60,35 +52,6 @@ public class VectorUtil {
 		m.m32 = buffer[14];
 		m.m33 = buffer[15];
 	}
-
-	public static void loadTranspose(Matrix4f m, float[] buffer) {
-		m.m00 = buffer[0];
-		m.m01 = buffer[4];
-		m.m02 = buffer[8];
-		m.m03 = buffer[12];
-		m.m10 = buffer[1];
-		m.m11 = buffer[5];
-		m.m12 = buffer[9];
-		m.m13 = buffer[13];
-		m.m20 = buffer[2];
-		m.m21 = buffer[6];
-		m.m22 = buffer[10];
-		m.m23 = buffer[14];
-		m.m30 = buffer[3];
-		m.m31 = buffer[7];
-		m.m32 = buffer[11];
-		m.m33 = buffer[15];
-
-	}
-
-//	public static void main(String[] args) {
-//		for (int i = 0; i < 4; i++) {
-//			for (int j = 0; j < 4; j++) {
-//				// System.out.printf("mat[%d][%d] = m.m%d%d;\n",i,j,i,j);
-//				System.out.printf("m.m%d%d = buffer[%d];\n", i, j, j * 4 + i);
-//			}
-//		}
-//	}
 
 	public static final Vector3f unit_x() {
 		return new Vector3f(1, 0, 0);
@@ -218,7 +181,7 @@ public class VectorUtil {
 		return out;
 	}
 
-	//默认矩阵表示：人站在原点(0,0,0)的位置以标准y轴(0,1,0)为上方向，看向 (0,0,-1)的点.
+	//??????????????????(0,0,0)??λ??????y??(0,1,0)????????? (0,0,-1)???.
 	public static final Matrix4f lookAt(Vector3f eye, Vector3f center,
 			Vector3f pUp, Matrix4f out) {
 		if (out == null) {

@@ -1,0 +1,68 @@
+#version 400
+
+#include "LightHelper.glsl"
+
+layout (location = 0) out vec4 fragColor;
+
+/*
+uniform cbPerObject
+{
+    mat4 gWorld;    // Model matrix
+	mat4 gWorldInvTranspose; // Normal Matrix
+	mat4 gWorldViewProj;     // ModelViewProjection Matrix
+	Material gMaterial;      // material
+};*/
+
+uniform cbPerFrame
+{
+	DirectionalLight gDirLight;
+	PointLight gPointLight;
+	SpotLight gSpotLight;
+	vec4 gEyePosW;
+};
+
+uniform Material gMaterial;      // material
+
+in vec3 PosW;
+in vec3 Normal;
+in vec3 ColorW;
+
+void main()
+{
+    if(gEyePosW.w != 0.0){
+       fragColor = vec4(ColorW, 1.0);
+       return;
+    }
+   // Interpolating normal can unnormalize it, so normalize it.
+    vec3 NormalW = normalize(Normal); 
+
+	vec3 toEyeW = normalize(gEyePosW.xyz - PosW);
+
+	// Start with a sum of zero. 
+	vec4 ambient = vec4(0.0, 0.0, 0.0, 0.0);
+	vec4 diffuse = vec4(0.0, 0.0, 0.0, 0.0);
+	vec4 spec    = vec4(0.0, 0.0, 0.0, 0.0);
+
+	// Sum the light contribution from each light source.
+	vec4 A, D, S;
+
+	ComputeDirectionalLight(gMaterial, gDirLight, NormalW, toEyeW, A, D, S);
+	ambient += A;  
+	diffuse += D;
+	spec    += S;
+
+	ComputePointLight(gMaterial, gPointLight, PosW, NormalW, toEyeW, A, D, S);
+	ambient += A;
+	diffuse += D;
+	spec    += S;
+
+	ComputeSpotLight(gMaterial, gSpotLight, PosW, NormalW, toEyeW, A, D, S);
+	ambient += A;
+	diffuse += D;
+	spec    += S;
+	   
+	fragColor = ambient + diffuse + spec /*+ vec4(ColorW, 1.0)*/;
+
+	// Common to take alpha from diffuse material.
+//	fragColor.a = gMaterial.Diffuse.a;
+}

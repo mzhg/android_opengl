@@ -1,0 +1,143 @@
+#version 400 core
+
+layout (vertices = 4) out;
+
+in VertexOut
+{
+   vec2 Tex;
+   vec2 BoundsY;
+   vec3 PosW;
+}vin[];
+
+out TcOut
+{
+   vec2 Tex;
+   vec3 PosW;
+}vout[];
+
+uniform vec3 uEyePosW;
+
+// When distance is minimum, the tessellation is maximum.
+// When distance is maximum, the tessellation is minimum.
+uniform float gMinDist;
+uniform float gMaxDist;
+
+// Exponents for power of 2 tessellation.  The tessellation
+// range is [2^(gMinTess), 2^(gMaxTess)].  Since the maximum
+// tessellation is 64, this means gMaxTess can be at most 6
+// since 2^6 = 64.
+uniform float gMinTess;
+uniform float gMaxTess;
+uniform vec4 gWorldFrustumPlanes[6];
+
+float CalcTessFactor(vec3 p)
+{
+	float d = distance(p, uEyePosW);
+
+	// max norm in xz plane (useful to see detail levels from a bird's eye).
+	//float d = max( abs(p.x-uEyePosW.x), abs(p.z-uEyePosW.z) );
+	
+	float s = clamp( (d - gMinDist) / (gMaxDist - gMinDist), 0.0, 1.0 );
+	
+	return pow(2.0, (mix(gMaxTess, gMinTess, s)) );
+}
+
+// Returns true if the box is completely behind (in negative half space) of plane.
+bool AabbBehindPlaneTest(vec3 center, vec3 extents, vec4 plane)
+{
+	vec3 n = abs(plane.xyz);
+	
+	// This is always positive.
+	float r = dot(extents, n);
+	
+	// signed distance from center point to plane.
+	float s = dot( vec4(center.xyz, 1.0f), plane );
+	
+	// If the center point of the box is a distance of e or more behind the
+	// plane (in which case s is negative since it is behind the plane),
+	// then the box is completely in the negative half space of the plane.
+	return (s + r) < 0.0f;
+}
+
+// Returns true if the box is completely outside the frustum.
+bool AabbOutsideFrustumTest(vec3 center, vec3 extents, vec4 frustumPlanes[6])
+{
+	for(int i = 0; i < 6; ++i)
+	{
+		// If the box is completely behind any of the frustum planes
+		// then it is outside the frustum.
+		if( AabbBehindPlaneTest(center, extents, frustumPlanes[i]) )
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+void main()
+{
+   gl_out[gl_InvocationID].gl_Position = vec4(vin[gl_InvocationID].PosW, 1.0);
+   vout[gl_InvocationID].PosW = vin[gl_InvocationID].PosW;
+   vout[gl_InvocationID].Tex = vin[gl_InvocationID].Tex;
+   
+   //
+	// Frustum cull
+	//
+	
+	// We store the patch BoundsY in the first control point.
+	float minY = vin[0].BoundsY.x;
+	float maxY = vin[0].BoundsY.y;
+	
+	// Build axis-aligned bounding box.  vin[2] is lower-left corner
+	// and vin[1] is upper-right corner.
+	vec3 vMin = vec3(vin[2].PosW.x, minY, vin[2].PosW.z);
+	vec3 vMax = vec3(vin[1].PosW.x, maxY, vin[1].PosW.z);
+	
+	vec3 boxCenter  = 0.5f*(vMin + vMax);
+	vec3 boxExtents = 0.5f*(vMax - vMin);
+	if( AabbOutsideFrustumTest(boxCenter, boxExtents, gWorldFrustumPlanes) )
+	{
+	    /*
+		gl_TessLevelOuter[0] = 0.0f;
+		gl_TessLevelOuter[1] = 0.0f;
+		gl_TessLevelOuter[2] = 0.0f;
+		gl_TessLevelOuter[3] = 0.0f;
+		
+		gl_TessLevelInner[0] = 0.0f;
+		gl_TessLevelInner[1] = 0.0f;
+		*/
+		
+		gl_TessLevelInner[0] = 0.0;
+		gl_TessLevelInner[1] = 0.0;
+		
+		gl_TessLevelOuter[0] = 0.0;
+		gl_TessLevelOuter[1] = 0.0;
+		gl_TessLevelOuter[2] = 0.0;
+		gl_TessLevelOuter[3] = 0.0;
+	}
+	//
+	// Do normal tessellation based on distance.
+	//
+	else 
+	{
+		// It is important to do the tess factor calculation based on the
+		// edge properties so that edges shared by more than one patch will
+		// have the same tessellation factor.  Otherwise, gaps can appear.
+		
+		// Compute midpoint on edges, and patch center
+		vec3 e0 = 0.5f*(vin[0].PosW + vin[2].PosW);
+		vec3 e1 = 0.5f*(vin[0].PosW + vin[1].PosW);
+		vec3 e2 = 0.5f*(vin[1].PosW + vin[3].PosW);
+		vec3 e3 = 0.5f*(vin[2].PosW + vin[3].PosW);
+		vec3  c = 0.25f*(vin[0].PosW + vin[1].PosW + vin[2].PosW + vin[3].PosW);
+		
+		gl_TessLevelOuter[0] = CalcTessFactor(e0);
+		gl_TessLevelOuter[1] = CalcTessFactor(e1);
+		gl_TessLevelOuter[2] = CalcTessFactor(e2);
+		gl_TessLevelOuter[3] = CalcTessFactor(e3);
+		
+		gl_TessLevelInner[0] = CalcTessFactor(c);
+		gl_TessLevelInner[1] = gl_TessLevelInner[0];
+	}
+}

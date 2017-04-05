@@ -1,0 +1,51 @@
+#version 400 core
+
+layout(quads, fractional_even_spacing, ccw) in;
+
+uniform vec2 gTexScale = vec2(50.0f);
+uniform sampler2D gHeightMap;
+uniform mat4 gViewProj;
+
+in TcOut
+{
+   vec2 Tex;
+   vec3 PosW;
+}quad[];
+
+out DomainOut
+{
+    vec3 PosW;//     : POSITION;
+	vec2 Tex;//      : TEXCOORD0;
+	vec2 TiledTex;// : TEXCOORD1;
+}dout;
+
+void main()
+{
+   vec2 uv = gl_TessCoord.xy;
+   // Bilinear interpolation.
+	dout.PosW = mix(
+		mix(quad[0].PosW, quad[1].PosW, uv.x),
+		mix(quad[2].PosW, quad[3].PosW, uv.x),
+		uv.y); 
+	
+	dout.Tex = mix(
+		mix(quad[0].Tex, quad[1].Tex, uv.x),
+		mix(quad[2].Tex, quad[3].Tex, uv.x),
+		uv.y); 
+		
+	// Tile layer textures over terrain.
+	dout.TiledTex = dout.Tex*gTexScale; 
+	
+	// Displacement mapping
+	dout.PosW.y = textureLod(gHeightMap, dout.Tex, 0 ).r;
+	
+	// NOTE: We tried computing the normal in the shader using finite difference, 
+	// but the vertices move continuously with fractional_even which creates
+	// noticable light shimmering artifacts as the normal changes.  Therefore,
+	// we moved the calculation to the pixel shader.  
+	
+	// Project to homogeneous clip space.
+	// dout.PosH    = mul(float4(dout.PosW, 1.0f), gViewProj);
+	
+	gl_Position = gViewProj * vec4(dout.PosW, 1.0);
+}

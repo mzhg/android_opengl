@@ -1,0 +1,45 @@
+#version 400 core
+
+subroutine void Technique();
+subroutine uniform Technique technique;
+
+layout (location  = 0) in vec3 PosL;
+layout (location  = 1) in vec3 NormalL;
+layout (location  = 2) in vec2 Tex;
+layout (location  = 3) in vec4 TangentL;
+layout (location  = 4) in vec3 Weights;
+layout (location  = 5) in ivec4 BoneIndices;
+
+uniform mat4 gWorldViewProj;
+uniform mat4 gBoneTransforms[96];
+
+subroutine (Technique) void basic_shadow()
+{
+    gl_Position = gWorldViewProj * vec4(PosL, 1.0);
+}
+
+subroutine (Technique) void skin_shadow()
+{
+  // Init array or else we get strange warnings about SV_POSITION.
+	float weights[4];
+	weights[0] = Weights.x;
+	weights[1] = Weights.y;
+	weights[2] = Weights.z;
+	weights[3] = 1.0f - weights[0] - weights[1] - weights[2];
+
+	vec3 posL     = vec3(0.0f, 0.0f, 0.0f);
+	
+	for(int i = 0; i < 4; i++)
+	{
+	    // Assume no nonuniform scaling when transforming normals, so 
+		// that we do not have to use the inverse-transpose.
+		posL += weights[i] * ( ( gBoneTransforms[int(BoneIndices[i])] * vec4(PosL, 1.0)).xyz);
+	}
+	
+   gl_Position = gWorldViewProj * vec4(posL, 1.0);
+}
+
+void main()
+{
+   technique();
+}

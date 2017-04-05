@@ -1,0 +1,34 @@
+#version 400
+
+uniform mat4 gTexTransform;
+uniform mat4 gViewProj;
+
+layout (location  = 0) in vec3 PosL;
+layout (location  = 1) in vec3 NormalL;
+layout (location  = 2) in vec2 Tex;
+layout (location  = 3) in vec3 Offset;
+layout (location  = 4) in vec4 Color;
+
+out VertexOut
+{
+   vec3 PosW;
+   vec3 NormalW;
+   vec2 Tex;
+   vec4 Color;
+}vout;
+
+void main()
+{
+   // Transform to world space space.
+ //  mat4 gWorld = World;
+ //  vout.PosW = (gWorld * vec4(PosL + Offset, 1.0)).xyz;
+   vout.PosW = PosL + Offset;
+   vout.NormalW = /*mat3(gWorld) * */ NormalL;
+   
+   vout.Tex = (gTexTransform * vec4(Tex, 0.0, 1.0)).xy;
+   
+   // Transform to homogeneous clip space.
+   gl_Position = gViewProj * vec4(vout.PosW, 1.0);
+   
+   vout.Color = Color;
+}

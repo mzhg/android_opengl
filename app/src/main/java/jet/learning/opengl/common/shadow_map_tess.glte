@@ -1,0 +1,56 @@
+#version 400 core
+
+layout(triangles, fractional_odd_spacing, ccw) in;
+
+uniform mat4 gViewProj;
+uniform float gHeightScale;
+uniform sampler2D gNormalMap;
+
+uniform vec3 uEyePosW;
+
+in HullOut
+{
+    vec3 NormalW; //  : NORMAL;
+	vec2 Tex; //      : TEXCOORD;
+}tri[];
+
+out DomainOut
+{
+//	vec4 PosH; //     : SV_POSITION;
+    vec3 PosW; //     : POSITION;
+    vec3 NormalW; //  : NORMAL;
+	vec2 Tex; //      : TEXCOORD;
+}dout;
+
+void main()
+{
+    vec3 bary = gl_TessCoord.xyz;
+	// Interpolate patch attributes to generated vertices.
+//	dout.PosW     = bary.x*tri[0].PosW     + bary.y*tri[1].PosW     + bary.z*tri[2].PosW;
+	dout.NormalW  = bary.x*tri[0].NormalW  + bary.y*tri[1].NormalW  + bary.z*tri[2].NormalW;
+	dout.Tex      = bary.x*tri[0].Tex      + bary.y*tri[1].Tex      + bary.z*tri[2].Tex;
+	
+	dout.PosW = bary.x * gl_in[0].gl_Position.xyz + bary.y * gl_in[1].gl_Position.xyz + bary.z * gl_in[2].gl_Position.xyz;
+	
+	// Interpolating normal can unnormalize it, so normalize it.
+	dout.NormalW = normalize(dout.NormalW);
+	
+	//
+	// Displacement mapping.
+	//
+	
+	// Choose the mipmap level based on distance to the eye; specifically, choose
+	// the next miplevel every MipInterval units, and clamp the miplevel in [0,6].
+	const float MipInterval = 20.0;
+	float mipLevel = clamp( (distance(dout.PosW, uEyePosW) - MipInterval) / MipInterval, 0.0, 6.0);
+	
+	// Sample height map (stored in alpha channel).
+	float h = textureLod(gNormalMap, dout.Tex, mipLevel).a;
+	
+	// Offset vertex along normal.
+	dout.PosW += (gHeightScale*(h-1.0))*dout.NormalW;
+	
+	// Project to homogeneous clip space.
+	//dout.PosH = mul(float4(dout.PosW, 1.0f), gViewProj);
+	gl_Position = gViewProj * vec4(dout.PosW, 1.0);
+}

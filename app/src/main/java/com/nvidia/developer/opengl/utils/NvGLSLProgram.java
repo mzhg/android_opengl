@@ -33,14 +33,12 @@
 //----------------------------------------------------------------------------------
 package com.nvidia.developer.opengl.utils;
 
-import javax.microedition.khronos.opengles.GL11;
-
-import org.lwjgl.util.vector.Matrix4f;
-
 import android.opengl.GLES20;
 import android.opengl.GLException;
 
-import com.nvidia.developer.opengl.app.NvAppBase;
+import org.lwjgl.util.vector.Matrix4f;
+
+import javax.microedition.khronos.opengles.GL11;
 
 public class NvGLSLProgram implements NvDisposeable{
 
@@ -51,7 +49,6 @@ public class NvGLSLProgram implements NvDisposeable{
 	
 	/**
 	 * Creates and returns a shader object from a pair of filenames/paths.<br>
-	 * Uses {@link #NvAssetLoader} to load the files.  Convenience function.
 	 * @param vertFilename the filename and partial path to the text file containing the vertex shader source
 	 * @param fragFilename the filename and partial path to the text file containing the fragment shader source
 	 * @param strict if set to true, then later calls to retrieve the locations of nonexistent uniforms and 
@@ -71,7 +68,6 @@ public class NvGLSLProgram implements NvDisposeable{
 	
 	/**
 	 * Creates and returns a shader object from a pair of filenames/paths.<br>
-	 * Uses {@link #NvAssetLoader} to load the files.
 	 * @param vertFilename the filename and partial path to the text file containing the vertex shader source
 	 * @param fragFilename the filename and partial path to the text file containing the fragment shader source
 	 * @return a reference to an <code>NvGLSLProgram</code> on success and null on failure
@@ -106,7 +102,6 @@ public class NvGLSLProgram implements NvDisposeable{
 	 * @param vertSrc the string containing the vertex shader source
 	 * @param fragSrc the string containing the fragment shader source
 	 * @return a reference to an <code>NvGLSLProgram</code> on success and null on failure
-	 * @see #createFromStrings(CharSequence, CharSequence, boolean)
 	 */
 	public static NvGLSLProgram createFromStrings(CharSequence vertSrc, CharSequence fragSrc){
 		NvGLSLProgram prog = new NvGLSLProgram();
@@ -242,7 +237,7 @@ public class NvGLSLProgram implements NvDisposeable{
 	 * shader types such as geometry and tessellation shaders (if supported)
 	 * @return true on success and false on failure
 	 */
-	public boolean setSourceFromStrings(ShaderSourceItem[] src){
+	public boolean setSourceFromStrings(ShaderSourceItem... src){
 		return setSourceFromStrings(src, src.length, false);
 	}
 	
@@ -341,7 +336,7 @@ public class NvGLSLProgram implements NvDisposeable{
 	    int i;
 	    for (i = 0; i < count; i++) {
 	        int shader = GLES20.glCreateShader(src[i].type);
-	        GLES20.glShaderSource(shader, src[i].src);
+	        GLES20.glShaderSource(shader, src[i].src.toString());  // TODO Bad performance
 	        GLES20.glCompileShader(shader);
 	        if (!checkCompileError(shader, src[i].type))
 	            return 0;
@@ -752,7 +747,7 @@ public class NvGLSLProgram implements NvDisposeable{
 	/**
 	 * Set vector program uniform array by index.
 	 * Assumes that the given shader is bound via {@link #enable}
-	 * @param name the index of the uniform
+	 * @param index the index of the uniform
 	 * @param value array of values
 	 * @param offset The offset within the array of the first float to be read; must be non-negative and no larger than array.length
 	 * @param count The number of floats to be read from the given array; must be non-negative and no larger than array.length - offset
@@ -945,14 +940,14 @@ public class NvGLSLProgram implements NvDisposeable{
 	 */
 	public static final class ShaderSourceItem{
 		/** Shader source code */
-		public String src;
+		public CharSequence src;
 		/** The GL_*_SHADER enum representing the shader type */
 		public int type;
 		
 		public ShaderSourceItem() {
 		}
 
-		public ShaderSourceItem(String src, int type) {
+		public ShaderSourceItem(CharSequence src, int type) {
 			this.src = src;
 			this.type = type;
 		}

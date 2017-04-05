@@ -1,0 +1,25 @@
+#version 400 core
+
+layout (location  = 0) in vec3 InitialPosW;
+layout (location  = 1) in vec3 InitialVelW;
+layout (location  = 2) in vec2 SizeW;
+layout (location  = 3) in float Age;
+layout (location  = 4) in uint Type;
+
+out Particle
+{
+   vec3 InitialPosW;// : POSITION;
+   vec3 InitialVelW;// : VELOCITY;
+   vec2 SizeW;//       : SIZE;
+   float Age;//        : AGE;
+	uint Type;//       : TYPE;
+}vout;
+
+void main()
+{
+   vout.InitialPosW = InitialPosW;
+   vout.InitialVelW = InitialVelW;
+   vout.SizeW = SizeW;
+   vout.Age = Age;
+   vout.Type = Type;
+}

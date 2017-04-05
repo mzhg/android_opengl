@@ -1,0 +1,13 @@
+#version 400
+
+// Nonnumeric values cannot be added to a cbuffer.
+uniform samplerCube gCubeMap;
+
+layout (location = 0) out vec4 fragColor;
+
+in vec3 PosW;
+
+void main()
+{
+   fragColor = texture(gCubeMap, (PosW));
+}

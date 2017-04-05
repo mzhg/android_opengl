@@ -369,5 +369,27 @@ public class GLES {
 		integer[0] = buffer;
 		GLES30.glDrawBuffers(1, integer, 0);
 	}
-	
+
+
+	public static int glGenVertexArrays() {
+		GLES30.glGenVertexArrays(1, integer, 0);
+		return integer[0];
+	}
+
+	public static int glGetActiveUniformBlocki(int program, int index, int pname) {
+		GLES30.glGetActiveUniformBlockiv(program, index, pname, integer, 0);
+		return integer[0];
+	}
+
+	public static int glGetActiveUniformsi(int program, int indice, int pname) {
+		integer[0] = indice;
+		GLES30.glGetActiveUniformsiv(program, 1, integer, 0, pname, integer, 0);  // TODO
+		return integer[0];
+	}
+
+	public static void glDeleteVertexArrays(int vao) {
+		integer[0] = vao;
+		GLES30.glDeleteVertexArrays(1, integer, 0);
+	}
+
 }

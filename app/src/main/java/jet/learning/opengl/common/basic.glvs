@@ -1,0 +1,58 @@
+#version 400
+
+#define USE_UNIFORM_BUFFER
+
+#ifdef USE_UNIFORM_BUFFER
+
+struct Material
+{
+	vec4 Ambient;
+	vec4 Diffuse;
+	vec4 Specular; // w = SpecPower
+	vec4 Reflect;
+};
+
+uniform cbPerObject
+{
+	mat4 gWorld;
+	mat4 gWorldInvTranspose;
+	mat4 gWorldViewProj;
+	mat4 gTexTransform;
+	Material gMaterial;
+}; 
+
+#else
+
+uniform mat4 gWorld;
+uniform mat4 gWorldInvTranspose;
+uniform mat4 gWorldViewProj;
+uniform mat4 gTexTransform;
+uniform mat4 gShadowTransform;
+
+#endif
+
+layout (location  = 0) in vec3 PosL;
+layout (location  = 1) in vec3 NormalL;
+layout (location  = 2) in vec2 Tex;
+
+out VertexOut
+{
+   vec3 PosW;
+   vec3 NormalW;
+   vec2 Tex;
+   vec4 ShadowPosH;
+}vout;
+
+void main()
+{
+   // Transform to world space space.
+   vout.PosW = (gWorld * vec4(PosL, 1.0)).xyz;
+   vout.NormalW = mat3(gWorldInvTranspose) * NormalL;
+   vout.Tex = (gTexTransform * vec4(Tex, 0.0, 1.0)).xy;
+   
+   // Transform to homogeneous clip space.
+   gl_Position = gWorldViewProj * vec4(PosL, 1.0);
+   
+   // Generate projective tex-coords to project shadow map onto scene.
+   vout.ShadowPosH = gShadowTransform * vec4(PosL, 1.0);
+}

@@ -1,0 +1,23 @@
+#version 330
+
+layout (location = 0) in vec3 PosL;
+layout (location = 1) in vec3 ToFarPlaneIndex;
+layout (location = 2) in vec2 Tex;
+
+uniform vec4 gFrustumCorners[4];
+
+out VertexOut
+{
+   vec3 ToFarPlane;
+   vec2 Tex;
+}vout;
+
+void main()
+{
+    gl_Position = vec4(PosL, 1.0f);
+    
+    // We store the index to the frustum corner in the normal x-coord slot.
+    vout.ToFarPlane = gFrustumCorners[int(ToFarPlaneIndex.x)].xyz;
+    
+    vout.Tex = Tex;
+}

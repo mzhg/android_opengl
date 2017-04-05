@@ -1,0 +1,84 @@
+#version 400 core
+
+layout (points ) in;
+layout (triangle_strip, max_vertices = 4) out;
+
+#define PT_EMITTER 0
+#define PT_FLARE 1
+
+uniform mat4 gViewProj;
+uniform vec3 gEyePosW;
+
+in VertexOut
+{
+	vec3 PosW;//  : POSITION;
+	vec2 SizeW;// : SIZE;
+	vec4 Color;// : COLOR;
+	uint   Type;//  : TYPE;
+}gin[];
+
+out GeoOut
+{
+//	vec4 PosH  : SV_Position;
+	vec4 Color;// : COLOR;
+	vec2 Tex;//   : TEXCOORD;
+}gout;
+
+void main()
+{
+    // do not draw emitter particles.
+	if( gin[0].Type != PT_EMITTER )
+	{
+	    // Texture coordinates used to stretch texture over quad 
+		// when we expand point particle into a quad.
+		vec2 gQuadTexC[4];
+//		gQuadTexC[0] = vec2(0.0f, 1.0f);
+//		gQuadTexC[1] = vec2(1.0f, 1.0f);
+//		gQuadTexC[2] = vec2(0.0f, 0.0f);
+//		gQuadTexC[3] = vec2(1.0f, 0.0f);
+
+//		gQuadTexC[0] = vec2(0.0f, 1.0f);
+//		gQuadTexC[1] = vec2(0.0f, 0.0f);
+//		gQuadTexC[2] = vec2(1.0f, 1.0f);
+//		gQuadTexC[3] = vec2(1.0f, 0.0f);
+
+		gQuadTexC[0] = vec2(1.0f, 1.0f);
+		gQuadTexC[1] = vec2(1.0f, 0.0f);
+		gQuadTexC[2] = vec2(0.0f, 1.0f);
+		gQuadTexC[3] = vec2(0.0f, 0.0f);
+		
+		//
+		// Compute world matrix so that billboard faces the camera.
+		//
+		vec3 look  = normalize(gEyePosW.xyz - gin[0].PosW);
+		vec3 right = normalize(cross(vec3(0,1,0), look));
+		vec3 up    = cross(look, right);
+		
+		//
+		// Compute triangle strip vertices (quad) in world space.
+		//
+		float halfWidth  = 0.5f*gin[0].SizeW.x;
+		float halfHeight = 0.5f*gin[0].SizeW.y;
+	
+		vec4 v[4];
+		v[0] = vec4(gin[0].PosW + halfWidth*right - halfHeight*up, 1.0f);
+		v[1] = vec4(gin[0].PosW + halfWidth*right + halfHeight*up, 1.0f);
+		v[2] = vec4(gin[0].PosW - halfWidth*right - halfHeight*up, 1.0f);
+		v[3] = vec4(gin[0].PosW - halfWidth*right + halfHeight*up, 1.0f);
+		
+		//
+		// Transform quad vertices to world space and output 
+		// them as a triangle strip.
+		//
+		//GeoOut gout;
+		//[unroll]
+		for(int i = 0; i < 4; ++i)
+		{
+//			gout.PosH  = mul(v[i], gViewProj);
+            gl_Position = gViewProj * v[i];
+			gout.Tex   = gQuadTexC[i];
+			gout.Color = gin[0].Color;
+			EmitVertex();
+		}	
+	}
+}

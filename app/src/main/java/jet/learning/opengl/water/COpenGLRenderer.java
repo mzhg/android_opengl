@@ -24,8 +24,6 @@ import java.nio.ShortBuffer;
 
 import javax.microedition.khronos.opengles.GL11;
 
-import jet.learning.opengl.common.MathUtil;
-
 import static android.opengl.GLES20.GL_TEXTURE0;
 import static android.opengl.GLES20.glUseProgram;
 import static android.opengl.GLES30.GL_RGB8;
@@ -441,7 +439,7 @@ final class COpenGLRenderer {
         this.width = Width;
         this.height = Height;
 
-        MathUtil.perspective(45.0f, (float)Width / (float)Height, 0.125f, 512.0f, projectionMatrix);
+        Matrix4f.perspective(45.0f, (float)Width / (float)Height, 0.125f, 512.0f, projectionMatrix);
 //        ProjectionBiasMatrixInverse = inverse(ProjectionMatrix) * BiasMatrixInverse; TODO
     }
 

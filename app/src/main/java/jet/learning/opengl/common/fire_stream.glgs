@@ -1,0 +1,99 @@
+#version 400 core
+
+#define PT_EMITTER 0
+#define PT_FLARE 1
+
+layout(points) in;
+layout(points, max_vertices = 2) out;
+
+// Random texture used to generate random numbers in shaders.
+uniform sampler1D gRandomTex;
+
+uniform vec3 gEmitPosW;
+uniform float gGameTime;
+uniform float gTimeStep;
+
+in Particle
+{
+   vec3 InitialPosW;// : POSITION;
+   vec3 InitialVelW;// : VELOCITY;
+   vec2 SizeW;//       : SIZE;
+   float Age;//        : AGE;
+	uint Type;//       : TYPE;
+}gin[];
+
+//out ParticleW
+//{
+out	vec3 InitialPosW;// : POSITION;
+out vec3 InitialVelW;// : VELOCITY;
+out vec2 SizeW;//       : SIZE;
+out float Age;//        : AGE;
+out	uint Type;//       : TYPE;
+//}gout;
+
+//***********************************************
+// HELPER FUNCTIONS                             *
+//***********************************************
+vec3 RandUnitVec3(float offset)
+{
+	// Use game time plus offset to sample random texture.
+	float u = (gGameTime + offset);
+	
+	// coordinates in [-1,1]
+	vec3 v = textureLod(gRandomTex, u, 0).xyz;
+	
+	// project onto unit sphere
+	return normalize(v);
+}
+
+void main()
+{
+//    gin[0].Age += gTimeStep;
+    
+	if( gin[0].Type == PT_EMITTER )
+	{	
+		// time to emit a new particle?
+		if( gin[0].Age  + gTimeStep > 0.005f )
+		{
+			vec3 vRandom = RandUnitVec3(0.0f);
+			vRandom.x *= 0.5f;
+			vRandom.z *= 0.5f;
+			
+			InitialPosW = gEmitPosW.xyz;
+			InitialVelW = 4.0 * vRandom;
+			SizeW       = vec2(3.0f, 3.0f);
+			Age         = 0.0f;
+			Type        = PT_FLARE;
+			
+			EmitVertex();
+			//ptStream.Append(p);
+			
+			// reset the time to emit
+			//gin[0].Age = 0.0f;
+		}
+		
+		// always keep emitters
+		//ptStream.Append(gin[0]);
+		InitialPosW = gin[0].InitialPosW;
+		InitialVelW = gin[0].InitialVelW;
+		SizeW       = gin[0].SizeW;
+		Age         = gin[0].Age;
+		Type        = gin[0].Type;
+		
+		EmitVertex();
+	}
+	else
+	{
+		// Specify conditions to keep particle; this may vary from system to system.
+		if( gin[0].Age <= 1.0f ){
+//			ptStream.Append(gin[0]);
+			InitialPosW = gin[0].InitialPosW;
+			InitialVelW = gin[0].InitialVelW;
+			SizeW       = gin[0].SizeW;
+			Age         = gin[0].Age + gTimeStep;
+			Type        = gin[0].Type;
+			
+			EmitVertex();
+		}
+	}	
+}

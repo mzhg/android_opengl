@@ -1,0 +1,14 @@
+#version 400
+
+uniform mat4 gWorldViewProj;
+
+layout (location  = 0) in vec3 PosL;
+
+out vec3 PosW;
+
+void main()
+{
+   PosW = PosL;
+   
+   gl_Position = gWorldViewProj * vec4(PosL, 1.0);
+}

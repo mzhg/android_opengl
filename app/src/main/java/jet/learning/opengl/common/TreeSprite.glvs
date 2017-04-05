@@ -1,0 +1,16 @@
+#version 330
+
+layout (location  = 0) in vec3 PosW;
+layout (location  = 1) in vec2 SizeW;
+
+out VertexOut
+{
+	vec3 CenterW;
+	vec2 SizeW;
+}vout;
+
+void main()
+{
+  vout.CenterW = PosW;
+  vout.SizeW = SizeW;
+}

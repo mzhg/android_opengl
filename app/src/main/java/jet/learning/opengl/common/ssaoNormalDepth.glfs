@@ -1,0 +1,47 @@
+#version 400
+
+layout (location = 0) out vec4 fragColor;
+
+subroutine void Technique();
+subroutine uniform Technique technique;
+
+uniform sampler2D gDiffuseMap;
+
+in VertexOut
+{
+	vec3 PosV;
+	vec3 NormalV;
+	vec2 Tex;
+}pin;
+
+void PS(bool gAlphaClip)
+{
+	// Interpolating normal can unnormalize it, so normalize it.
+    vec3 NormalV = normalize(pin.NormalV);
+
+	if(gAlphaClip)
+	{
+		vec4 texColor = texture( gDiffuseMap, pin.Tex );
+		 
+//		clip(texColor.a - 0.1f);
+        if(texColor.a < 0.1f)
+           discard;
+	}
+	
+	fragColor =  vec4(NormalV, pin.PosV.z);
+}
+
+subroutine (Technique) void NormalDepth()
+{
+   PS(false);
+}
+
+subroutine (Technique) void NormalDepthAlphaClip()
+{
+   PS(true);
+}
+
+void main()
+{
+   technique();
+}

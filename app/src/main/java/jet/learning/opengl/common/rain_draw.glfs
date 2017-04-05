@@ -1,0 +1,12 @@
+#version 400 core
+
+layout (location = 0) out vec4 fragColor;
+
+uniform sampler2D gTexArray;
+
+in vec2 Tex;
+
+void main()
+{
+   fragColor = texture(gTexArray, Tex);
+}

@@ -1,0 +1,26 @@
+#version 400 core
+
+layout (location  = 0) in vec3 InitialPosW;
+layout (location  = 1) in vec3 InitialVelW;
+layout (location  = 2) in vec2 SizeW;
+layout (location  = 3) in float Age;
+layout (location  = 4) in uint Type;
+
+out VertexOut
+{
+	vec3 PosW;//  : POSITION;
+	uint Type;//  : TYPE;
+}vout;
+
+// Net constant acceleration used to accerlate the particles
+uniform vec3 gAccelW = vec3(-1.0f, -9.8f, 0.0f);
+
+void main()
+{
+    float t = Age;
+	
+	// constant acceleration equation
+	vout.PosW = 0.5f*t*t*gAccelW + t*InitialVelW + InitialPosW;
+	
+	vout.Type  = Type;
+}

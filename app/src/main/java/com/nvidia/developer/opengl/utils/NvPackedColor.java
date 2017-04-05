@@ -33,12 +33,26 @@
 //----------------------------------------------------------------------------------
 package com.nvidia.developer.opengl.utils;
 
+import org.lwjgl.util.vector.ReadableVector3f;
+import org.lwjgl.util.vector.Vector3f;
+
 public final class NvPackedColor {
 
 	/** A predefined constant for WHITE. */
 	public static final int NV_PC_PREDEF_WHITE = 0xFFFFFFFF;
 	/** A predefined constant for BLACK. */
 	public static final int NV_PC_PREDEF_BLACK = 0xFF000000;
+
+	public static final ReadableVector3f WHITE = new Vector3f(1, 1, 1);
+	public static final ReadableVector3f BLACK = new Vector3f(0,0,0);
+	public static final ReadableVector3f RED = new Vector3f(1, 0, 0);
+	public static final ReadableVector3f GREEN = new Vector3f(0, 1, 0);
+	public static final ReadableVector3f BLUE = new Vector3f(0, 0, 1);
+	public static final ReadableVector3f YELLOW = new Vector3f(1, 1, 0);
+	public static final ReadableVector3f CYAN = new Vector3f(0, 1, 1);
+	public static final ReadableVector3f MAGENTA = new Vector3f(1, 0, 1);
+	public static final ReadableVector3f SILVER = new Vector3f(0.75f, 0.75f, 0.75f);
+	public static final ReadableVector3f LIGHT_STEEL_BLUE = new Vector3f(0.69f, 0.77f, 0.87f);
 	
 	/** Extracting the red value from an packed color which is in rgb(a) form. */
 	public static final int getRedFromRGB(int rgb){

@@ -1,18 +1,21 @@
 package com.nvidia.developer.opengl.utils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
-import javax.microedition.khronos.opengles.GL10;
-
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.opengl.GLES30;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import javax.microedition.khronos.opengles.GL10;
 
 public final class Glut {
 
@@ -121,6 +124,76 @@ public final class Glut {
 			e.printStackTrace();
 		}
 		
+		return null;
+	}
+
+	public static final StringBuilder loadTextFromClassPath(Class<?> clazz, String filename){
+		InputStream input = clazz.getResourceAsStream(filename);
+
+		BufferedReader in = new BufferedReader(new InputStreamReader(input));
+		StringBuilder sb = new StringBuilder();
+		String s;
+
+		try {
+			while ((s = in.readLine()) != null)
+				sb.append(s).append('\n');
+			in.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return sb;
+	}
+
+	public static int nvImageLoadTextureArrayFromDDSData(String[] ddsFile, int count) {
+		int texID = GLES.glGenTextures();
+		GLES30.glBindTexture(GLES30.GL_TEXTURE_2D_ARRAY, texID);
+
+		for (int i = 0; i < count; i++) {
+			NvImage image = NvImage.createFromDDSFile(ddsFile[i]);
+
+			if (image != null) {
+				int w = image.getWidth();
+				int h = image.getHeight();
+				if (i == 0) {
+					if (image.isCompressed())
+					{
+//                        glCompressedTexImage3DOES(GL_TEXTURE_2D_ARRAY_EXT, 0, image.getInternalFormat(),
+//                            w, h, count, 0, image.getImageSize(0)*count, NULL);
+						GLES30.glCompressedTexImage3D(GLES30.GL_TEXTURE_2D_ARRAY, 0, image.getInternalFormat(), w, h, count, 0, image.getImageSize(0)*count, (ByteBuffer)null);
+					}
+					else
+					{
+//                           glTexImage3DOES(GL_TEXTURE_2D_ARRAY_EXT, 0, image.getFormat(), w, h, count, 0,
+//                            image.getFormat(), image.getType(), NULL);
+						GLES30.glTexImage3D(GLES30.GL_TEXTURE_2D_ARRAY, 0, image.getInternalFormat(), w, h, count, 0, image.getFormat(), image.getType(), (ByteBuffer)null);
+					}
+				}
+				if (image.isCompressed())
+				{
+//                    glCompressedTexSubImage3DOES(GL_TEXTURE_2D_ARRAY_EXT, 0, 0, 0, i, w, h, 1, image.getInternalFormat(),
+//                        image.getImageSize(0), image.getLevel(0));
+					GLES30.glCompressedTexSubImage3D(GLES30.GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, w, h, 1, image.getInternalFormat(),
+							image.getImageSize(0), GLUtil.wrap(image.getLevel(0)));
+				}
+				else
+				{
+//                    glTexSubImage3DOES(GL_TEXTURE_2D_ARRAY_EXT, 0, 0, 0, i, w, h, 1, image.getFormat(),
+//                        image.getType(), image.getLevel(0));
+					GLES30.glTexSubImage3D(GLES30.GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, w, h, 1, image.getFormat(), image.getType(), GLUtil.wrap(image.getLevel(0)));
+				}
+			}
+		}
+
+		return texID;
+	}
+
+	public static InputStream readFileStream(String filename) {
+		try {
+			return assetManager.open(filename);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		return null;
 	}
 }

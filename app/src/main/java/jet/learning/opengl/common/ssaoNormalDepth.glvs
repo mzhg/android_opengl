@@ -1,0 +1,29 @@
+#version 330
+
+layout( location = 0 ) in vec3 PosL;
+layout( location = 1 ) in vec3 NormalL;
+layout( location = 2 ) in vec2 Tex;
+
+uniform mat4 gWorldView;
+uniform mat4 gWorldInvTransposeView;
+uniform mat4 gWorldViewProj;
+uniform mat4 gTexTransform;
+
+out VertexOut
+{
+	vec3 PosV;
+	vec3 NormalV;
+	vec2 Tex;
+}vout;
+
+void main()
+{
+   // Transform to view space.
+   vout.PosV = (gWorldView * vec4(PosL, 1.0)).xyz;
+   vout.NormalV = mat3(gWorldInvTransposeView) * NormalL;
+   
+   // Output vertex attributes for interpolation across triangle.
+   vout.Tex = (gTexTransform * vec4(Tex, 0.0, 1.0)).xy;
+   
+   gl_Position = gWorldViewProj * vec4(PosL, 1.0);
+}

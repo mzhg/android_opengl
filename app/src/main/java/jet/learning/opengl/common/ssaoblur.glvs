@@ -1,0 +1,15 @@
+#version 330
+
+layout( location = 0 ) in vec3 PosL;
+layout( location = 1 ) in vec3 unused;
+layout( location = 2 ) in vec2 Tex;
+
+out vec2 TexW;
+
+void main()
+{
+   // Already in NDC space.
+   gl_Position = vec4(PosL, 1.0);
+   
+   TexW = Tex;
+}

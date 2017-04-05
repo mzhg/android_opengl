@@ -1,0 +1,142 @@
+#version 400
+
+#include "LightHelper.glsl"
+
+layout (location = 0) out vec4 fragColor;
+
+#define USE_UNIFORM_BUFFER
+
+#ifdef USE_UNIFORM_BUFFER
+
+uniform cbPerObject
+{
+	mat4 gWorld;
+	mat4 gWorldInvTranspose;
+	mat4 gWorldViewProj;
+	Material gMaterial;
+}; 
+
+#else
+
+uniform Material gMaterial;
+
+#endif
+
+uniform cbPerFrame
+{
+	DirectionalLight gDirLights[3];
+	vec3 gEyePosW;
+	// this variable should declare as a uniform.
+	int gLightCount;
+
+	float  gFogStart;
+	float  gFogRange;
+	vec4 gFogColor;
+};
+
+uniform bool gUseTexure = false;
+uniform bool gAlphaClip = false;
+uniform bool gFogEnabled = false;
+uniform bool gReflectionEnabled = false;
+uniform bool gUseShadowMap = false;
+	
+// Nonnumeric values cannot be added to a cbuffer.
+uniform sampler2D gDiffuseMap;
+uniform samplerCube gCubeMap;
+uniform sampler2DShadow gShadowMap;
+
+in VertexOut
+{
+   vec3 PosW;
+   vec3 NormalW;
+   vec2 Tex;
+   vec4 ShadowPosH;
+}vout;
+
+void main()
+{
+   // Interpolating normal can unnormalize it, so normalize it.
+    vec3 NormalW = normalize(vout.NormalW);
+
+	// The toEye vector is used in lighting.
+	vec3 toEye = gEyePosW - vout.PosW;
+
+	// Cache the distance to the eye from this surface point.
+	float distToEye = length(toEye); 
+
+	// Normalize.
+	toEye /= distToEye;
+	
+	// Default to multiplicative identity.
+    vec4 texColor = vec4(1, 1, 1, 1);
+    if(gUseTexure)
+	{
+		// Sample texture.
+		texColor = texture(gDiffuseMap, vout.Tex );
+		
+		if(gAlphaClip)
+		{
+			// Discard pixel if texture alpha < 0.1.  Note that we do this
+			// test as soon as possible so that we can potentially exit the shader 
+			// early, thereby skipping the rest of the shader code.
+			if(texColor.a - 0.1 < 0.0)
+				discard;
+		}
+	}
+	
+	//
+	// Lighting.
+	//
+
+    fragColor = texColor;
+    if(gLightCount > 0){
+		// Start with a sum of zero. 
+		vec4 ambient = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+		vec4 diffuse = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+		vec4 spec    = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+		// Only the first light casts a shadow.
+		vec3 shadow = vec3(1.0f, 1.0f, 1.0f);
+		if(gUseShadowMap)
+			shadow[0] = textureProj(gShadowMap, vout.ShadowPosH); //CalcShadowFactor(gShadowMap, vout.ShadowPosH);
+		
+		// Sum the light contribution from each light source.  
+		//[unroll]
+		for(int i = 0; i < gLightCount; ++i)
+		{
+			vec4 A, D, S;
+			ComputeDirectionalLight(gMaterial, gDirLights[i], NormalW, toEye, 
+				A, D, S);
+	
+			ambient += A;
+			diffuse += shadow[i] * D;
+			spec    += shadow[i] * S;
+		}
+	
+		fragColor = texColor*(ambient + diffuse) + spec;
+		
+		if( gReflectionEnabled )
+		{
+			vec3 incident = -toEye;
+			vec3 reflectionVector = reflect(incident, NormalW);
+			vec4 reflectionColor  = texture(gCubeMap, reflectionVector);
+
+			fragColor += gMaterial.Reflect*reflectionColor;
+		}
+	}
+	
+	//
+	// Fogging
+	//
+
+	if( gFogEnabled )
+	{
+		float fogLerp = clamp( (distToEye - gFogStart) / gFogRange, 0.0, 1.0 ); 
+
+		// Blend the fog color and the lit color.
+		fragColor = mix(fragColor, gFogColor, fogLerp);
+	}
+
+	// Common to take alpha from diffuse material.
+	fragColor.a = gMaterial.Diffuse.a * texColor.a;
+}

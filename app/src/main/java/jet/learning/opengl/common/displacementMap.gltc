@@ -1,0 +1,40 @@
+#version 400 core
+
+layout (vertices = 3) out;
+
+
+in VertexOut
+{
+   vec3 NormalW;
+   vec3 TangentW;
+   vec2 Tex;
+   float TessFactor;
+   vec3 PosW;
+}vin[];
+
+out HullOut
+{
+    vec3 NormalW; //  : NORMAL;
+	vec3 TangentW; // : TANGENT;
+	vec2 Tex; //      : TEXCOORD;
+}hout[];
+
+void main()
+{
+	// Average tess factors along edges, and pick an edge tess factor for 
+	// the interior tessellation.  It is important to do the tess factor
+	// calculation based on the edge properties so that edges shared by 
+	// more than one triangle will have the same tessellation factor.  
+	// Otherwise, gaps can appear.
+	
+	gl_out[gl_InvocationID].gl_Position = vec4(vin[gl_InvocationID].PosW, 1.0);
+	hout[gl_InvocationID].NormalW = vin[gl_InvocationID].NormalW;
+	hout[gl_InvocationID].TangentW = vin[gl_InvocationID].TangentW;
+	hout[gl_InvocationID].Tex = vin[gl_InvocationID].Tex;
+	
+	gl_TessLevelInner[0] = 0.5 * (vin[1].TessFactor + vin[2].TessFactor);
+	
+	gl_TessLevelOuter[0] = 0.5 * (vin[1].TessFactor + vin[2].TessFactor);
+	gl_TessLevelOuter[1] = 0.5 * (vin[2].TessFactor + vin[0].TessFactor);
+	gl_TessLevelOuter[2] = 0.5 * (vin[0].TessFactor + vin[1].TessFactor);
+}

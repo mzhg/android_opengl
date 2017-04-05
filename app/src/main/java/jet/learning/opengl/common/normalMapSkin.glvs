@@ -1,0 +1,61 @@
+#version 400
+
+uniform mat4 gWorld;
+uniform mat4 gWorldInvTranspose;
+uniform mat4 gWorldViewProj;
+uniform mat4 gTexTransform;
+uniform mat4 gShadowTransform;
+
+layout (location  = 0) in vec3 PosL;
+layout (location  = 1) in vec3 NormalL;
+layout (location  = 2) in vec2 Tex;
+layout (location  = 3) in vec4 TangentL;
+layout (location  = 4) in vec3 Weights;
+layout (location  = 5) in ivec4 BoneIndices;
+
+uniform mat4 gBoneTransforms[96];
+
+out VertexOut
+{
+   vec3 PosW;
+   vec3 NormalW;
+   vec4 TangentW;
+   vec2 Tex;
+   vec4 ShadowPosH;
+}vout;
+
+void main()
+{
+   // Init array or else we get strange warnings about SV_POSITION.
+	float weights[4];
+	weights[0] = Weights.x;
+	weights[1] = Weights.y;
+	weights[2] = Weights.z;
+	weights[3] = 1.0f - weights[0] - weights[1] - weights[2];
+
+	vec3 posL     = vec3(0.0f, 0.0f, 0.0f);
+	vec3 normalL  = vec3(0.0f, 0.0f, 0.0f);
+	vec3 tangentL = vec3(0.0f, 0.0f, 0.0f);
+	
+	for(int i = 0; i < 4; i++)
+	{
+	    // Assume no nonuniform scaling when transforming normals, so 
+		// that we do not have to use the inverse-transpose.
+		posL += weights[i] * ( ( gBoneTransforms[int(BoneIndices[i])] * vec4(PosL, 1.0)).xyz);
+		normalL += weights[i] * (mat3(gBoneTransforms[int(BoneIndices[i])]) * NormalL);
+		tangentL += weights[i] * (mat3(gBoneTransforms[int(BoneIndices[i])]) * TangentL.xyz);
+	}
+	
+   // Transform to world space space.
+   vout.PosW = (gWorld * vec4(posL, 1.0)).xyz;
+   vout.NormalW = mat3(gWorldInvTranspose) * normalL;
+   vout.TangentW = vec4(mat3(gWorld) * tangentL, TangentL.w);
+   
+   vout.Tex = (gTexTransform * vec4(Tex, 0.0, 1.0)).xy;
+   
+   // Generate projective tex-coords to project shadow map onto scene.
+   vout.ShadowPosH = gShadowTransform * vec4(posL, 1.0);
+   
+   // Transform to homogeneous clip space.
+   gl_Position = gWorldViewProj * vec4(posL, 1.0);
+}

@@ -1,0 +1,33 @@
+#version 400 core
+
+layout (location  = 0) in vec3 InitialPosW;
+layout (location  = 1) in vec3 InitialVelW;
+layout (location  = 2) in vec2 SizeW;
+layout (location  = 3) in float Age;
+layout (location  = 4) in uint Type;
+
+out VertexOut
+{
+	vec3 PosW;//  : POSITION;
+	vec2 SizeW;// : SIZE;
+	vec4 Color;// : COLOR;
+	uint   Type;//  : TYPE;
+}vout;
+
+// Net constant acceleration used to accerlate the particles
+const vec3 gAccelW = vec3(0.0f, 7.8f, 0.0f);
+
+void main()
+{
+   float t = Age;
+	
+	// constant acceleration equation
+	vout.PosW = 0.5f*t*t*gAccelW + t*InitialVelW + InitialPosW;
+	
+	// fade color with time
+	float opacity = 1.0f - smoothstep(0.0f, 1.0f, t/1.0f);
+	vout.Color = vec4(1.0f, 1.0f, 1.0f, opacity);
+	
+	vout.SizeW = SizeW;
+	vout.Type  = Type;
+}

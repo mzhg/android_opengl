@@ -24,7 +24,6 @@ import javax.microedition.khronos.opengles.GL11;
 import jet.learning.opengl.common.FrameBufferBuilder;
 import jet.learning.opengl.common.FrameBufferObject;
 import jet.learning.opengl.common.HDRImage;
-import jet.learning.opengl.common.MathUtil;
 import jet.learning.opengl.common.TextureInfo;
 
 import static android.opengl.GLES20.glDisableVertexAttribArray;
@@ -408,7 +407,7 @@ public class HDR extends NvSampleApp {
 //        fbo_builder.getColorTextures().get(0).setInternalFormat(GLES30.GL_RGBA8);
 //		hdr_params.dest = new FrameBufferObject(fbo_builder);
 
-        MathUtil.perspective(FOV * 0.5f, (float)width/(float)height, Z_NEAR, Z_FAR, projection_mat);
+        Matrix4f.perspective(FOV * 0.5f, (float)width/(float)height, Z_NEAR, Z_FAR, projection_mat);
         GLES.checkGLError("reshape1");
     }
 

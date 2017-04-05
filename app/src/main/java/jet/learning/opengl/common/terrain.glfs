@@ -1,0 +1,128 @@
+#version 400
+
+#include "LightHelper.glsl"
+
+layout (location = 0) out vec4 fragColor;
+
+uniform Material gMaterial;
+
+uniform cbPerFrame
+{
+	DirectionalLight gDirLights[3];
+	vec3 gEyePosW;
+	// this variable should declare as a uniform.
+	int gLightCount;
+
+	float  gFogStart;
+	float  gFogRange;
+	vec4 gFogColor;
+};
+
+uniform float gTexelCellSpaceU;
+uniform float gTexelCellSpaceV;
+uniform float gWorldCellSpace;
+
+uniform bool gFogEnabled = false;
+	
+// Nonnumeric values cannot be added to a cbuffer.
+uniform sampler2D gHeightMap;
+uniform sampler2D gBlendMap;
+uniform sampler2DArray gLayerMapArray;
+
+in DomainOut
+{
+    vec3 PosW;//     : POSITION;
+	vec2 Tex;//      : TEXCOORD0;
+	vec2 TiledTex;// : TEXCOORD1;
+}pin;
+
+
+void main()
+{
+   //
+	// Estimate normal and tangent using central differences.
+	//
+	vec2 leftTex   = pin.Tex + vec2(-gTexelCellSpaceU, 0.0f);
+	vec2 rightTex  = pin.Tex + vec2(gTexelCellSpaceU, 0.0f);
+	vec2 bottomTex = pin.Tex + vec2(0.0f, gTexelCellSpaceV);
+	vec2 topTex    = pin.Tex + vec2(0.0f, -gTexelCellSpaceV);
+	
+	float leftY   = textureLod(gHeightMap, leftTex, 0.0).r;
+	float rightY  = textureLod(gHeightMap, rightTex, 0 ).r;
+	float bottomY = textureLod(gHeightMap, bottomTex, 0 ).r;
+	float topY    = textureLod(gHeightMap, topTex, 0 ).r;
+	
+	vec3 tangent = normalize(vec3(2.0f*gWorldCellSpace, rightY - leftY, 0.0f));
+	vec3 bitan   = normalize(vec3(0.0f, bottomY - topY, -2.0f*gWorldCellSpace)); 
+	vec3 normalW = cross(tangent, bitan);
+
+
+	// The toEye vector is used in lighting.
+	vec3 toEye = gEyePosW - pin.PosW;
+
+	// Cache the distance to the eye from this surface point.
+	float distToEye = length(toEye);
+
+	// Normalize.
+	toEye /= distToEye;
+	
+	//
+	// Texturing
+	//
+	
+	// Sample layers in texture array.
+	vec4 c0 = texture(gLayerMapArray, vec3(pin.TiledTex, 0.0f) );
+	vec4 c1 = texture(gLayerMapArray, vec3(pin.TiledTex, 1.0f) );
+	vec4 c2 = texture(gLayerMapArray, vec3(pin.TiledTex, 2.0f) );
+	vec4 c3 = texture(gLayerMapArray, vec3(pin.TiledTex, 3.0f) );
+	vec4 c4 = texture(gLayerMapArray, vec3(pin.TiledTex, 4.0f) ); 
+	
+	// Sample the blend map.
+	vec4 t  = texture(gBlendMap,pin.Tex ); 
+    
+    // Blend the layers on top of each other.
+    vec4 texColor = c0;
+    texColor = mix(texColor, c1, t.r);
+    texColor = mix(texColor, c2, t.g);
+    texColor = mix(texColor, c3, t.b);
+    texColor = mix(texColor, c4, t.a);
+	
+	//
+	// Lighting.
+	//
+
+    fragColor = texColor;
+    if(gLightCount > 0){
+		// Start with a sum of zero. 
+		vec4 ambient = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+		vec4 diffuse = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+		vec4 spec    = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+		// Sum the light contribution from each light source.  
+		//[unroll]
+		for(int i = 0; i < gLightCount; ++i)
+		{
+			vec4 A, D, S;
+			ComputeDirectionalLight(gMaterial, gDirLights[i], normalW, toEye, 
+				A, D, S);
+	
+			ambient += A;
+			diffuse += D;
+			spec    += S;
+		}
+	
+		fragColor = texColor*(ambient + diffuse) + spec;
+	}
+	
+	//
+	// Fogging
+	//
+
+	if( gFogEnabled )
+	{
+		float fogmix = clamp( (distToEye - gFogStart) / gFogRange, 0.0, 1.0 ); 
+
+		// Blend the fog color and the lit color.
+		fragColor = mix(fragColor, gFogColor, fogmix);
+	}
+}

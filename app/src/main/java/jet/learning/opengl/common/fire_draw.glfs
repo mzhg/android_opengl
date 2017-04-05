@@ -1,0 +1,17 @@
+#version 400 core
+
+layout (location = 0) out vec4 fragColor;
+
+in GeoOut
+{
+//	vec4 PosH  : SV_Position;
+	vec4 Color;// : COLOR;
+	vec2 Tex;//   : TEXCOORD;
+}pin;
+
+uniform sampler2D gTexArray;
+
+void main()
+{
+   fragColor = texture(gTexArray, pin.Tex) * pin.Color;
+}

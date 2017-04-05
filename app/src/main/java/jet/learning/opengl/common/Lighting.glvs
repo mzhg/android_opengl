@@ -1,0 +1,24 @@
+#version 400
+
+layout (location  = 0) in vec3 PosL;
+layout (location  = 1) in vec3 NormalL;
+layout (location  = 2) in vec3 ColorL;
+
+uniform mat4 gWorld;    // Model matrix
+uniform mat4 gWorldInvTranspose; // Normal Matrix
+uniform mat4 gWorldViewProj;     // ModelViewProjection Matrix
+
+out vec3 PosW;
+out vec3 Normal;
+out vec3 ColorW;
+
+void main()
+{
+    // Transform to world space space.
+	PosW    = (gWorld * vec4(PosL, 1.0)).xyz;
+    Normal = mat3(gWorldInvTranspose) * NormalL;
+    ColorW = ColorL;
+		
+	// Transform to homogeneous clip space.
+	gl_Position = gWorldViewProj * vec4(PosL, 1.0);
+}

@@ -1,0 +1,10 @@
+#version 330
+
+in float AmbientOccW;
+
+layout (location = 0) out vec4 fragColor;
+
+void main()
+{
+   fragColor = vec4(AmbientOccW, AmbientOccW, AmbientOccW, 1.0);
+}

@@ -1,0 +1,85 @@
+#version 400 core
+
+subroutine void BlurType();
+subroutine uniform BlurType invokeBlur;
+
+layout (location = 0) out vec4 fragColor;
+
+uniform float gWeights[11] = 
+	{
+		0.05f, 0.05f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.05f, 0.05f
+	};
+uniform int gBlurRadius = 5;
+
+uniform sampler2D gNormalDepthMap;
+uniform sampler2D gInputImage;
+
+uniform float gTexelWidth;
+uniform float gTexelHeight;
+
+in vec2 TexW;
+
+void PS(bool gHorizontalBlur)
+{
+    vec2 texOffset;
+	if(gHorizontalBlur)
+	{
+		texOffset = vec2(gTexelWidth, 0.0f);
+	}
+	else
+	{
+		texOffset = vec2(0.0f, gTexelHeight);
+	}
+
+	// The center value always contributes to the sum.
+	vec4 color      = gWeights[5]* textureLod(gInputImage, TexW, 0.0);
+	float totalWeight = gWeights[5];
+	 
+	vec4 centerNormalDepth = textureLod(gNormalDepthMap, TexW, 0.0f);
+
+	for(float i = -gBlurRadius; i <=gBlurRadius; ++i)
+	{
+		// We already added in the center weight.
+		if( i == 0 )
+			continue;
+
+		vec2 tex = TexW + i*texOffset;
+
+		vec4 neighborNormalDepth = textureLod(gNormalDepthMap, tex, 0.0f);
+
+		//
+		// If the center value and neighbor values differ too much (either in 
+		// normal or depth), then we assume we are sampling across a discontinuity.
+		// We discard such samples from the blur.
+		//
+	
+		if( dot(neighborNormalDepth.xyz, centerNormalDepth.xyz) >= 0.8f &&
+		    abs(neighborNormalDepth.a - centerNormalDepth.a) <= 0.2f )
+		{
+			float weight = gWeights[int(i+gBlurRadius)];
+
+			// Add neighbor pixel to blur.
+			color += weight* textureLod(gInputImage, tex, 0.0);
+		
+			totalWeight += weight;
+		}
+	}
+
+	// Compensate for discarded samples by making total weights sum to 1.
+	fragColor = color / totalWeight;
+}
+
+subroutine (BlurType) void horizontalBlur()
+{
+  PS(true);
+}
+
+subroutine (BlurType) void verticalBlur()
+{
+  PS(false);
+}
+
+void main()
+{
+    invokeBlur();
+}
