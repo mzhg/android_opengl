@@ -14,6 +14,7 @@ void main()
 		for (x = 0; x<16; x++) {
 		    vec2 texcoord = vec2(x, y)/vec2(16);
 			logLumSum += (dot(textureLod(inputImage, texcoord, 0.0).rgb, LUMINANCE_VECTOR) + 0.00001);
+			// Commit test
 		}
 	}
 	logLumSum /= 256.0;
