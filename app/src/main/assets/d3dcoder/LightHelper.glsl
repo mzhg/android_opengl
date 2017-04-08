@@ -50,13 +50,28 @@ struct Material
 	vec4 Reflect;
 };
 
+uniform cbPerFrame
+{
+	DirectionalLight gDirLights[3];
+	vec3 gEyePosW;
+	// this variable should declare as a uniform.
+	int gLightCount;
+
+	float  gFogStart;
+	float  gFogRange;
+	vec4 gFogColor;
+};
+
+uniform Material gMaterial;
+
 //---------------------------------------------------------------------------------------
 // Computes the ambient, diffuse, and specular terms in the lighting equation
 // from a directional light.  We need to output the terms separately because
 // later we will modify the individual terms.
 //---------------------------------------------------------------------------------------
-void ComputeDirectionalLight(Material mat, DirectionalLight L, 
-                             vec3 normal, vec3 toEye,
+void ComputeDirectionalLight(//in Material mat, in DirectionalLight L,
+                             int index,
+                             in vec3 normal, in vec3 toEye,
 					         out vec4 ambient,
 						     out vec4 diffuse,
 						     out vec4 spec)
@@ -67,10 +82,10 @@ void ComputeDirectionalLight(Material mat, DirectionalLight L,
 	spec    = vec4(0.0, 0.0, 0.0, 0.0);
 
 	// The light vector aims opposite the direction the light rays travel.
-	vec3 lightVec = -L.Direction;
+	vec3 lightVec = -gDirLights[index].Direction;
 
 	// Add ambient term.
-	ambient = mat.Ambient * L.Ambient;	
+	ambient = gMaterial.Ambient * gDirLights[index].Ambient;
 
 	// Add diffuse and specular term, provided the surface is in 
 	// the line of site of the light.
@@ -82,10 +97,10 @@ void ComputeDirectionalLight(Material mat, DirectionalLight L,
 	if( diffuseFactor > 0.0 )
 	{
 		vec3 v         = reflect(-lightVec, normal);
-		float specFactor = pow(max(dot(v, toEye), 0.0f), mat.Specular.w);
+		float specFactor = pow(max(dot(v, toEye), 0.0f), gMaterial.Specular.w);
 					
-		diffuse = diffuseFactor * mat.Diffuse * L.Diffuse;
-		spec    = specFactor * mat.Specular * L.Specular;
+		diffuse = diffuseFactor * gMaterial.Diffuse * gDirLights[index].Diffuse;
+		spec    = specFactor * gMaterial.Specular * gDirLights[index].Specular;
 	}
 }
 
@@ -94,7 +109,7 @@ void ComputeDirectionalLight(Material mat, DirectionalLight L,
 // from a point light.  We need to output the terms separately because
 // later we will modify the individual terms.
 //---------------------------------------------------------------------------------------
-void ComputePointLight(Material mat, PointLight L, vec3 pos, vec3 normal, vec3 toEye,
+void ComputePointLight(in Material mat, in PointLight L, in vec3 pos, in vec3 normal, in vec3 toEye,
 				   out vec4 ambient, out vec4 diffuse, out vec4 spec)
 {
 	// Initialize outputs.
@@ -146,7 +161,7 @@ void ComputePointLight(Material mat, PointLight L, vec3 pos, vec3 normal, vec3 t
 // from a spotlight.  We need to output the terms separately because
 // later we will modify the individual terms.
 //---------------------------------------------------------------------------------------
-void ComputeSpotLight(Material mat, SpotLight L, vec3 pos, vec3 normal, vec3 toEye,
+void ComputeSpotLight(in Material mat, in SpotLight L, in vec3 pos, in vec3 normal, in vec3 toEye,
 				  out vec4 ambient, out vec4 diffuse, out vec4 spec)
 {
 	// Initialize outputs.

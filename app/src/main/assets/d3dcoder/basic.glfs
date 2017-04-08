@@ -1,4 +1,5 @@
-#version 400
+#version 300 es
+precision highp float;
 
 #include "LightHelper.glsl"
 
@@ -18,48 +19,31 @@ uniform cbPerObject
 
 #else
 
-uniform Material gMaterial;
-
 #endif
 
-uniform cbPerFrame
-{
-	DirectionalLight gDirLights[3];
-	vec3 gEyePosW;
-	// this variable should declare as a uniform.
-	int gLightCount;
-
-	float  gFogStart;
-	float  gFogRange;
-	vec4 gFogColor;
-};
-
-uniform bool gUseTexure = false;
-uniform bool gAlphaClip = false;
-uniform bool gFogEnabled = false;
-uniform bool gReflectionEnabled = false;
-uniform bool gUseShadowMap = false;
+uniform bool gUseTexure /*= false*/;
+uniform bool gAlphaClip /*= false*/;
+uniform bool gFogEnabled /*= false*/;
+uniform bool gReflectionEnabled /*= false*/;
+uniform bool gUseShadowMap /*= false*/;
 	
 // Nonnumeric values cannot be added to a cbuffer.
 uniform sampler2D gDiffuseMap;
 uniform samplerCube gCubeMap;
 uniform sampler2DShadow gShadowMap;
 
-in VertexOut
-{
-   vec3 PosW;
-   vec3 NormalW;
-   vec2 Tex;
-   vec4 ShadowPosH;
-}vout;
+in vec3 PosW;
+in vec3 NormalW;
+in vec2 TexW;
+in vec4 ShadowPosH;
 
 void main()
 {
    // Interpolating normal can unnormalize it, so normalize it.
-    vec3 NormalW = normalize(vout.NormalW);
+    vec3 NormalW = normalize(NormalW);
 
 	// The toEye vector is used in lighting.
-	vec3 toEye = gEyePosW - vout.PosW;
+	vec3 toEye = gEyePosW - PosW;
 
 	// Cache the distance to the eye from this surface point.
 	float distToEye = length(toEye); 
@@ -72,7 +56,7 @@ void main()
     if(gUseTexure)
 	{
 		// Sample texture.
-		texColor = texture(gDiffuseMap, vout.Tex );
+		texColor = texture(gDiffuseMap, TexW );
 		
 		if(gAlphaClip)
 		{
@@ -98,16 +82,17 @@ void main()
 		// Only the first light casts a shadow.
 		vec3 shadow = vec3(1.0f, 1.0f, 1.0f);
 		if(gUseShadowMap)
-			shadow[0] = textureProj(gShadowMap, vout.ShadowPosH); //CalcShadowFactor(gShadowMap, vout.ShadowPosH);
+			shadow[0] = textureProj(gShadowMap, ShadowPosH); //CalcShadowFactor(gShadowMap, ShadowPosH);
 		
 		// Sum the light contribution from each light source.  
 		//[unroll]
+
 		for(int i = 0; i < gLightCount; ++i)
 		{
 			vec4 A, D, S;
-			ComputeDirectionalLight(gMaterial, gDirLights[i], NormalW, toEye, 
+			ComputeDirectionalLight(i, NormalW, toEye,
 				A, D, S);
-	
+
 			ambient += A;
 			diffuse += shadow[i] * D;
 			spec    += shadow[i] * S;

@@ -2,6 +2,7 @@ package jet.learning.opengl.common;
 
 import android.opengl.GLES30;
 
+import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
 
@@ -32,6 +33,8 @@ public class UniformLights {
 	int fogStartOffset;
 	int fogRangeOffset;
 	int fogColorOffset;
+
+	private FloatBuffer buffer;
 	
 	public UniformLights() {
 		for(int i = 0;i < gDirLights.length; i++)
@@ -41,7 +44,7 @@ public class UniformLights {
 	public void init(int program){
 		uniformIndex = GLES30.glGetUniformBlockIndex(program, "cbPerFrame");
 		byteSize = GLES.glGetActiveUniformBlocki(program, uniformIndex, GLES30.GL_UNIFORM_BLOCK_DATA_SIZE);
-		
+		// byteSize = 112
 	    String[] names = {"gDirLights", "gEyePosW", "gLightCount", "gFogStart", "gFogRange", "gUseTexure", "gFogColor"};
 	    int[] indices = new int[names.length];
 	    IntBuffer _indices = GLUtil.getCachedIntBuffer(indices.length);
@@ -57,7 +60,19 @@ public class UniformLights {
 	    
 	    bufferID = GLES.glGenBuffers();
 		GLES30.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, bufferID);
-		GLES30.glBufferData(GLES30.GL_UNIFORM_BUFFER, byteSize, null, GLES30.GL_DYNAMIC_DRAW);
+		buffer = BufferUtils.createFloatBuffer(byteSize/4);
+
+		for(int i = 0; i < gDirLights.length; i++){
+			gDirLights[i].store(buffer);
+		}
+		buffer.position(eyePosWOffset);  	gEyePosW.store(buffer);
+		buffer.position(lightCountOffset);  buffer.put(Float.intBitsToFloat(gLightCount));
+		buffer.position(fogStartOffset);  	buffer.put(gFogStart);
+		buffer.position(fogRangeOffset);  	buffer.put(gFogRange);
+		buffer.position(fogColorOffset);  	gFogColor.store(buffer);
+		buffer.flip();
+		GLES30.glBufferData(GLES30.GL_UNIFORM_BUFFER, byteSize, buffer, GLES30.GL_DYNAMIC_DRAW);
+		GLES30.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, 0);
 	}
 	
 	public void setDirectionLights(DirectionalLight[] lights){
@@ -67,22 +82,10 @@ public class UniformLights {
 	}
 	
 	public void apply(){
-		FloatBuffer buffer = GLUtil.getCachedFloatBuffer(byteSize/4);
-		
-		buffer.position(dirLightsOffset);
-		for(int i = 0; i < gDirLights.length; i++){
-			gDirLights[i].store(buffer);
-		}
-		
-		buffer.position(eyePosWOffset);  	gEyePosW.store(buffer);
-		buffer.position(lightCountOffset);  buffer.put(Float.intBitsToFloat(gLightCount));
-		buffer.position(fogStartOffset);  	buffer.put(gFogStart);
-		buffer.position(fogRangeOffset);  	buffer.put(gFogRange);
-		buffer.position(fogColorOffset);  	gFogColor.store(buffer);
-		buffer.flip();
-
-		GLES30.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, bufferID);
-		GLES30.glBufferSubData(GLES30.GL_UNIFORM_BUFFER, 0, byteSize, buffer);
+//		FloatBuffer buffer = GLUtil.getCachedFloatBuffer(byteSize/4);
+//		buffer.position(dirLightsOffset);
+//		GLES30.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, bufferID);
+//		GLES30.glBufferSubData(GLES30.GL_UNIFORM_BUFFER, 0, byteSize, buffer);
 		GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, uniformIndex, bufferID);
 	}
 }

@@ -2,6 +2,7 @@ package jet.learning.opengl.common;
 
 import android.opengl.GLES30;
 
+import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
 
 import org.lwjgl.util.vector.Matrix4f;
@@ -39,16 +40,16 @@ public class UniformMatrix {
 	}
 
 	public void apply() {
-		GLES30.glUniformMatrix4fv(worldOffset, 1, false, GLUtil.wrap(gWorld));
-		GLES30.glUniformMatrix4fv(worldInvTransposeOffset, 1, false, GLUtil.wrap(gWorldInvTranspose));
-		GLES30.glUniformMatrix4fv(worldViewPorjOffset, 1, false, GLUtil.wrap(gWorldViewProj));
-		GLES30.glUniformMatrix4fv(worldOffset, 1, false, GLUtil.wrap(gWorld));
-		GLES30.glUniformMatrix4fv(texTransformOffset, 1, false, GLUtil.wrap(gTexTransform));
-		GLES30.glUniformMatrix4fv(shadowTransformOffset, 1, false, GLUtil.wrap(gShadowTransform));
+		GLES30.glUniformMatrix4fv(worldOffset, 1, false, GLUtil.wrap(gWorld));  GLES.checkGLError();
+		GLES30.glUniformMatrix4fv(worldInvTransposeOffset, 1, false, GLUtil.wrap(gWorldInvTranspose));  GLES.checkGLError();
+		GLES30.glUniformMatrix4fv(worldViewPorjOffset, 1, false, GLUtil.wrap(gWorldViewProj));  GLES.checkGLError();
+		GLES30.glUniformMatrix4fv(worldOffset, 1, false, GLUtil.wrap(gWorld));  GLES.checkGLError();
+		GLES30.glUniformMatrix4fv(texTransformOffset, 1, false, GLUtil.wrap(gTexTransform));  GLES.checkGLError();
+		GLES30.glUniformMatrix4fv(shadowTransformOffset, 1, false, GLUtil.wrap(gShadowTransform));  GLES.checkGLError();
 
-		GLES30.glUniform4f(ambientOffset, gMaterial.ambient.x, gMaterial.ambient.y, gMaterial.ambient.z, gMaterial.ambient.w);
-		GLES30.glUniform4f(diffuseOffset, gMaterial.diffuse.x, gMaterial.diffuse.y, gMaterial.diffuse.z, gMaterial.diffuse.w);
-		GLES30.glUniform4f(specularOffset, gMaterial.specular.x, gMaterial.specular.y, gMaterial.specular.z, gMaterial.specular.w);
-		GLES30.glUniform4f(reflectOffset, gMaterial.reflect.x, gMaterial.reflect.y, gMaterial.reflect.z, gMaterial.reflect.w);
+		GLES30.glUniform4f(ambientOffset, gMaterial.ambient.x, gMaterial.ambient.y, gMaterial.ambient.z, gMaterial.ambient.w);  GLES.checkGLError();
+		GLES30.glUniform4f(diffuseOffset, gMaterial.diffuse.x, gMaterial.diffuse.y, gMaterial.diffuse.z, gMaterial.diffuse.w);  GLES.checkGLError();
+		GLES30.glUniform4f(specularOffset, gMaterial.specular.x, gMaterial.specular.y, gMaterial.specular.z, gMaterial.specular.w);  GLES.checkGLError();
+		GLES30.glUniform4f(reflectOffset, gMaterial.reflect.x, gMaterial.reflect.y, gMaterial.reflect.z, gMaterial.reflect.w);  GLES.checkGLError();
 	}
 }

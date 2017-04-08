@@ -128,7 +128,14 @@ public final class Glut {
 	}
 
 	public static final StringBuilder loadTextFromClassPath(Class<?> clazz, String filename){
-		InputStream input = clazz.getResourceAsStream(filename);
+		String packName = clazz.getName();
+		packName = packName.replace(clazz.getSimpleName(), "");
+		packName = packName.replace('.', '/');
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		packName+= filename;
+		InputStream input = ClassLoader.getSystemResourceAsStream(packName);
+		if(input == null)
+			throw  new NullPointerException();
 
 		BufferedReader in = new BufferedReader(new InputStreamReader(input));
 		StringBuilder sb = new StringBuilder();

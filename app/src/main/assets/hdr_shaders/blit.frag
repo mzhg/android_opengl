@@ -40,9 +40,7 @@ uniform sampler2D uSourceTex;
 in vec2 a_texCoord;
 
 out vec4 gl_FragColor;
-#define texture2D(x, y) texture(x, y)
-
 void main(void)
 {
-    gl_FragColor = texture2D(uSourceTex, a_texCoord);
+    gl_FragColor = texture(uSourceTex, a_texCoord);
 }

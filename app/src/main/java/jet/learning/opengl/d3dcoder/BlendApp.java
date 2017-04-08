@@ -2,11 +2,12 @@ package jet.learning.opengl.d3dcoder;
 
 import android.opengl.GLES20;
 import android.opengl.GLES30;
+import android.os.Bundle;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
-import com.nvidia.developer.opengl.utils.Glut;
+import com.nvidia.developer.opengl.utils.NvAssetLoader;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
 import com.nvidia.developer.opengl.utils.NvImage;
 import com.nvidia.developer.opengl.utils.NvPackedColor;
@@ -92,16 +93,23 @@ public class BlendApp extends NvSampleApp {
     final Vector2f mWaterTexOffset = new Vector2f();
 
     int mRenderOptions = 1;
-    final Vector3f mEyePosW = mLights.gEyePosW;
-    private float mRunningTime;
-
-    float mTheta = 1.3f * PI;
-    float mPhi = 0.4f * PI;
-    float mRadius = 80.0f;
 
     float t_base;
 
     ByteBuffer mMapBuffer;
+
+    private String mLightHelpString;
+    private StringBuilder vertexString;
+    private StringBuilder fragmentString;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        vertexString = NvAssetLoader.readText("d3dcoder/basic.glvs");
+        fragmentString = NvAssetLoader.readText("d3dcoder/basic.glfs");
+        mLightHelpString = NvAssetLoader.readText("d3dcoder/LightHelper.glsl").toString();
+    }
 
     @Override
     protected void initRendering() {
@@ -142,12 +150,13 @@ public class BlendApp extends NvSampleApp {
 
         mWaves.init(160, 160, 1.0f, 0.03f, 3.25f, 0.4f);
 
-        mGrassMapSRV = NvImage.uploadTextureFromDDSFile("data/grass.dds");
+        mGrassMapSRV = NvImage.uploadTextureFromDDSFile("textures/grass.dds");
         makeTextureProperties();
-        mWavesMapSRV = NvImage.uploadTextureFromDDSFile("data/water2.dds");
+        mWavesMapSRV = NvImage.uploadTextureFromDDSFile("textures/water2.dds");
         makeTextureProperties();
-        mBoxMapSRV = NvImage.uploadTextureFromDDSFile("data/WireFence.dds");
+        mBoxMapSRV = NvImage.uploadTextureFromDDSFile("textures/WireFence.dds");
         makeTextureProperties();
+        GLES.checkGLError();
 
         buildProgram();
         buildLandGeometryBuffers();
@@ -167,17 +176,20 @@ public class BlendApp extends NvSampleApp {
     }
 
     private void drawScene(){
+        GLES20.glUseProgram(mProgram);
+
         ReadableVector3f color = NvPackedColor.LIGHT_STEEL_BLUE;
         GLES20.glClearColor(color.getX(), color.getY(), color.getZ(), 1);
         GLES20.glClear(GL11.GL_COLOR_BUFFER_BIT| GL11.GL_DEPTH_BUFFER_BIT);
         GLES20.glEnable(GL11.GL_DEPTH_TEST);
-
+        GLES.checkGLError();
         mLights.apply();
-
+        GLES.checkGLError();
         Matrix4f.mul(mProj, mView, mProjView);
 
         // Draw the box with alpha clipping.
         GLES20.glDisable(GL11.GL_CULL_FACE);
+        GLES.checkGLError();
         switch (mRenderOptions) {
             case LIGHTING:
                 GLES20.glUniform1i(mfxUseTexture, 0);
@@ -195,7 +207,7 @@ public class BlendApp extends NvSampleApp {
                 GLES20.glUniform1i(mfxFogEnabled, 1);
                 break;
         }
-
+        GLES.checkGLError();
         Matrix4f world = mBoxWorld;
         mMatrix.gWorld.load(world);
         mMatrix.gTexTransform.load(mBoxTexTransform);
@@ -203,12 +215,12 @@ public class BlendApp extends NvSampleApp {
         Matrix4f.mul(mProjView, world, mMatrix.gWorldViewProj);
         mMatrix.gMaterial.set(mBoxMat);
         mMatrix.apply();
-
+        GLES.checkGLError();
         GLES30.glBindTexture(GL11.GL_TEXTURE_2D, mBoxMapSRV);
 
-        GLES30.glBindVertexArray(mBoxVBO);
+        GLES30.glBindVertexArray(mBoxVBO);GLES.checkGLError();
         GLES30.glDrawElements(GL11.GL_TRIANGLES, 36, GL11.GL_UNSIGNED_SHORT, 0);
-
+        GLES.checkGLError();
         // Draw the hill
         GLES30.glEnable(GL11.GL_CULL_FACE);
         switch (mRenderOptions) {
@@ -233,7 +245,7 @@ public class BlendApp extends NvSampleApp {
 
         GLES30.glBindVertexArray(mLandVBO);
         GLES30.glDrawElements(GL11.GL_TRIANGLES, mLandIndexCount, GL11.GL_UNSIGNED_SHORT, 0);
-
+        GLES.checkGLError();
 
         // Draw the waves
         world = mWavesWorld;
@@ -243,17 +255,21 @@ public class BlendApp extends NvSampleApp {
         Matrix4f.mul(mProjView, world, mMatrix.gWorldViewProj);
         mMatrix.gMaterial.set(mWavesMat);
         mMatrix.apply();
-
+        GLES.checkGLError();
         GLES30.glBindTexture(GL11.GL_TEXTURE_2D, mWavesMapSRV);
         GLES30.glEnable(GL11.GL_BLEND);
         GLES30.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
 
         GLES30.glBindVertexArray(mWavesVBO);
-        GLES30.glDrawElements(GL11.GL_TRIANGLES, 3*mWaves.triangleCount(), GLES30.GL_UNSIGNED_INT, 0);
+        GLES30.glDrawElements(GL11.GL_TRIANGLES, 3*mWaves.triangleCount(), GLES30.GL_UNSIGNED_SHORT, 0);
         GLES30.glDisable(GL11.GL_BLEND);
+        GLES30.glBindVertexArray(0);
+        GLES.checkGLError();
     }
 
+    private float mRunningTime;
     private void updateScene(float dt) {
+        mRunningTime += dt;
         // Convert Spherical to Cartesian coordinates.
         /*
         float x = mRadius*Math.sin(mPhi)*Math.cos(mTheta);
@@ -307,6 +323,8 @@ public class BlendApp extends NvSampleApp {
             mMapBuffer.putFloat(0.5f - pos.z / mWaves.depth());
         }
         GLES30.glUnmapBuffer(GLES20.GL_ARRAY_BUFFER);
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
 
         // Translate texture over time.
         mWaterTexOffset.y += 0.05f*dt;
@@ -317,17 +335,14 @@ public class BlendApp extends NvSampleApp {
     }
 
     void buildProgram(){
-        String lightHelpString = Glut.loadTextFromClassPath(DirectionalLight.class, "LightHelper.glsl").toString();
-        StringBuilder vertexString = Glut.loadTextFromClassPath(DirectionalLight.class, "basic.glvs");
-        StringBuilder fragmentString = Glut.loadTextFromClassPath(DirectionalLight.class, "basic.glfs");
 
         String include = "#include \"LightHelper.glsl\"";
         int index = vertexString.indexOf(include);
         if(index != -1)
-            vertexString.replace(index, index + include.length(), lightHelpString);
+            vertexString.replace(index, index + include.length(), mLightHelpString);
 
         index = fragmentString.indexOf(include);
-        fragmentString.replace(index, index + include.length(), lightHelpString);
+        fragmentString.replace(index, index + include.length(), mLightHelpString);
 
         boolean use_uniform_block = false;
         if(!use_uniform_block){
@@ -356,11 +371,24 @@ public class BlendApp extends NvSampleApp {
         mfxUseTexture = GLES20.glGetUniformLocation(mProgram, "gUseTexure");
         int texSamp   = GLES20.glGetUniformLocation(mProgram, "gDiffuseMap");
 
+        if(mfxAlphaClip < 0)
+            throw new IllegalArgumentException("mfxAlphaClip is not valid");
+        if(mfxFogEnabled < 0)
+            throw new IllegalArgumentException("mfxFogEnabled is not valid");
+        if(mfxUseTexture < 0)
+            throw new IllegalArgumentException("mfxUseTexture is not valid");
+
         mMatrix.init(mProgram);
         mLights.init(mProgram);
 
         GLES20.glUseProgram(mProgram);
         GLES20.glUniform1i(texSamp, 0);
+
+        mLightHelpString = null;
+        vertexString = null;
+        fragmentString = null;
+
+        GLES.checkGLError();
     }
 
     void buildWaveGeometryBuffers(){
@@ -419,6 +447,8 @@ public class BlendApp extends NvSampleApp {
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        GLES.checkGLError();
     }
 
     float getHillHeight(float x, float z){
@@ -465,12 +495,12 @@ public class BlendApp extends NvSampleApp {
 
         mLandVB = GLES.glGenBuffers();
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, mLandVB);
-        GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER, 4 * 8 * grid.getVertexCount(), vertices,  GLES30.GL_STATIC_DRAW);
+        GLES.glBufferData(GLES30.GL_ARRAY_BUFFER, vertices,  GLES30.GL_STATIC_DRAW);
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
 
         mLandIB = GLES.glGenBuffers();
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, mLandIB);
-        GLES30.glBufferData(GLES30.GL_ELEMENT_ARRAY_BUFFER, 4 * grid.getIndiceCount(), GLUtil.wrap(grid.indices.getData(), 0, grid.getIndiceCount()), GLES30.GL_STATIC_DRAW);
+        GLES.glBufferData(GLES30.GL_ELEMENT_ARRAY_BUFFER, GLUtil.wrap(grid.indices.getData(), 0, grid.getIndiceCount()), GLES30.GL_STATIC_DRAW);
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
 
         mLandVBO = GLES.glGenVertexArrays();
@@ -492,6 +522,8 @@ public class BlendApp extends NvSampleApp {
 
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        GLES.checkGLError();
     }
 
     void buildCrateGeometryBuffers(){
@@ -522,7 +554,7 @@ public class BlendApp extends NvSampleApp {
         //
         mBoxIB = GLES.glGenBuffers();
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, mBoxIB);
-        GLES30.glBufferData(GLES30.GL_ELEMENT_ARRAY_BUFFER, 4 * box.indices.size(), GLUtil.wrap(box.indices.getData(), 0, box.indices.size()), GLES30.GL_STATIC_DRAW);
+        GLES.glBufferData(GLES30.GL_ELEMENT_ARRAY_BUFFER, GLUtil.wrap(box.indices.getData(), 0, box.indices.size()), GLES30.GL_STATIC_DRAW);
 
         mBoxVBO = GLES.glGenVertexArrays();
         GLES30.glBindVertexArray(mBoxVBO);
@@ -543,6 +575,8 @@ public class BlendApp extends NvSampleApp {
 
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        GLES.checkGLError();
     }
 
     private void makeTextureProperties(){
