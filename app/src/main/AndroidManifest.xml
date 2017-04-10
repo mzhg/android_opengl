@@ -217,6 +217,17 @@
         </activity>
 
         <activity
+            android:name="jet.learning.opengl.es1_x.AmbientDemo"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="Ambient Demo" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es1" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name="jet.learning.opengl.samples.LightStreaker"
             android:configChanges="keyboardHidden|orientation"
             android:screenOrientation="landscape"

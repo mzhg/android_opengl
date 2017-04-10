@@ -102,23 +102,27 @@ public class NvAppBase extends Activity implements GLSurfaceView.Renderer, NvInp
 		
 		ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
 		ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
-		
-		if(configurationInfo.reqGlEsVersion >= 0x20000){
+
+		glConfig = new NvEGLConfiguration(NvGfxAPIVersion.GLES2);
+		configurationCallback(glConfig);
+
+		if(configurationInfo.reqGlEsVersion >= 0x20000 && isRequreOpenGLES2()){
 			int major = (configurationInfo.reqGlEsVersion >> 16) & 0xFFFF;
 			m_surfaceView.setEGLContextClientVersion(major);
-			glConfig = new NvEGLConfiguration(NvGfxAPIVersion.GLES2);
-			
-			configurationCallback(glConfig);
-			
-			m_surfaceView.setEGLConfigChooser(glConfig.redBits, glConfig.greenBits, glConfig.blueBits, glConfig.alphaBits, glConfig.depthBits, glConfig.stencilBits);
+			GLES.useES2 = true;
 		}else{
-			showDialog("OpenGL锟斤拷锟斤拷", "锟斤拷锟斤拷只锟街э拷锟絆penGL ES 2.0!!!", true);
+			glConfig.apiVer = NvGfxAPIVersion.GLES1;
+			m_surfaceView.setEGLContextClientVersion(1);
+			GLES.useES2 = false;
 		}
-		
+
+		m_surfaceView.setEGLConfigChooser(glConfig.redBits, glConfig.greenBits, glConfig.blueBits, glConfig.alphaBits, glConfig.depthBits, glConfig.stencilBits);
 		m_surfaceView.setRenderer(this);
 		setContentView(m_surfaceView);
 		m_surfaceView.requestFocus();
 	}
+
+	protected boolean isRequreOpenGLES2() { return true;}
 	
 	public final int getWidth(){
 		return width;

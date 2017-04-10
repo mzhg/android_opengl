@@ -16,6 +16,9 @@ package com.nvidia.developer.opengl.utils;
  * limitations under the License.
  ******************************************************************************/
 
+import android.opengl.GLES10;
+import android.opengl.GLES20;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -25,14 +28,11 @@ import java.util.Arrays;
 import javax.microedition.khronos.opengles.GL10;
 import javax.microedition.khronos.opengles.GL11;
 
-import android.opengl.GLES10;
-import android.opengl.GLES20;
-
 /** An ImmediateModeRenderer allows you to perform immediate mode rendering as you were accustomed to in your desktop OpenGL
- * environment. In order to draw something you first have to call {@link ImmediateModeRenderer10#begin(int)} with the primitive
+ * environment. In order to draw something you first have to call {@link #begin(int, int...)} with the primitive
  * type you want to render. Next you specify as many vertices as you want by first defining the vertex color, normal and texture
  * coordinates followed by the vertex position which finalizes the definition of a single vertex. When you are done specifying the
- * geometry you have to call {@link ImmediateModeRenderer10#end()} to make the renderer render the geometry. Internally the
+ * geometry you have to call {@link #end()} to make the renderer render the geometry. Internally the
  * renderer uses vertex arrays to render the provided geometry. This is not the best performing way to do this so use this class
  * only for non performance critical low vertex count geometries while debugging.
  * 
@@ -152,6 +152,10 @@ public class ImmediateRenderer {
 		
 		
 		numVertices = 0;
+
+		if(profile == GLES1){
+			colorSize = 4; // Color size must be 4 in OpenGL es 1.x profile.
+		}
 		
 		prepareBuffers();
 	}
@@ -337,7 +341,7 @@ public class ImmediateRenderer {
 	 * 
 	 * @param x the x component
 	 * @param y the y component
-	 * @param z the z component */
+	 */
 	public void vertex (float x, float y) {
 		positionsBuffer.put(x).put(y);
 		if(positionSize == 3)
@@ -375,7 +379,6 @@ public class ImmediateRenderer {
 		if((profile & GLES2) == 0){
 			GLES10.glEnableClientState(GL11.GL_VERTEX_ARRAY);
 			GLES10.glVertexPointer(positionSize, GL11.GL_FLOAT, 0, positionsBuffer);
-	
 			if (hasColor) {
 				GLES10.glEnableClientState(GL11.GL_COLOR_ARRAY);
 				GLES10.glColorPointer(colorSize, GL11.GL_FLOAT, 0, colorsBuffer);
@@ -418,8 +421,12 @@ public class ImmediateRenderer {
 				GLES10.glDrawArrays(primitiveType, 0, numVertices);
 			else
 				GLES10.glDrawElements(primitiveType, indicesBuffer.remaining(), GLES10.GL_UNSIGNED_SHORT, indicesBuffer);
+
+			GLES.checkGLError();
 	
 			if (hasColor) GLES10.glDisableClientState(GLES10.GL_COLOR_ARRAY);
+
+			GLES.checkGLError();
 			if (hasNormal) GLES10.glDisableClientState(GLES10.GL_NORMAL_ARRAY);
 			
 			if (hasTex3) {
