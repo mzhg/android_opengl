@@ -5,13 +5,13 @@
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
 
- <string name="cardinal_north">N</string>
- <string name="cardinal_east">E</string>
- 
- <string name="cardinal_south">S</string>
- <string name="cardinal_west">W</string>
- 
- <!-- The title of the time picker dialog. [CHAR LIMIT=NONE] -->
+    <string name="cardinal_north">N</string>
+    <string name="cardinal_east">E</string>
+
+    <string name="cardinal_south">S</string>
+    <string name="cardinal_west">W</string>
+
+    <!-- The title of the time picker dialog. [CHAR LIMIT=NONE] -->
     <string name="time_picker_dialog_title">Set time</string>
     <!-- The title of the date picker dialog. [CHAR LIMIT=NONE] -->
     <string name="date_picker_dialog_title">Set date</string>
@@ -38,7 +38,7 @@
 
     <!-- @hide DO NOT TRANSLATE. Separator between the hour and minute elements in a TimePicker widget -->
     <string name="time_picker_separator">:</string>
-    
+
     <string-array name="planets">
         <item>Earth</item>
         <item>Venus</item>
@@ -96,11 +96,11 @@
     <string name="actionpur">PUR</string>
     <string name="action_wht">Stark White</string>
     <string name="actionwht">WHT</string>
-    <string name="action_inv">Invisible!</string>    
-    <string name="popup_viz">VISIBLE</string>    
-    <string name="popup_inviz">INVISIBLE</string>    
-    <string name="popup_gone">GONE</string>    
-    <string name="clockGone">Remove AnalogClock From Layout</string>    
-    <string name="clockViz">Restore AnalogClock Visibility</string>    
-    <string name="clockInviz">Render AnalogClock Invisible</string>    
+    <string name="action_inv">Invisible!</string>
+    <string name="popup_viz">VISIBLE</string>
+    <string name="popup_inviz">INVISIBLE</string>
+    <string name="popup_gone">GONE</string>
+    <string name="clockGone">Remove AnalogClock From Layout</string>
+    <string name="clockViz">Restore AnalogClock Visibility</string>
+    <string name="clockInviz">Render AnalogClock Invisible</string>
 </resources>

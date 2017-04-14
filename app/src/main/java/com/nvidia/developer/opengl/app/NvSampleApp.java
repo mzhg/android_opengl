@@ -1,6 +1,10 @@
 package com.nvidia.developer.opengl.app;
 
+import android.app.ActivityManager;
+import android.content.pm.ConfigurationInfo;
+import android.opengl.GLSurfaceView;
 import android.util.Log;
+import android.view.View;
 
 import com.nvidia.developer.opengl.ui.NvFocusEvent;
 import com.nvidia.developer.opengl.ui.NvGestureEvent;
@@ -24,6 +28,7 @@ import com.nvidia.developer.opengl.ui.NvUIValueText;
 import com.nvidia.developer.opengl.ui.NvUIWindow;
 import com.nvidia.developer.opengl.utils.Dimension;
 import com.nvidia.developer.opengl.utils.FieldControl;
+import com.nvidia.developer.opengl.utils.NvGfxAPIVersion;
 import com.nvidia.developer.opengl.utils.NvImage;
 import com.nvidia.developer.opengl.utils.NvLogger;
 import com.nvidia.developer.opengl.utils.NvStopWatch;
@@ -34,7 +39,7 @@ import java.util.HashMap;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class NvSampleApp extends NvAppBase{
+public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 
 	protected NvFramerateCounter mFramerate;
 	protected float mFrameDelta;
@@ -79,8 +84,24 @@ public class NvSampleApp extends NvAppBase{
 	    mFramerate = new NvFramerateCounter();
 	    mFrameTimer.start();
 	    
-		super.onSurfaceCreated(arg0, egl);
+		super.onSurfaceCreated(egl);
 	    baseInitUI();
+	}
+
+	@Override
+	protected View createRenderView(NvEGLConfiguration configuration){
+		GLSurfaceView view = new GLSurfaceView(this);
+		view.setEGLConfigChooser(configuration.redBits, configuration.greenBits, configuration.blueBits, configuration.alphaBits, configuration.depthBits, configuration.stencilBits);
+		if(configuration.apiVer == NvGfxAPIVersion.GLES1){
+			view.setEGLContextClientVersion(1);
+		}else{
+			ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+			ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
+			int major = (configurationInfo.reqGlEsVersion >> 16) & 0xFFFF;
+			view.setEGLContextClientVersion(major);
+		}
+		view.setRenderer(this);
+		return view;
 	}
 	
 	@Override
@@ -137,6 +158,13 @@ public class NvSampleApp extends NvAppBase{
             }
         }
 	}
+
+	/**
+	 * Rendering callback.<p>
+	 * Called to request the app render a frame at regular intervals when
+	 * the app is focused or when force by outside events like a resize
+	 */
+	protected void draw() { }
 	
 	private void baseInitUI(){
 	    if (mUIWindow == null){
@@ -398,9 +426,9 @@ public class NvSampleApp extends NvAppBase{
 	 * 
 	 * @param var
 	 *            the tweak variable to be bound
-	 * @param incKey
+	 * @param incBtn
 	 *            the button to be bound to increment the tweak variable
-	 * @param decKey
+	 * @param decBtn
 	 *            the button to be bound to decrement the tweak variable
 	 */
 	public void addTweakButtonBind(NvTweakVarBase var, int incBtn, int decBtn/*=0*/) {

@@ -1,6 +1,7 @@
 package jet.learning.opengl.es1_x;
 
 import android.opengl.GLES11;
+import android.os.Bundle;
 
 import com.nvidia.developer.opengl.app.GLES1SampleApp;
 import com.nvidia.developer.opengl.utils.GLES;
@@ -15,9 +16,13 @@ import org.lwjgl.util.vector.Matrix4f;
 
 public class AmbientDemo extends GLES1SampleApp{
 
-    private final Matrix4f mView = new Matrix4f();
-    private final Matrix4f mProj = new Matrix4f();
     private ImmediateRenderer mRenderer;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        enableSensor();
+    }
 
     @Override
     protected void initRendering() {
@@ -82,7 +87,7 @@ public class AmbientDemo extends GLES1SampleApp{
         GLES11.glPushMatrix();
 //        GLES11.glRotatef(xRot, 1.0f, 0.0f, 0.0f);
 //        GLES11.glRotatef(yRot, 0.0f, 1.0f, 0.0f);
-        m_transformer.getModelViewMat(mView);
+        Matrix4f mView = getViewMatrix();
         GLES11.glLoadMatrixf(GLUtil.wrap(mView));
         // Nose Cone /////////////////////////////
         // Bright Green

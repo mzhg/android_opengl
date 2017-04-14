@@ -45,7 +45,11 @@ public final class NvUtils {
 	public static boolean BTN_SUPPORTS_HOVER = false;
 	public static boolean later = false;
 	public static boolean SHOW_PRESSED_BUTTON = false;
-	
+
+	public static final byte[] EMPTY_BYTE = new byte[0];
+	public static final float[] EMPTY_FLOAT = new float[0];
+	public static final int[] EMPTY_INT = new int[0];
+
 	/** A big bold constant to make pure virtual methods more visible in code. */
 	static final int NV_PURE_VIRTUAL = 0;
 	

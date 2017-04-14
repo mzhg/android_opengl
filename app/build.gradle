@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.oglsamples"
-        minSdkVersion    18
+        minSdkVersion    19
         targetSdkVersion 24
     }
 
@@ -18,7 +18,13 @@ android {
     }
 }
 
+repositories {    flatDir {        dirs 'libs'    }}
+
 dependencies {
     compile 'com.android.support:support-v4:24.0.0'
     compile files('libs/lwjgl_utils.jar')
+    compile(name:'base', ext:'aar')
+    compile(name:'common', ext:'aar')
+
+    compile 'com.google.protobuf.nano:protobuf-javanano:3.0.0-alpha-7'
 }

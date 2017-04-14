@@ -3,7 +3,8 @@ package jet.learning.opengl.d3dcoder;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
 
-import com.nvidia.developer.opengl.app.NvSampleApp;
+import com.google.vr.sdk.base.Eye;
+import com.nvidia.developer.opengl.app.GvrSampleApp;
 import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
@@ -11,6 +12,7 @@ import com.nvidia.developer.opengl.utils.NvAssetLoader;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
 import com.nvidia.developer.opengl.utils.NvImage;
 import com.nvidia.developer.opengl.utils.NvPackedColor;
+import com.nvidia.developer.opengl.utils.NvUtils;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.ReadableVector3f;
@@ -31,7 +33,7 @@ import jet.learning.opengl.common.Vertex;
  * Created by mazhen'gui on 2017/4/7.
  */
 
-public class CrateApp extends NvSampleApp {
+public class CrateApp extends GvrSampleApp {
     final UniformMatrix mMatrix = new UniformMatrix();
     final UniformLights mLights = new UniformLights();
 
@@ -53,7 +55,6 @@ public class CrateApp extends NvSampleApp {
     final Matrix4f mTexTransform = new Matrix4f();
     final Matrix4f mBoxWorld = new Matrix4f();
 
-    final Matrix4f mView = new Matrix4f();
     final Matrix4f mProj = new Matrix4f();
     final Matrix4f mProjView = new Matrix4f();
 
@@ -172,23 +173,23 @@ public class CrateApp extends NvSampleApp {
 
     @Override
     protected void reshape(int width, int height) {
-        Matrix4f.perspective((float)Math.toDegrees(0.25 * PI), (float)width/height, 1.0f, 1000.0f, mProj);
+        Matrix4f.perspective((float)Math.toDegrees(0.25 * NvUtils.PI), (float)width/height, 1.0f, 1000.0f, mProj);
     }
 
     @Override
-    protected void draw() {
+    public void onDrawEye(Eye eye) {
         ReadableVector3f color = NvPackedColor.LIGHT_STEEL_BLUE;
         GLES20.glClearColor(color.getX(), color.getY(), color.getZ(), 1);
         GLES20.glClear(GL11.GL_COLOR_BUFFER_BIT| GL11.GL_DEPTH_BUFFER_BIT);
         GLES20.glEnable(GL11.GL_DEPTH_TEST);
 
-        mLights.gEyePosW.set(m_transformer.getTranslationVec());
+        Matrix4f viewMat = getViewMatrix(eye);
+        mLights.gEyePosW.set(0,0,0);
         mLights.gEyePosW.scale(-1);
         GLES20.glUseProgram(mProgram);
         mLights.apply();
-        m_transformer.getModelViewMat(mView);
 //        Matrix4f.lookAt(2.5f,0,0, 0,0,0, 0,1,0, mView);
-        Matrix4f.mul(mProj, mView, mProjView);
+        Matrix4f.mul(mProj, viewMat, mProjView);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GL11.GL_TEXTURE_2D, mDiffuseMapSRV);
@@ -208,6 +209,11 @@ public class CrateApp extends NvSampleApp {
         GLES30.glDrawElements(GL11.GL_TRIANGLES, mBoxIndexCount, GL11.GL_UNSIGNED_SHORT, mBoxIndexOffset);
         GLES.checkGLError();
         GLES30.glBindVertexArray(0);
+    }
+
+    @Override
+    public void onRendererShutdown() {
+
     }
 
     void buildFX(){
