@@ -62,8 +62,16 @@ public class ImmediateRenderer {
 		if(gl != null && (gl instanceof GL10)){
 			gl10 = (GL10)gl;
 		}
-		
+
+		GLES.checkGLError("initGL 0");
 		MAX_TEXTURE_UNITS = GLES.glGetInteger(GLES20.GL_MAX_TEXTURE_IMAGE_UNITS);
+
+		try {
+			GLES.checkGLError("initGL 1");
+		} catch (RuntimeException e) {
+			// TODO A fewer drivers don't support the glGetInteger(GL_MAX_TEXTURE_IMAGE_UNITS);
+			MAX_TEXTURE_UNITS = 8;
+		}
 	}
 	
 	/** the primitive type **/

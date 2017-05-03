@@ -309,7 +309,9 @@ public final class NvUtils {
 	private static final Formatter formatter = new Formatter(a);
 	/**
 	 * Reallocates an array with a new size, and copies the contents of old
-	 * array to the new array.
+	 * array to the new array.<p></>
+	 *
+	 * Use the {@link java.util.Arrays} instead.
 	 * 
 	 * @param oldArray
 	 *            The old array,to be reallocated.
@@ -317,6 +319,7 @@ public final class NvUtils {
 	 *            The new array size.
 	 * @return A new Array with same contents.
 	 */
+	@Deprecated
 	public static final Object resizeArray(Object oldArray, int newSize) {
 		int oldSize = java.lang.reflect.Array.getLength(oldArray);
 		Class<?> elementType = oldArray.getClass().getComponentType();

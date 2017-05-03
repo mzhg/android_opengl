@@ -1,8 +1,8 @@
 package com.nvidia.developer.opengl.utils;
 
-import java.util.Arrays;
-
 import org.lwjgl.util.vector.Matrix4f;
+
+import java.util.Arrays;
 
 public class StackFloat {
 
@@ -142,7 +142,7 @@ public class StackFloat {
 			throw new IllegalArgumentException("size < 0");
 
 		if (size >= items.length)
-			items = (float[]) NvUtils.resizeArray(items, size);
+			items = Arrays.copyOf(items, size);
 
 		this.size = size;
 	}

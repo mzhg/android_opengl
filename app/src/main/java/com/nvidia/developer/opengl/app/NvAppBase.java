@@ -8,6 +8,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.opengl.GLES20;
+import android.opengl.Matrix;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -19,11 +20,13 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import com.nvidia.developer.opengl.utils.GLES;
+import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.Glut;
 import com.nvidia.developer.opengl.utils.NvAssetLoader;
 import com.nvidia.developer.opengl.utils.NvGfxAPIVersion;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -43,13 +46,14 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks, Se
 
 	private SensorManager mSensorManager;
 	private Sensor mRotVectSensor;
+	private final float[] remapRotationMatrix = new float[16];
 	private final float[] mRotationMatrix = new float[16];
 	private final float[] orientationVals = new float[16];
 	private boolean mSensorEnabled;
 
 	private static final int MSG_EXCEPTION = 0;
 	private static final int UI_TASK = 1;
-	private static final int TYPE_ROTATION_VR = Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR;
+	private static final int TYPE_ROTATION_VR = Sensor.TYPE_ROTATION_VECTOR;
 
 	private static boolean g_HaveNewTask = false;
 	private static final Object g_Lock = new Object();
@@ -294,6 +298,8 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks, Se
 		Log.e("OpenGL ES", "Real Version: " + version);
 		Log.e("OpenGL ES", "Vendor: " + vendor);
 		Log.e("OpenGL ES", "Extensions: " + ext);
+
+		GLUtil.markThread(Thread.currentThread());
 		
 		initRendering();
 	}
@@ -357,19 +363,66 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks, Se
 
 	public float[] getRotationMatrix(){return mRotationMatrix;}
 
+	private static final int[][] ROT_LOC = {
+			{0, 5, 10},
+			{0, 6, 9},
+			{1, 4, 10},
+			{1, 6, 8},
+			{2, 4, 9},
+			{2, 5, 8}
+	};
+
+	static final int III = 8;
+
+	// index: [0, 47]
+	private static void initMatrix(int index, float[] mat){
+		int loc_index = index /III;
+		int iSign = index % III;
+
+		boolean[] signs = new boolean[3];
+		if(iSign != 0){
+			String strSign = Integer.toBinaryString(iSign);
+			int offset = 3 - strSign.length();
+			for(int i = 0; i < strSign.length(); i++){
+				signs[offset + i] = (strSign.charAt(i) == '1');
+			}
+		}
+
+		int[] loc_array = ROT_LOC[loc_index];
+		for(int i = 0; i < 3; i++){
+			mat[loc_array[i]] = signs[i] ? -1 : 1;
+		}
+		mat[15] = 1.0f;
+	}
+
+	static final int g_TestIndex = 18;
+
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 		// It is good practice to check that we received the proper sensor event
 		if (event.sensor.getType() == TYPE_ROTATION_VR)
 		{
 			// Convert the rotation-vector to a 4x4 matrix.
-			SensorManager.getRotationMatrixFromVector(mRotationMatrix,
+			SensorManager.getRotationMatrixFromVector(orientationVals,
 					event.values);
+//			SensorManager
+//					.remapCoordinateSystem(orientationVals,
+//							SensorManager.AXIS_X, SensorManager.AXIS_Z,
+//							mRotationMatrix);
+//			SensorManager
+//					.remapCoordinateSystem(orientationVals,
+//							SensorManager.AXIS_Y, SensorManager.AXIS_MINUS_X,
+//							mRotationMatrix);
+			Arrays.fill(remapRotationMatrix, 0);
+			initMatrix(g_TestIndex, remapRotationMatrix);
+			Matrix.multiplyMM(mRotationMatrix, 0, remapRotationMatrix, 0, orientationVals, 0);
+
 //			SensorManager
 //					.remapCoordinateSystem(mRotationMatrix,
 //							SensorManager.AXIS_Y, SensorManager.AXIS_Z,
-//							mRotationMatrix);
-			SensorManager.getOrientation(mRotationMatrix, orientationVals);
+//							orientationVals);
+//			System.arraycopy(orientationVals, 0, mRotationMatrix, 0, 16);
+//			SensorManager.getOrientation(mRotationMatrix, orientationVals);
 
 			// Optionally convert the result from radians to degrees TODO randians is ok.
 //            orientationVals[0] = (float) Math.toDegrees(orientationVals[0]);

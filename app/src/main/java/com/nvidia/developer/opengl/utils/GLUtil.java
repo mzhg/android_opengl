@@ -18,6 +18,8 @@ public final class GLUtil {
 	private static ShortBuffer shortBuffer;
 	private static FloatBuffer floatBuffer;
 	private static DoubleBuffer doubleBuffer;
+
+	private static Thread glThread;
 	
 	static{
 		/* default to allocate 1MB memory. */
@@ -27,8 +29,14 @@ public final class GLUtil {
 	private GLUtil(){
 		throw new Error();
 	}
+
+	public static void markThread(Thread thread) {glThread = thread;}
 	
 	private static void remolloc(int size){
+		if(glThread != null && Thread.currentThread() != glThread){
+			throw new IllegalStateException("Can't use GLUtil on the non-gl-thread.");
+		}
+
 		if(nativeBuffer == null || nativeBuffer.capacity() < size){
 			nativeBuffer = BufferUtils.createByteBuffer(size);
 			

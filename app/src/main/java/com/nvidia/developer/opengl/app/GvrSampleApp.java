@@ -35,7 +35,7 @@ public abstract class GvrSampleApp extends GvrActivity implements GvrView.Stereo
     private float totalTime;
     private final Matrix4f m_ViewMat = new Matrix4f();
     private final Matrix4f m_EyeMat = new Matrix4f();
-    private final float[] m_TempMat = new float[16];
+    private final Matrix4f m_HeadViewMat = new Matrix4f();
     private NvInputHandler mInputHandler;
 
     @Override
@@ -93,6 +93,11 @@ public abstract class GvrSampleApp extends GvrActivity implements GvrView.Stereo
         final boolean mTestMode = false;
         final boolean isExiting = false;
 
+        float[] mat = headTransform.getHeadView();
+        m_HeadViewMat.load(mat, 0);
+        m_transformer.getModelViewMat(m_ViewMat);
+        Matrix4f.mul(m_HeadViewMat, m_ViewMat, m_HeadViewMat);
+
         if (mTestMode) {
             // Simulate 60fps
             mFrameDelta = 1.0f / 60.0f;
@@ -131,6 +136,8 @@ public abstract class GvrSampleApp extends GvrActivity implements GvrView.Stereo
 
         return Matrix4f.mul(m_EyeMat, m_ViewMat, m_ViewMat);
     }
+
+    public Matrix4f getHeadViewMatrix() {return m_HeadViewMat;}
 
     @Override
     public abstract void onDrawEye(Eye eye);

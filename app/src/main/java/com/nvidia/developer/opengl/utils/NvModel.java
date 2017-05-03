@@ -5,7 +5,6 @@ import org.lwjgl.util.vector.Vector3f;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -86,7 +85,7 @@ public class NvModel {
 	 */
 	public void loadModelFromFile(String filename) {
 		try {
-			BufferedReader reader = new BufferedReader(new FileReader(filename));
+			BufferedReader reader = new BufferedReader(NvAssetLoader.openReaderStream(filename));
 			float x, y, z, w;
 			int idx[][] = new int[3][3];
 			boolean hasTC = false;
