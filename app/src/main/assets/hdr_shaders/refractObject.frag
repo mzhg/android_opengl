@@ -11,9 +11,7 @@ uniform vec4 color;
 const float eta=0.7;
 const float deta=-0.006;
 
-out vec4 gl_FragColor;
-#define texture2D(x, y) texture(x, y)
-#define textureCube(x, y) texture(x, y)
+out vec4 FragColor;
 
 float my_fresnel(vec3 I, vec3 N, float power,  float scale,  float bias)
 {
@@ -29,11 +27,11 @@ void main()
 	vec3 T2 = refract(I, N, eta+deta);
 	vec3 T3 = refract(I, N, eta+2.0*deta);
     float fresnel = my_fresnel(-I, N, 4.0, 0.99, 0.1);
-    vec3 Creflect = textureCube(envMap, R).rgb;
+    vec3 Creflect = texture(envMap, R).rgb;
 	vec3 Crefract;
-    Crefract.r = textureCube(envMap, T1).r;
-	Crefract.g = textureCube(envMap, T2).g;
-	Crefract.b = textureCube(envMap, T3).b;
+    Crefract.r = texture(envMap, T1).r;
+	Crefract.g = texture(envMap, T2).g;
+	Crefract.b = texture(envMap, T3).b;
     Crefract *= color.rgb;
-    gl_FragColor = vec4(mix(Crefract, Creflect, fresnel)+emission, 1.0);
+    FragColor = vec4(mix(Crefract, Creflect, fresnel)+emission, 1.0);
 }

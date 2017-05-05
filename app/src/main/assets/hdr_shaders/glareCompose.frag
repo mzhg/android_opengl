@@ -9,15 +9,14 @@ uniform sampler2D sampler2;
 uniform sampler2D sampler3;
 uniform sampler2D sampler4;
 
-out vec4 gl_FragColor;
-#define texture2D(x, y) texture(x, y)
+out vec4 FragColor;
 
 void main()
 {
-	gl_FragColor = texture2D(sampler1, a_texCoord)*mixCoeff.x 
-				 + texture2D(sampler2, a_texCoord)*mixCoeff.y 
-				 + texture2D(sampler3, a_texCoord)*mixCoeff.z
-				 + texture2D(sampler4, a_texCoord)*mixCoeff.w;
+	FragColor = texture(sampler1, a_texCoord)*mixCoeff.x
+				 + texture(sampler2, a_texCoord)*mixCoeff.y
+				 + texture(sampler3, a_texCoord)*mixCoeff.z
+				 + texture(sampler4, a_texCoord)*mixCoeff.w;
 
-    gl_FragColor = min(vec4(256.0 * 256.0), gl_FragColor);
+    FragColor = min(vec4(256.0 * 256.0), FragColor);
 }

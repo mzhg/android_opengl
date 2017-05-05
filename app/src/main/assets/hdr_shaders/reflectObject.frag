@@ -9,9 +9,7 @@ uniform vec4 color;
 uniform samplerCube envMap;
 uniform samplerCube envMapRough;
 
-out vec4 gl_FragColor;
-#define texture2D(x, y) texture(x, y)
-#define textureCube(x, y) texture(x, y)
+out vec4 FragColor;
 
 float my_fresnel(vec3 I, vec3 N, float power,  float scale,  float bias)
 {
@@ -28,5 +26,5 @@ void main()
 	vec3 CreflectRough = texture(envMapRough, R).rgb;
     CreflectRough *= color.rgb;
 	Creflect *= color.rgb;
-	gl_FragColor = vec4(mix(mix(CreflectRough,Creflect,fresnel),mix(Creflect,CreflectRough,fresnel),color.a)+emission, 1.0);
+	FragColor = vec4(mix(mix(CreflectRough,Creflect,fresnel),mix(Creflect,CreflectRough,fresnel),color.a)+emission, 1.0);
 }

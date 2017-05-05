@@ -7,13 +7,11 @@ uniform sampler2D sampler2;
 uniform sampler2D sampler3;
 uniform sampler2D sampler4;
 
-out vec4 gl_FragColor;
-#define texture2D(x, y) texture(x, y)
+out vec4 FragColor;
 
 void main()
 {
-  vec4 color1 = max(texture2D(sampler1, TexCoord), texture2D(sampler2, TexCoord));
-  vec4 color2 = max(texture2D(sampler3, TexCoord), texture2D(sampler4, TexCoord));
-  gl_FragColor = max(color1, color2);
-  gl_FragColor = min(vec4(256.0 * 256.0), gl_FragColor);
+  vec4 color1 = max(texture(sampler1, TexCoord), texture(sampler2, TexCoord));
+  vec4 color2 = max(texture(sampler3, TexCoord), texture(sampler4, TexCoord));
+  FragColor = max(color1, color2);
 }

@@ -18,8 +18,7 @@ const float E = 0.02;
 const float F = 0.30;
 const float W = 11.2;
 
-out vec4 gl_FragColor;
-#define texture2D(x, y) texture(x, y)
+out vec4 FragColor;
 
 vec3 filmicTonemapping(vec3 x)
 {
@@ -35,11 +34,11 @@ float vignette(vec2 pos, float inner, float outer)
 
 void main()
 {
-    vec4 scene = texture2D(sceneTex, a_texCoord);
-    vec4 blurred = texture2D(blurTex, a_texCoord);
+    vec4 scene = texture(sceneTex, a_texCoord);
+    vec4 blurred = texture(blurTex, a_texCoord);
+    float lum = texture(lumTex, vec2(0.0,0.0)).r;
     vec3 c = scene.rgb + blurred.rgb * blurAmount;
-
-    c = c * exposure;
+    c = c * exposure/lum;
     c = c * vignette(a_texCoord*2.0-1.0, 0.55, 1.5);
     float ExposureBias = 1.0;
     c = filmicTonemapping(ExposureBias*c);
@@ -48,6 +47,6 @@ void main()
     c.r = pow(c.r, gamma);
     c.g = pow(c.g, gamma);
     c.b = pow(c.b, gamma);
-    gl_FragColor = vec4(c, 1.0);
-    gl_FragColor = min(vec4(256.0 * 256.0), gl_FragColor);
+    FragColor = vec4(c, 1.0);
+    FragColor = min(vec4(256.0 * 256.0), FragColor);
 }

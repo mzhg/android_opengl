@@ -224,10 +224,8 @@ public class HDR extends NvSampleApp {
         // Transform the eye position from camera coordinate to the world coordinate.
         Matrix4f.transformVector(temp, eye_pos, eye_pos);
         */
-        eye_pos.set(m_transformer.getTranslationVec());
-        eye_pos.scale(-1);
-
         m_transformer.getModelViewMat(temp);
+        Matrix4f.decompseRigidMatrix(temp, eye_pos, null, null);
         Matrix4f view_inverse = eye_mvp;
         view_inverse.load(temp);
         view_inverse.invert();

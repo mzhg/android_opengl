@@ -3,11 +3,10 @@ precision highp float;
 in vec3 TexCoord;
 uniform samplerCube envMap;
 
-out vec4 gl_FragColor;
-#define textureCube(x, y) texture(x, y)
+out vec4 FragColor;
 
 void main()
 {
-	gl_FragColor = texture(envMap, TexCoord);
-	gl_FragColor.a = gl_FragCoord.z;
+	FragColor = texture(envMap, TexCoord);
+	FragColor.a = gl_FragCoord.z;
 }

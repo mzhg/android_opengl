@@ -10,9 +10,7 @@ uniform samplerCube envMap;
 uniform samplerCube envMapIrrad;
 uniform sampler2D diffuseMap;
 
-out vec4 gl_FragColor;
-#define texture2D(x, y) texture(x, y)
-#define textureCube(x, y) texture(x, y)
+out vec4 FragColor;
 
 float my_fresnel(vec3 I, vec3 N, float power,  float scale,  float bias)
 {
@@ -25,10 +23,10 @@ void main()
     vec3 N = normalize(Normal);
     vec3 R = reflect(I, N);
     float fresnel = my_fresnel(-I, N, 5.0, 1.0, 0.1);
-    vec3 Creflect = textureCube(envMap, R).rgb;
-	vec3 irrad = textureCube(envMapIrrad, N).rgb;
-	vec3 diffuse = texture2D(diffuseMap, texcoord).rgb * color.a + color.rgb;
+    vec3 Creflect = texture(envMap, R).rgb;
+	vec3 irrad = texture(envMapIrrad, N).rgb;
+	vec3 diffuse = texture(diffuseMap, texcoord).rgb * color.a + color.rgb;
 	diffuse = max(vec3(1), diffuse);
-	gl_FragColor = vec4(mix(diffuse*irrad, Creflect, fresnel*color.a)+emission, 1.0);
+	FragColor = vec4(mix(diffuse*irrad, Creflect, fresnel*color.a)+emission, 1.0);
 //	gl_FragColor.xyz = max(vec3(1), gl_FragColor.xyz);
 }

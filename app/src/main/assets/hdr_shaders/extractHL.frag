@@ -5,12 +5,11 @@ uniform float	threshold;
 uniform float	scalar;
 uniform sampler2D sampler;
 
-out vec4 gl_FragColor;
-#define texture2D(x, y) texture(x, y)
+out vec4 FragColor;
 void main()
 {
-    vec4 sceneColor = texture2D(sampler, a_texCoord);
+    vec4 sceneColor = texture(sampler, a_texCoord);
     sceneColor = min(vec4(256.0 * 256.0), sceneColor);
-	gl_FragColor = max((sceneColor - threshold)*scalar, vec4(0.0,0.0,0.0,0.0));
+	FragColor = max((sceneColor - threshold)*scalar, vec4(0.0,0.0,0.0,0.0));
 
 }
