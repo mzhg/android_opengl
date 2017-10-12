@@ -3,12 +3,7 @@ package com.nvidia.developer.opengl.app;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.pm.ConfigurationInfo;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.opengl.GLES20;
-import android.opengl.Matrix;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -26,13 +21,12 @@ import com.nvidia.developer.opengl.utils.NvAssetLoader;
 import com.nvidia.developer.opengl.utils.NvGfxAPIVersion;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public abstract class NvAppBase extends Activity implements NvInputCallbacks, SensorEventListener {
+public abstract class NvAppBase extends Activity implements NvInputCallbacks {
 
 	protected static final float PI = (float)Math.PI;
 	
@@ -44,16 +38,8 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks, Se
 	
     private Thread uiTread;
 
-	private SensorManager mSensorManager;
-	private Sensor mRotVectSensor;
-	private final float[] remapRotationMatrix = new float[16];
-	private final float[] mRotationMatrix = new float[16];
-	private final float[] orientationVals = new float[16];
-	private boolean mSensorEnabled;
-
 	private static final int MSG_EXCEPTION = 0;
 	private static final int UI_TASK = 1;
-	private static final int TYPE_ROTATION_VR = Sensor.TYPE_ROTATION_VECTOR;
 
 	private static boolean g_HaveNewTask = false;
 	private static final Object g_Lock = new Object();
@@ -137,25 +123,9 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks, Se
 
 		setContentView(m_surfaceView);
 		m_surfaceView.requestFocus();
-
-		mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-		mRotVectSensor =
-				mSensorManager.getDefaultSensor(TYPE_ROTATION_VR);
-		android.opengl.Matrix.setIdentityM(mRotationMatrix, 0);
 	}
 
 	protected abstract View createRenderView(NvEGLConfiguration configuration);
-
-	public void enableSensor(){
-		mSensorEnabled = true;
-		mSensorManager.registerListener(this, mRotVectSensor, SensorManager.SENSOR_DELAY_GAME);
-	}
-
-	public void disableSensor(){
-		mSensorEnabled = false;
-		mSensorManager.unregisterListener(this);
-		android.opengl.Matrix.setIdentityM(mRotationMatrix, 0);
-	}
 
 	//
 	public final void addUITask(UIThreadTask task) {
@@ -344,26 +314,7 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks, Se
 		return false;
 	}
 
-	@Override
-	protected void onResume() {
-		super.onResume();
-
-		if(mSensorEnabled){
-			mSensorManager.registerListener(this, mRotVectSensor, SensorManager.SENSOR_DELAY_GAME);
-		}
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-		if(mSensorEnabled){
-			mSensorManager.unregisterListener(this);
-		}
-	}
-
-	public float[] getRotationMatrix(){return mRotationMatrix;}
-
-	private static final int[][] ROT_LOC = {
+	/*private static final int[][] ROT_LOC = {
 			{0, 5, 10},
 			{0, 6, 9},
 			{1, 4, 10},
@@ -395,42 +346,5 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks, Se
 		mat[15] = 1.0f;
 	}
 
-	static final int g_TestIndex = 18;
-
-	@Override
-	public void onSensorChanged(SensorEvent event) {
-		// It is good practice to check that we received the proper sensor event
-		if (event.sensor.getType() == TYPE_ROTATION_VR)
-		{
-			// Convert the rotation-vector to a 4x4 matrix.
-			SensorManager.getRotationMatrixFromVector(orientationVals,
-					event.values);
-//			SensorManager
-//					.remapCoordinateSystem(orientationVals,
-//							SensorManager.AXIS_X, SensorManager.AXIS_Z,
-//							mRotationMatrix);
-//			SensorManager
-//					.remapCoordinateSystem(orientationVals,
-//							SensorManager.AXIS_Y, SensorManager.AXIS_MINUS_X,
-//							mRotationMatrix);
-			Arrays.fill(remapRotationMatrix, 0);
-			initMatrix(g_TestIndex, remapRotationMatrix);
-			Matrix.multiplyMM(mRotationMatrix, 0, remapRotationMatrix, 0, orientationVals, 0);
-
-//			SensorManager
-//					.remapCoordinateSystem(mRotationMatrix,
-//							SensorManager.AXIS_Y, SensorManager.AXIS_Z,
-//							orientationVals);
-//			System.arraycopy(orientationVals, 0, mRotationMatrix, 0, 16);
-//			SensorManager.getOrientation(mRotationMatrix, orientationVals);
-
-			// Optionally convert the result from radians to degrees TODO randians is ok.
-//            orientationVals[0] = (float) Math.toDegrees(orientationVals[0]);
-//            orientationVals[1] = (float) Math.toDegrees(orientationVals[1]);
-//            orientationVals[2] = (float) Math.toDegrees(orientationVals[2]);
-		}
-	}
-
-	@Override
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+	static final int g_TestIndex = 18;*/
 }

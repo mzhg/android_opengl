@@ -102,8 +102,6 @@ public class ModelShow extends GLES1SampleApp{
         GLES.checkGLError();
         immediateRenderer = new ImmediateRenderer(ImmediateRenderer.GLES1);
         m_transformer.setTranslation(0,0,-4);
-
-        enableSensor();
     }
 
     @Override

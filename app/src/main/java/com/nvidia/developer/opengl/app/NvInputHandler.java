@@ -22,7 +22,6 @@ public class NvInputHandler {
     private final int[] touchX = new int[20];
     private final int[] touchY = new int[20];
     private final boolean[] isTouched = new boolean[20];
-    private final NvPointerEvent[] p = new NvPointerEvent[20];
     private final NvPointerEvent[][] specialEvents = new NvPointerEvent[6][12];
     private int mainCursor;
     private final int[] subCursor = new int[6];
@@ -46,34 +45,37 @@ public class NvInputHandler {
 
     public void pollEvents(){
         List<_KeyEvent> events = keyListener.getKeyEvents();
-        if(mInputListener ==null){
-            return;
-        }
-
-        for(int i = 0; i < events.size(); i++){
-            boolean handled = false;
-            _KeyEvent e = events.get(i);
-            int code = e.keyCode;
-            boolean down = e.down;
-
-            handled = mInputListener.keyInput(code, down ? NvKeyActionType.DOWN : NvKeyActionType.UP);
-            if(!handled && down){
-                char c = e.keyChar;
-                if(c != 0)
-                    mInputListener.characterInput(c);
-            }
-        }
-
         List<NvPointerEvent> pEvents = touchListener.getTouchEvents();
-        if(pEvents.size() > 0){
-            int pointerCount = pEvents.size();
-            NvPointerEvent p = pEvents.get(0);
+
+        synchronized (this){
+            if(mInputListener ==null){
+                return;
+            }
+
+            for(int i = 0; i < events.size(); i++){
+                boolean handled = false;
+                _KeyEvent e = events.get(i);
+                int code = e.keyCode;
+                boolean down = e.down;
+
+                handled = mInputListener.keyInput(code, down ? NvKeyActionType.DOWN : NvKeyActionType.UP);
+                if(!handled && down){
+                    char c = e.keyChar;
+                    if(c != 0)
+                        mInputListener.characterInput(c);
+                }
+            }
+
+            if(pEvents.size() > 0){
+                int pointerCount = pEvents.size();
+                NvPointerEvent p = pEvents.get(0);
 
 //		   pointerInput(NvInputDeviceType.TOUCH, pact, 0, pointerCount, pEvents.toArray(this.p));
-            splitEvents(pEvents);
+                splitEvents(pEvents);
 
-            for(int i = 0; i <= mainCursor; i++){
-                mInputListener.pointerInput(NvInputDeviceType.TOUCH, eventType[i], 0, subCursor[i], specialEvents[i]);
+                for(int i = 0; i <= mainCursor; i++){
+                    mInputListener.pointerInput(NvInputDeviceType.TOUCH, eventType[i], 0, subCursor[i], specialEvents[i]);
+                }
             }
         }
     }
@@ -91,7 +93,7 @@ public class NvInputHandler {
     }
 
     public int getTouchY(int pointer){
-        return (pointer < 0 || pointer >=20) ? 0 :touchX[pointer];
+        return (pointer < 0 || pointer >=20) ? 0 :touchY[pointer];
     }
 
     private final void splitEvents(List<NvPointerEvent> pEvents){
@@ -238,7 +240,7 @@ public class NvInputHandler {
                 }
             };
 
-            keyEventPool = new Pool<_KeyEvent>(factory, 100);
+            keyEventPool = new Pool<>(factory, 100);
         }
 
         @Override

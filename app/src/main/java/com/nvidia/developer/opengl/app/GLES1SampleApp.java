@@ -148,9 +148,9 @@ public class GLES1SampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 
     public Matrix4f getViewMatrix(){
         m_transformer.getModelViewMat(m_ViewMat);
-        m_SensorMat.load(getRotationMatrix(), 0);
-
-        return Matrix4f.mul(m_SensorMat, m_ViewMat, m_ViewMat);
+        /*m_SensorMat.load(getRotationMatrix(), 0);
+        return Matrix4f.mul(m_SensorMat, m_ViewMat, m_ViewMat);*/
+        return m_ViewMat;
     }
 
     private int m_QuadPosTex;

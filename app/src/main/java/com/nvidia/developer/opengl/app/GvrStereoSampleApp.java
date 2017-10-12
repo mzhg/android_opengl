@@ -25,7 +25,7 @@ import javax.microedition.khronos.egl.EGLConfig;
  * Created by mazhen'gui on 2017/4/10.
  */
 
-public abstract class GvrSampleApp extends GvrActivity implements GvrView.Renderer, NvInputCallbacks{
+public abstract class GvrStereoSampleApp extends GvrActivity implements GvrView.StereoRenderer, NvInputCallbacks{
 
     protected NvFramerateCounter mFramerate;
     protected float mFrameDelta;
@@ -88,7 +88,7 @@ public abstract class GvrSampleApp extends GvrActivity implements GvrView.Render
     protected abstract void initRendering();
 
     @Override
-    public void onDrawFrame(HeadTransform headTransform, Eye eye, Eye eye1) {
+    public void onNewFrame(HeadTransform headTransform) {
         mFrameTimer.stop();
         final boolean mTestMode = false;
         final boolean isExiting = false;
@@ -117,7 +117,7 @@ public abstract class GvrSampleApp extends GvrActivity implements GvrView.Render
         if(!isExiting){
             mFrameTimer.start();
 
-            draw(headTransform, eye, eye1);
+//            draw();
 //            drawFPS();
             if (mFramerate.nextFrame()) {
                 // for now, disabling console output of fps as we have on-screen.
@@ -139,7 +139,8 @@ public abstract class GvrSampleApp extends GvrActivity implements GvrView.Render
 
     public Matrix4f getHeadViewMatrix() {return m_HeadViewMat;}
 
-    protected abstract void draw(HeadTransform headTransform, Eye eye, Eye eye1);
+    @Override
+    public abstract void onDrawEye(Eye eye);
 
     @Override
     public void onFinishFrame(Viewport viewport) {
@@ -205,8 +206,20 @@ public abstract class GvrSampleApp extends GvrActivity implements GvrView.Render
         return false;
     }
 
+    private boolean isDown = false;
+    private float startX = 0, startY = 0;
 
     public final boolean pointerInput(int device, int action, int modifiers, int count, NvPointerEvent[] points) {
+        long time = 0;
+//		    static bool isDown = false;
+//		    static float startX = 0, startY = 0;
+        boolean isButtonEvent = (action==NvPointerActionType.DOWN)||(action==NvPointerActionType.UP);
+        if (isButtonEvent)
+            isDown = (action==NvPointerActionType.DOWN);
+
+//        if (handlePointerInput(device, action, modifiers, count, points))
+//            return true;
+//        else
         return m_transformer.processPointer(device, action, modifiers, count, points);
     }
 }

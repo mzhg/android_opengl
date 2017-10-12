@@ -87,7 +87,6 @@ public class HDRGaussionBlurProgram extends SimpleOpenGLProgram {
      <pre>(a+b) * f(i + b/(a+b))</pre>
      as long as <code>0 <= b/(a+b) <= 1</code>
      */
-
     static CharSequence generate1DConvolutionFP_filter(float []weights, int width, boolean vertical, boolean tex2D, int img_width, int img_height)
     {
         // calculate new set of weights and offsets

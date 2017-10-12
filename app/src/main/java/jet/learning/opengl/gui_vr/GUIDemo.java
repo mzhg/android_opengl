@@ -2,7 +2,7 @@ package jet.learning.opengl.gui_vr;
 
 import com.google.vr.sdk.base.Eye;
 import com.google.vr.sdk.base.HeadTransform;
-import com.nvidia.developer.opengl.app.GvrSampleApp;
+import com.nvidia.developer.opengl.app.GvrStereoSampleApp;
 import com.nvidia.developer.opengl.utils.GLES;
 
 import org.lwjgl.util.vector.Vector3f;
@@ -11,7 +11,7 @@ import org.lwjgl.util.vector.Vector3f;
  * Created by mazhen'gui on 2017/4/14.
  */
 
-public class GUIDemo extends GvrSampleApp{
+public class GUIDemo extends GvrStereoSampleApp {
 
     private UIRenderer m_Renderer;
     @Override
