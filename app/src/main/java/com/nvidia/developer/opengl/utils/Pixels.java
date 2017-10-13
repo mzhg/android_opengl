@@ -1,12 +1,12 @@
 package com.nvidia.developer.opengl.utils;
 
+import android.opengl.GLES10;
+
 import java.nio.ByteBuffer;
 
 import javax.microedition.khronos.opengles.GL11;
 
-import android.opengl.GLES10;
-
-public class Pixels {
+public abstract class Pixels {
 
 	int width;           // the width of image in pixels
 	int height;          // the height of image in pixels.
@@ -15,6 +15,34 @@ public class Pixels {
 	int size;            // bit size of the per color component
 
 	ByteBuffer buffer; // pixels data
+	String name;
+
+	int cmapEntries;
+	int cmapFormat;
+	ByteBuffer cmap;  // for colormap
+
+	public static Pixels createPixels(int width, int height, int size){
+		switch (size) {
+			case 1:
+				return new Pixels1(width, height);
+			case 2:
+				return new Pixels2(width, height);
+			case 3:
+				return new Pixels3(width, height);
+			case 4:
+				return new Pixels4(width, height);
+			default:
+				throw new IllegalArgumentException("Invalid size: " + size);
+		}
+	}
+
+	protected Pixels(int width, int height, int size){
+		this.size = size;
+		this.width = width;
+		this.height = height;
+
+		buffer = BufferUtils.createByteBuffer(size * width * height);
+	}
 	
 	public void uploadTexture2D(boolean mipmap){
 		uploadTexture2D(GLES10.GL_TEXTURE_2D, mipmap);

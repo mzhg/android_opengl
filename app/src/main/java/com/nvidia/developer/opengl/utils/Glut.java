@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import javax.microedition.khronos.opengles.GL10;
 
@@ -48,13 +47,9 @@ public final class Glut {
 	}
 	
 	private static Pixels convertBitmapToPixels(Bitmap bitmap){
-		Pixels pixels = new Pixels();
 		int sizePerPixel;
 		int internalFormat;
 		int format;
-		
-		pixels.width = bitmap.getWidth();
-		pixels.height = bitmap.getHeight();
 		
 		Config config = bitmap.getConfig();
 		
@@ -78,8 +73,9 @@ public final class Glut {
 		default:
 		    throw new RuntimeException();
 		}
-		
-		ByteBuffer buffer = pixels.buffer = ByteBuffer.allocateDirect(pixels.width * pixels.height * sizePerPixel).order(ByteOrder.nativeOrder());
+
+		Pixels pixels = Pixels.createPixels(bitmap.getWidth(), bitmap.getHeight(), sizePerPixel);
+		ByteBuffer buffer = pixels.buffer;
 		buffer.clear();
 
 		for(int i = 0; i < pixels.height; i++){

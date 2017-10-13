@@ -46,6 +46,11 @@ public class NvGLSLProgram implements NvDisposeable{
 	
 	protected boolean m_strict;
 	protected int m_program;
+	public interface LinkerTask{
+		void invoke(int programID);
+	}
+
+	private LinkerTask m_linkerTask;
 	
 	/**
 	 * Creates and returns a shader object from a pair of filenames/paths.<br>
@@ -315,6 +320,10 @@ public class NvGLSLProgram implements NvDisposeable{
 	    GLES20.glAttachShader(program, vertexShader);
 	    GLES20.glAttachShader(program, fragmentShader);
 
+		if(m_linkerTask!=null){
+			m_linkerTask.invoke(program);
+		}
+
 	    GLES20.glLinkProgram(program);
 	    
 	 // can be deleted since the program will keep a reference
@@ -346,6 +355,10 @@ public class NvGLSLProgram implements NvDisposeable{
 	        // can be deleted since the program will keep a reference
 	        GLES20.glDeleteShader(shader);
 	    }
+
+		if(m_linkerTask!=null){
+			m_linkerTask.invoke(program);
+		}
 
 	    GLES20.glLinkProgram(program);
 	    
@@ -437,6 +450,9 @@ public class NvGLSLProgram implements NvDisposeable{
 	public int getProgram(){
 		return m_program;
 	}
+
+	public void setLinkeTask(LinkerTask task) {m_linkerTask = task;}
+	public LinkerTask getLinkerTask()         { return m_linkerTask;}
 	
 	/**
 	 * Binds a 2D texture to a shader uniform by name.<p>

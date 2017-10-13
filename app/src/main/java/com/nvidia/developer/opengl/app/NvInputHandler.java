@@ -67,10 +67,6 @@ public class NvInputHandler {
             }
 
             if(pEvents.size() > 0){
-                int pointerCount = pEvents.size();
-                NvPointerEvent p = pEvents.get(0);
-
-//		   pointerInput(NvInputDeviceType.TOUCH, pact, 0, pointerCount, pEvents.toArray(this.p));
                 splitEvents(pEvents);
 
                 for(int i = 0; i <= mainCursor; i++){

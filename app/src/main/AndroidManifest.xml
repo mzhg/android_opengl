@@ -319,6 +319,17 @@
                 <category android:name="jet.learning.opengl.category.es2" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.BumpMapping"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="BumpMapping" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
