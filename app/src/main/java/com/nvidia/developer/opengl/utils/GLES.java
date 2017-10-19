@@ -28,6 +28,11 @@ public class GLES {
 		return integer[0];
 	}
 
+	public static int glGenQueries(){
+		GLES30.glGenQueries(1, integer, 0);
+		return integer[0];
+	}
+
 	public static int glGenRenderbuffers(){
 		GLES20.glGenRenderbuffers(1, integer, 0);
 		return integer[0];

@@ -16,7 +16,7 @@
 
 #endif
 
-#if ENABLE_VERTEX_ID
+#ifdef ENABLE_VERTEX_ID
 const vec2 QuadVertices[4] = vec2[4]
 (
     vec2(-1.0, -1.0),
@@ -37,7 +37,7 @@ const vec2 QuadTexCoordinates[4] = vec2[4]
 	attribute vec4 aPosition;
 #endif
 
-#if ENABLE_IN_OUT_FEATURE
+#ifdef ENABLE_IN_OUT_FEATURE
 	out vec4 ScreenSpaceUV;
 #else
 	varying vec4 ScreenSpaceUV;
@@ -46,7 +46,7 @@ const vec2 QuadTexCoordinates[4] = vec2[4]
     
 void main()
 {
-#if ENABLE_VERTEX_ID
+#ifdef ENABLE_VERTEX_ID
 	gl_Position = vec4(QuadVertices[gl_VertexID], 0.0, 1.0);
 #else
 	gl_Position = aPosition;

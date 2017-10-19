@@ -42,7 +42,7 @@ import jet.learning.opengl.shapes.Model;
  * Created by mazhen'gui on 2017/10/13.
  */
 
-public class BumpMapping extends NvSampleApp {
+public final class BumpMapping extends NvSampleApp {
     private static final String TAG = "BumpMapping";
 
     private static final int DECAL_MAP_UNIT = 0;

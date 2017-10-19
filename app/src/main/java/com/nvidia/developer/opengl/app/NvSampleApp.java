@@ -59,12 +59,6 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 	protected final HashMap<Integer, NvTweakBind> mKeyBinds = new HashMap<Integer, NvTweakBind>();
 	protected final HashMap<Integer, NvTweakBind> mButtonBinds = new HashMap<Integer, NvTweakBind>();
 
-	private int mMainFBO;
-
-	private float mTestDuration;
-	private int mTestRepeatFrames;
-	private String mTestName;
-	
 	private float totalTime;
 	
 	@Override
@@ -141,14 +135,6 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
             draw();
             if (!mTestMode) {
                 baseDrawUI();
-            }
-            
-            if (mTestMode && (mTestRepeatFrames > 1)) {
-                // repeat frame so that we can simulate a heavier workload
-                for (int i = 1; i < mTestRepeatFrames; i++) {
-                    m_transformer.update(mFrameDelta);
-                    draw();
-                }
             }
             
             if (mFramerate.nextFrame()) {
@@ -499,76 +485,62 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 	private float startX = 0, startY = 0;
 	
 	public final boolean pointerInput(int device, int action, int modifiers, int count, NvPointerEvent[] points) {
-		    long time = 0;
+		long time = 0;
 //		    static bool isDown = false;
 //		    static float startX = 0, startY = 0;
-		    boolean isButtonEvent = (action==NvPointerActionType.DOWN)||(action==NvPointerActionType.UP);
-		    if (isButtonEvent)
-		        isDown = (action==NvPointerActionType.DOWN);
+		boolean isButtonEvent = (action==NvPointerActionType.DOWN)||(action==NvPointerActionType.UP);
+		if (isButtonEvent)
+			isDown = (action==NvPointerActionType.DOWN);
 
-		    if (mUIWindow!= null) {
-		        int giclass = NvInputEventClass.MOUSE; // default to mouse
-		        int gikind;
-		        // override for non-mouse device.
-		        if (device==NvInputDeviceType.STYLUS)
-		            giclass = NvInputEventClass.STYLUS;
-		        else if (device==NvInputDeviceType.TOUCH)
-		            giclass = NvInputEventClass.TOUCH;
-		        // since not using a heavyweight gesture detection system,
-		        // determine reasonable kind/state to pass along here.
-		        if (isButtonEvent)
-		            gikind = (isDown ? NvGestureKind.PRESS : NvGestureKind.RELEASE);
-		        else
-		            gikind = (isDown ? NvGestureKind.DRAG : NvGestureKind.HOVER);
-		        float x=0, y=0;
-		        if (count != 0)
-		        {
-		            x = points[0].m_x;
-		            y = points[0].m_y;
-		        }
-		        NvGestureEvent gesture = new NvGestureEvent(giclass, gikind, x, y);
-		        if (isButtonEvent)
-		        {
-		            if (isDown)
-		            {
-		                startX = x;
-		                startY = y;
-		            }
-		        }
-		        else if (isDown)
-		        {
-		            gesture.x = startX;
-		            gesture.y = startY;
-		            gesture.dx = x - startX;
-		            gesture.dy = y - startY;
-		        }
-		        int r = mUIWindow.handleEvent(gesture, time, null);
-		        if ((r&NvUIEventResponse.nvuiEventHandled) != 0) 
-		        {
-		            if ((r&NvUIEventResponse.nvuiEventHadReaction) != 0)
-		                baseHandleReaction();
-		            return true;
-		        }
-		    }
-
-		    if (handlePointerInput(device, action, modifiers, count, points))
-		        return true;
-		    else
-		        return m_transformer.processPointer(device, action, modifiers, count, points);
+		if (mUIWindow!= null) {
+			int giclass = NvInputEventClass.MOUSE; // default to mouse
+			int gikind;
+			// override for non-mouse device.
+			if (device==NvInputDeviceType.STYLUS)
+				giclass = NvInputEventClass.STYLUS;
+			else if (device==NvInputDeviceType.TOUCH)
+				giclass = NvInputEventClass.TOUCH;
+			// since not using a heavyweight gesture detection system,
+			// determine reasonable kind/state to pass along here.
+			if (isButtonEvent)
+				gikind = (isDown ? NvGestureKind.PRESS : NvGestureKind.RELEASE);
+			else
+				gikind = (isDown ? NvGestureKind.DRAG : NvGestureKind.HOVER);
+			float x=0, y=0;
+			if (count != 0)
+			{
+				x = points[0].m_x;
+				y = points[0].m_y;
+			}
+			NvGestureEvent gesture = new NvGestureEvent(giclass, gikind, x, y);
+			if (isButtonEvent)
+			{
+				if (isDown)
+				{
+					startX = x;
+					startY = y;
+				}
+			}
+			else if (isDown)
+			{
+				gesture.x = startX;
+				gesture.y = startY;
+				gesture.dx = x - startX;
+				gesture.dy = y - startY;
+			}
+			int r = mUIWindow.handleEvent(gesture, time, null);
+			if ((r&NvUIEventResponse.nvuiEventHandled) != 0)
+			{
+				if ((r&NvUIEventResponse.nvuiEventHadReaction) != 0)
+					baseHandleReaction();
+				return true;
+			}
 		}
 
-	/**
-	 * Retrieve the main "onscreen" framebuffer; this may actually be an
-	 * offscreen FBO that the framework uses internally, and then resolves to
-	 * the window. Apps should ALWAYS use this value when binding the onscreen
-	 * FBO and NOT use FBO ID 0 in order to ensure that they are compatible with
-	 * test mode, etc. This should be queried on a per-frame basis. It may
-	 * change every frame
-	 * 
-	 * @return the GL ID of the main, "onscreen" FBO
-	 */
-	public int getMainFBO() {
-		return mMainFBO;
+		if (handlePointerInput(device, action, modifiers, count, points))
+			return true;
+		else
+			return m_transformer.processPointer(device, action, modifiers, count, points);
 	}
 
 	/** Convience method used to create <code>FieldControl</code>*/
