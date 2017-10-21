@@ -134,8 +134,12 @@ public class NvInputHandler {
                 eventType[mainCursor] = pact;
             }
 
-            specialEvents[mainCursor][subCursor[mainCursor] ++] = event;
+            specialEvents[mainCursor][wrap(subCursor[mainCursor] ++, 12)] = event;
         }
+    }
+
+    private static int wrap(int value, int limit){
+        return value < limit ? value : limit - 1;
     }
 
     private static final class _KeyEvent{

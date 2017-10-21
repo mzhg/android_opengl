@@ -694,6 +694,7 @@ public class FrameBufferObject {
 //			case GLES30.GL_RGB4:				return RGB;
 //			case GLES30.GL_RGB5:				return RGB;
 			case GLES30.GL_RGB8:				return RGB;
+			case GLES30.GL_RGB:				return RGB;
 			case GLES30.GL_RGB8_SNORM:		return RGB;
 //			case GLES30.GL_RGB10:				return RGB;
 //			case GLES30.GL_RGB12:				return RGB;
@@ -702,6 +703,7 @@ public class FrameBufferObject {
 			case GLES30.GL_RGBA4:				return RGBA;  // TODO
 			case GLES30.GL_RGB5_A1:			return RGBA;  // TODO
 			case GLES30.GL_RGBA8:				return RGBA;
+			case GLES30.GL_RGBA:				return RGBA;
 			case GLES30.GL_RGBA8_SNORM:		return RGBA;
 			case GLES30.GL_RGB10_A2:			return RGBA;
 			case GLES30.GL_RGB10_A2UI:		return RGBA_INTEGER;
@@ -776,6 +778,7 @@ public class FrameBufferObject {
 //			case GLES30.GL_RGB4:				return GL11.GL_UNSIGNED_BYTE;  // TODO ?
 //			case GLES30.GL_RGB5:				return GL11.GL_UNSIGNED_BYTE;  // TODO ?
 			case GLES30.GL_RGB8:				return GL11.GL_UNSIGNED_BYTE;
+			case GLES30.GL_RGB:				return GL11.GL_UNSIGNED_BYTE;
 			case GLES30.GL_RGB8_SNORM:		return GL11.GL_BYTE;
 //			case GLES30.GL_RGB10:				return GL11.GL_UNSIGNED_BYTE;  // TODO
 //			case GLES30.GL_RGB12:				return GL11.GL_UNSIGNED_BYTE;  // TODO

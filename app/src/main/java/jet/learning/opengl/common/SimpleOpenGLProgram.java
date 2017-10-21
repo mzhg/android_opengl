@@ -8,8 +8,8 @@ import android.opengl.GLES20;
 
 public class SimpleOpenGLProgram {
 
-    private int posLoc = 0;
-    private int texLoc = 1;
+    protected int posLoc = 0;
+    protected int texLoc = 1;
 
     protected int programID;
 

@@ -6,28 +6,322 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
+import com.nvidia.developer.opengl.utils.AttribBinder;
+import com.nvidia.developer.opengl.utils.AttribBindingTask;
+import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.Glut;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
+import com.nvidia.developer.opengl.utils.NvShapes;
 
 import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.ReadableVector3f;
 import org.lwjgl.util.vector.Vector3f;
+import org.lwjgl.util.vector.Vector4f;
+
+import java.nio.FloatBuffer;
 
 import javax.microedition.khronos.opengles.GL11;
 
 import jet.learning.opengl.common.FrameBufferBuilder;
 import jet.learning.opengl.common.FrameBufferObject;
+import jet.learning.opengl.common.SimpleLightProgram;
+import jet.learning.opengl.common.SimpleTextureProgram;
 import jet.learning.opengl.common.TextureInfo;
+import jet.learning.opengl.shapes.DrawMode;
+import jet.learning.opengl.shapes.GLVAO;
+import jet.learning.opengl.shapes.QuadricBuilder;
+import jet.learning.opengl.shapes.QuadricMesh;
+import jet.learning.opengl.shapes.QuadricSphere;
 
 /**
  * Created by mazhen'gui on 2017/10/19.
  */
 
 public class ShinySprites extends NvSampleApp {
-    private static final int TEX_SZ = 256;
+    private static final int POSITION_LOC = 0;
+    private static final int NORMAL_LOC = 1;
+    private static final int TEXTURE_LOC = 2;
 
-    private static final class CSSprite{
+    private static final int TEX_SZ = 256;
+    private static final int NUMSHINES = 400;
+    private SimpleTextureProgram mQuadProgram;
+    private SimpleLightProgram mLightProgram;
+
+    float m_fTestConstant1 = 0;
+    float m_fTestConstant2 = 3.7f;
+    float fsize = 0.21f;
+    float alpha = 0, beta = 0;
+
+    CSSprite sprites;
+
+    private final Vector4f light_pos = new Vector4f(5,5,10,1);
+    private final Vector3f lightDiff = new Vector3f(1,1,1);
+    private final Vector3f lightSpec = new Vector3f(0.9f,0.9f,0.9f);
+    private final float shinefact = 50;
+
+    private final Vector3f[] shines = new Vector3f[NUMSHINES];
+    private final Matrix4f proj = new Matrix4f();
+    private final Matrix4f view = new Matrix4f();
+    private final Matrix4f model = new Matrix4f();
+    private final Matrix4f modelView = new Matrix4f();
+    private final Matrix4f modelViewProj = new Matrix4f();
+    private final Matrix4f normalMat = new Matrix4f();
+    private final Vector3f tempV3 = new Vector3f();
+    private final SimpleLightProgram.LightParams lightParams = new SimpleLightProgram.LightParams();
+    private GLVAO m_sphere;
+
+    private boolean m_debug = false;
+    private boolean m_s = true;
+    private boolean m_o = true;
+    private boolean m_q = false;
+    private boolean m__ = true;
+    private boolean m_w = false;
+
+    @Override
+    protected void initRendering() {
+        for(int i = 0; i < shines.length; i++){
+            shines[i] = new Vector3f();
+        }
+
+        setTitle("Shiny Sprites Demo");
+
+        /*glClearColor(.25f, .25f, .25f, 1);
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
+        glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiff);
+        glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpec);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, lightSpec);
+        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shinefact);
+        glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+        glEnable(GL_COLOR_MATERIAL);*/
+        lightParams.lightPos.set(light_pos);
+        lightParams.lightDiffuse.set(lightDiff);
+        lightParams.lightSpecular.set(lightSpec);
+        lightParams.materialSpecular.set(lightSpec);
+        lightParams.materialSpecular.w = shinefact;
+        lightParams.materialDiffuse.set(lightDiff);
+        lightParams.eyePos.set(0,0,0);
+
+
+//        cgSetErrorCallback(cgErrorCallback);
+
+        /*bInitialized = sprites.init();
+        if (!bInitialized)
+        {
+            printf("Initialisation failed: %s\n", sprites.get_error_msg());
+            cleanExit(0);
+        }*/
+        sprites = new CSSprite(false);
+        sprites.init();
+
+	    final double RADIUS = 1.01;
+        for(int i=0; i<NUMSHINES; i++)
+        {
+            float be = PI*(float)Math.random();
+            float al = 2*PI*(float)Math.random();
+            shines[i].set(  (float)(RADIUS*Math.cos(al)*Math.sin(be)),
+                            (float)(RADIUS*Math.sin(al)),
+                            (float)(RADIUS*Math.cos(al)*Math.cos(be)));
+        }
+
+        mQuadProgram = new SimpleTextureProgram(new AttribBindingTask(
+                new AttribBinder(SimpleTextureProgram.POSITION_ATTRIB_NAME, POSITION_LOC),
+                new AttribBinder(SimpleTextureProgram.TEXTURE_ATTRIB_NAME, TEXTURE_LOC)));
+
+        mLightProgram = new SimpleLightProgram(true, new AttribBindingTask(
+                new AttribBinder(SimpleLightProgram.POSITION_ATTRIB_NAME, POSITION_LOC),
+                new AttribBinder(SimpleLightProgram.TEXTURE_ATTRIB_NAME, TEXTURE_LOC),
+                new AttribBinder(SimpleLightProgram.NORMAL_ATTRIB_NAME, NORMAL_LOC)));
+
+        QuadricBuilder builder = new QuadricBuilder();
+        builder.setXSteps(30).setYSteps(30);
+        builder.setDrawMode(DrawMode.FILL);
+        builder.setCenterToOrigin(true);
+        builder.setPostionLocation(POSITION_LOC);
+        builder.setNormalLocation(NORMAL_LOC);
+        builder.setTexCoordLocation(TEXTURE_LOC);
+        builder.setFlag(true);  // For OpenGL ES 2.0 above
+
+        m_sphere = new QuadricMesh(builder, new QuadricSphere(1)).getModel().genVAO(true);
+        GLES.checkGLError();
+    }
+
+    private void updateTransform(){
+        m_transformer.getModelViewMat(view);
+        Matrix4f.mul(view, model, modelView);
+        Matrix4f.mul(proj, modelView, modelViewProj);
+    }
+
+    @Override
+    protected void draw() {
+        model.setIdentity();
+        model.m32 = -3;
+        model.rotate(alpha, 0,1,0);
+        model.rotate(beta, 1,0,0);
+
+        updateTransform();
+        Matrix4f.decompseRigidMatrix(view, lightParams.eyePos,null,null);
+
+        //
+        // First : occlusion pass
+        //
+        sprites.begin_occlusion(m_debug);
+        {
+            if(m_s){
+                mQuadProgram.enable();
+                mQuadProgram.setMatrix(modelViewProj);
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+
+                m_sphere.bind();
+                m_sphere.draw(GLES20.GL_TRIANGLES);
+                m_sphere.unbind();
+
+                model.translate(1.5f,0,0);
+                model.scale(0.5f);
+                updateTransform();
+                mQuadProgram.setMatrix(modelViewProj);
+                m_sphere.bind();
+                m_sphere.draw(GLES20.GL_TRIANGLES);
+                m_sphere.unbind();
+            }
+
+            sprites.set_test_cst(m_fTestConstant1*PI*2, 0);
+            sprites.begin();
+            sprites.bind_light(light_pos, shinefact);
+            for(int i=0; i< NUMSHINES; i++)
+            {
+                sprites.draw_sprite(shines[i], shines[i], 0.01f, 0.01f);
+                /*glh::vec3f pos(shines[i]);
+                pos *= 0.5;
+                pos[0] += 1.5;*/
+                Vector3f pos = tempV3;
+                pos.set(shines[i]);
+                pos.scale(0.5f);
+                pos.x += 1.5f;
+
+                sprites.draw_sprite(pos, shines[i], .01f, 0.01f);
+            }
+            sprites.end();
+//            glPopMatrix();
+        }
+        sprites.end_occlusion(m_debug);
+        GLES.checkGLError();
+
+        if (!m_debug)
+        {
+            //
+            // second : Render
+            //
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+            //
+            // various settings
+            //
+
+//            glPolygonMode(GL_FRONT_AND_BACK, b['w'] ? GL_LINE : GL_FILL);
+
+            GLES20.glDisable(GLES20.GL_CULL_FACE);
+
+//            if(glActiveTextureARB)
+            {
+//                glActiveTextureARB( GL_TEXTURE1_ARB );
+//                glDisable(GL_TEXTURE_2D);
+                GLES20.glActiveTexture( GLES20.GL_TEXTURE0 );
+            }
+//            glEnable(GL_LIGHTING);
+//            glEnable(GL_LIGHT0);
+//            glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shinefact);
+            mLightProgram.enable();
+
+            model.setIdentity();
+            model.m32 = -3;
+            model.rotate(alpha, 0,1,0);
+            model.rotate(beta, 1,0,0);
+
+            updateTransform();
+
+            lightParams.model.load(model);
+            lightParams.modelViewProj.load(modelViewProj);
+            GLES.checkGLError();
+
+            if(m_s)
+            {
+                /*glColor3f(0.5f,0.0f,0.2f);
+                glutSolidSphere(1,30,30);*/
+                lightParams.color.set(0.5f,0.0f,0.2f, 1.0f);
+                mLightProgram.setLightParams(lightParams);
+                m_sphere.bind();
+                m_sphere.draw(GLES20.GL_TRIANGLES);
+                m_sphere.unbind();
+
+                /*glPushMatrix();
+                glTranslatef(1.5,0,0);
+                glColor3f(0.0f,0.2f,0.5f);
+                glutSolidSphere(0.5,30,30);
+                glPopMatrix();*/
+                model.translate(1.5f,0,0);
+                model.scale(0.5f);
+                updateTransform();
+                lightParams.model.load(model);
+                lightParams.modelViewProj.load(modelViewProj);
+                lightParams.color.set(0.0f,0.2f,0.5f, 1.0f);
+                mLightProgram.setLightParams(lightParams);
+                m_sphere.bind();
+                m_sphere.draw(GLES20.GL_TRIANGLES);
+                m_sphere.unbind();
+                GLES.checkGLError();
+            }
+
+            sprites.set_test_cst(m_fTestConstant1*PI*2, 0);
+            model.setIdentity();
+            model.m32 = -3;
+            model.rotate(alpha, 0,1,0);
+            model.rotate(beta, 1,0,0);
+
+            updateTransform();
+
+            sprites.begin();
+            sprites.bind_light(light_pos, shinefact);
+            for(int i=0; i< NUMSHINES; i++)
+            {
+                sprites.draw_sprite(shines[i], shines[i], .05f, 0.35f);
+                /*glh::vec3f pos(shines[i]);
+                pos *= 0.5;
+                pos[0] += 1.5;*/
+                Vector3f pos = tempV3;
+                pos.set(shines[i]);
+                pos.scale(0.5f);
+                pos.x += 1.5f;
+                sprites.draw_sprite(pos, shines[i], .05f, 0.35f);
+            }
+            sprites.end();
+
+            if(m_o)
+                sprites.display_occlusion_map();
+            //
+            //----> Finish the scene
+            //
+//            glPopMatrix();
+        }
+
+        GLES.checkGLError();
+        if(m__)
+        {
+            alpha += Math.toRadians(0.6);
+            beta += Math.toRadians(0.2234);
+        }
+    }
+
+    @Override
+    protected void reshape(int width, int height) {
+        Matrix4f.perspective(60, (float)width/height, 0.1f, 100.0f, proj);
+        GLES20.glViewport(0,0,width, height);
+    }
+
+    private final class CSSprite{
         String			m_msg;			///< If there are some error messages
 //        PBuffer 		*m_PBuffer;		///< pbuffer for this light
         FrameBufferObject m_PBuffer;
@@ -42,6 +336,8 @@ public class ShinySprites extends NvSampleApp {
         int	m_occlusionmap;
         boolean m_bManaged;
         ShinySpriteRenderProgram renderProgram;
+        int sprite_buffer;
+        FloatBuffer bufferData;
 
         CSSprite(boolean managed){
             m_bManaged = managed;
@@ -175,6 +471,13 @@ public class ShinySprites extends NvSampleApp {
             // Cg Prog
             //
             renderProgram = new ShinySpriteRenderProgram();
+
+            bufferData = BufferUtils.createFloatBuffer(12 * 4);
+            sprite_buffer = GLES.glGenBuffers();
+            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, sprite_buffer);
+            GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, bufferData.remaining() * 4, bufferData, GLES20.GL_DYNAMIC_DRAW);
+            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+
             // Load the program. Optionaly have a look in the resources
             /*char *cgProg = read_text_file("cg_ShinySprite/cg_ShinySprite.cg", "NV", hModule);
             if (!cgProg)
@@ -301,10 +604,28 @@ public class ShinySprites extends NvSampleApp {
             if(m_inpbuffer)
             {
 //                glCallList(dl_bind_vtxprg_pbuffer);  TODO
+                GLES20.glDisable(GLES20.GL_BLEND);
+                GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+                GLES20.glDepthMask(true);
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);  // unbind the texture
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);  // unbind the texture
+                renderProgram.setDisableTex(true);
             }
             else
             {
 //                glCallList(dl_bind_vtxprg);  TODO
+
+                GLES20.glEnable(GLES20.GL_BLEND);
+                GLES20.glBlendFuncSeparate(GLES20.GL_SRC_COLOR, GLES20.GL_ONE, GLES20.GL_ZERO, GLES20.GL_ONE);
+                GLES20.glActiveTexture( GLES20.GL_TEXTURE0 );
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture);
+                GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+                GLES20.glDepthMask(false);
+                renderProgram.setDisableTex(false);
+
+
                 /*if(glActiveTextureARB)
                 {
                     glActiveTextureARB( GL_TEXTURE1_ARB );
@@ -318,9 +639,14 @@ public class ShinySprites extends NvSampleApp {
                 m_PBuffer.bindColorTexture(0);
             }
 
-            renderProgram.setProjection(Matrix4f.IDENTITY);
-            renderProgram.setModelView(Matrix4f.IDENTITY);
-            renderProgram.setModelViewIT(Matrix4f.IDENTITY);
+            /*normalMat.load(modelView);
+            normalMat.m30 = normalMat.m31 = normalMat.m32 = 0;  // zeros translation
+            normalMat.invert();
+            normalMat.transpose();*/
+
+            renderProgram.setProjection(proj);
+            renderProgram.setModelView(modelView);
+            renderProgram.setModelViewIT(modelView);
         }
 
         void end(){
@@ -330,6 +656,10 @@ public class ShinySprites extends NvSampleApp {
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+
+                GLES20.glDepthMask(true);
+                GLES20.glDisable(GLES20.GL_BLEND);
+                GLES20.glDisable(GLES20.GL_DEPTH_TEST);
             }
         }
         void draw_sprite(	Vector3f pos, Vector3f norm,
@@ -353,34 +683,98 @@ public class ShinySprites extends NvSampleApp {
             glTexCoord2f(1, 0);
             glNormal3fv(&(norm[0]));
             glVertex3fv(&(pos[0]));*/
+
+            bufferData.put(MinSz).put(MinSz).put(MaxSz).put(MaxSz);
+            bufferData.put(1).put(1);
+            bufferData.put(norm.x).put(norm.y).put(norm.z);
+            bufferData.put(pos.x).put(pos.y).put(pos.z);
+
+            bufferData.put(-MinSz).put(MinSz).put(-MaxSz).put(MaxSz);
+            bufferData.put(0).put(1);
+            bufferData.put(norm.x).put(norm.y).put(norm.z);
+            bufferData.put(pos.x).put(pos.y).put(pos.z);
+
+            bufferData.put(-MinSz).put(-MinSz).put(-MaxSz).put(-MaxSz);
+            bufferData.put(0).put(0);
+            bufferData.put(norm.x).put(norm.y).put(norm.z);
+            bufferData.put(pos.x).put(pos.y).put(pos.z);
+
+            bufferData.put(MinSz).put(-MinSz).put(MaxSz).put(-MaxSz);
+            bufferData.put(1).put(0);
+            bufferData.put(norm.x).put(norm.y).put(norm.z);
+            bufferData.put(pos.x).put(pos.y).put(pos.z);
+            bufferData.flip();
+
+            final int stride = 12 * 4;
+            final int pos_offset = 9 * 4;
+            final int nor_offset = 6 * 4;
+            final int tex_offset = 4 * 4;
+            final int size_offset = 0;
+
+            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, sprite_buffer);
+            GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, 0, bufferData.remaining() << 2, bufferData);
+            GLES20.glEnableVertexAttribArray(renderProgram.getPositionAttrib());
+            GLES20.glVertexAttribPointer(renderProgram.getPositionAttrib(), 3, GLES20.GL_FLOAT, false, stride, pos_offset);
+
+            GLES20.glEnableVertexAttribArray(renderProgram.getNormalAttrib());
+            GLES20.glVertexAttribPointer(renderProgram.getNormalAttrib(), 3, GLES20.GL_FLOAT, false, stride, nor_offset);
+
+            GLES20.glEnableVertexAttribArray(renderProgram.getTexcoordAttrib());
+            GLES20.glVertexAttribPointer(renderProgram.getTexcoordAttrib(), 2, GLES20.GL_FLOAT, false, stride, tex_offset);
+
+            GLES20.glEnableVertexAttribArray(renderProgram.getSizeAttrib());
+            GLES20.glVertexAttribPointer(renderProgram.getSizeAttrib(), 4, GLES20.GL_FLOAT, false, stride, size_offset);
+
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 4);
+
+            GLES20.glDisableVertexAttribArray(renderProgram.getPositionAttrib());
+            GLES20.glDisableVertexAttribArray(renderProgram.getNormalAttrib());
+            GLES20.glDisableVertexAttribArray(renderProgram.getTexcoordAttrib());
+            GLES20.glDisableVertexAttribArray(renderProgram.getSizeAttrib());
+            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
         }
 
-        void bind_light(Vector3f l, float shine){
-            renderProgram.setLight(l.x, l.y, l.z);
+        void bind_light(ReadableVector3f l, float shine){
+            renderProgram.setLight(l.getX(), l.getY(), l.getZ());
             renderProgram.setShininess(shine);
         }
 
         void begin_occlusion(boolean bDebug){
+            m_PBuffer.enableRenderToColorAndDepth(0);
+            m_PBuffer.saveAndSetViewPort();
+            GLES20.glClearColor(0.5f, 0, 1, 1.0f);
+            GLES20.glClearDepthf(1.0f);
+            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
+            GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT|GLES20.GL_COLOR_BUFFER_BIT);
+            m_inpbuffer = true;
         }
 
         void end_occlusion(boolean bDebug){
-
-        }
-
-        void begin_render(){
-
-        }
-        void end_render(){
-
+            FrameBufferObject.disableRenderToColorDepth();
+            m_PBuffer.restoreViewPort();
+            m_inpbuffer = false;
         }
 
         void display_occlusion_map(){
+            GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+            mQuadProgram.enable();
+            GLES20.glViewport(0,0,getWidth()/4, getHeight()/4);
+            m_PBuffer.bindColorTexture(0);
+            NvShapes.drawQuad(mQuadProgram.getAttribPosition(), mQuadProgram.getAttribTexCoord());
 
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            GLES20.glViewport(0,0,getWidth(), getHeight());
         }
 
         void free(){
+            if(m_PBuffer != null){
+                m_PBuffer.dispose();
+            }
 
+            if(renderProgram != null){
+                renderProgram.dispose();
+            }
         }
     }
 
@@ -407,6 +801,7 @@ public class ShinySprites extends NvSampleApp {
         private int shininessIdx = -1;
         private int slicesIdx = -1;
         private int csTableIdx = -1;
+        private int disableTexIdx = -1;
 
 //        attribute vec4 In_Position;
 //        attribute vec4 In_Size;
@@ -429,6 +824,7 @@ public class ShinySprites extends NvSampleApp {
             shininessIdx = getUniformLocation("Shininess");
             slicesIdx = getUniformLocation("Slices");
             csTableIdx = getUniformLocation("CSTable");
+            disableTexIdx = getUniformLocation("g_DisableTexture");
 
             positionAttrib = getAttribLocation("In_Position");
             sizeAttrib = getAttribLocation("In_Size");
@@ -506,7 +902,13 @@ public class ShinySprites extends NvSampleApp {
             }
         }
 
-        void setSlices(float slice){
+        void setDisableTex(boolean flag){
+            if(disableTexIdx >=0){
+                GLES20.glUniform1i(disableTexIdx, flag?1:0);
+            }
+        }
+
+        private void setSlices(float slice){
             if(slicesIdx >=0){
                 GLES20.glUniform1f(slicesIdx, slice);
             }
@@ -518,7 +920,7 @@ public class ShinySprites extends NvSampleApp {
             }
         }
 
-        void setCSTable(float[] table){
+        private void setCSTable(float[] table){
             if(csTableIdx >=0){
                 GLES20.glUniform2fv(csTableIdx, table.length/2, table, 0);
             }
