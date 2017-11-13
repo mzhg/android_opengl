@@ -205,9 +205,7 @@ public class CrateApp extends NvSampleApp {
         GLES.checkGLError();
         GLES30.glBindVertexArray(mBoxVBO);
 //
-        GLES.checkGLError();
         GLES30.glDrawElements(GL11.GL_TRIANGLES, mBoxIndexCount, GL11.GL_UNSIGNED_SHORT, mBoxIndexOffset);
-        GLES.checkGLError();
         GLES30.glBindVertexArray(0);
     }
 

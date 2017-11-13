@@ -19,20 +19,20 @@ public class SimpleLightProgram extends SimpleOpenGLProgram {
     public static final String NORMAL_ATTRIB_NAME = "In_Normal";
     public static final String COLOR_ATTRIB_NAME = "In_Color";
 
-    int m_g_ModelViewProjLoc = -1;
-    int m_g_LightSpecularLoc = -1;
-    int m_g_EyePosLoc = -1;
-    int m_g_LightAmbientLoc = -1;
-    int m_g_ColorLoc = -1;
-    int m_g_MaterialSpecularLoc = -1;
-    int m_g_LightPosLoc = -1;
-    int m_g_LightDiffuseLoc = -1;
-    int m_g_ModelLoc = -1;
-    int m_g_MaterialDiffuseLoc = -1;
-    int m_g_MaterialAmbientLoc = -1;
+    private int m_g_ModelViewProjLoc = -1;
+    private int m_g_LightSpecularLoc = -1;
+    private int m_g_EyePosLoc = -1;
+    private int m_g_LightAmbientLoc = -1;
+    private int m_g_ColorLoc = -1;
+    private int m_g_MaterialSpecularLoc = -1;
+    private int m_g_LightPosLoc = -1;
+    private int m_g_LightDiffuseLoc = -1;
+    private int m_g_ModelLoc = -1;
+    private int m_g_MaterialDiffuseLoc = -1;
+    private int m_g_MaterialAmbientLoc = -1;
 
-    int normalAttribLoc;
-    int colorAttribLoc;
+    private int normalAttribLoc;
+    private int colorAttribLoc;
 
     public SimpleLightProgram(boolean uniform, NvGLSLProgram.LinkerTask task){
         NvGLSLProgram program = new NvGLSLProgram();

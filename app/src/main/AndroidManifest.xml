@@ -8,6 +8,10 @@
         android:minSdkVersion="11"
         android:targetSdkVersion="18" />
 
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
     <uses-feature android:glEsVersion="0x00020000" android:required="true" />
     <uses-feature android:glEsVersion="0x00030000" android:required="true" />
     <uses-feature android:glEsVersion="0x00030001" android:required="false" />
@@ -255,6 +259,7 @@
             </intent-filter>
         </activity>
 
+        <!--
         <activity
             android:name="jet.learning.opengl.samples.LightStreaker"
             android:configChanges="keyboardHidden|orientation"
@@ -265,6 +270,7 @@
                 <category android:name="jet.learning.opengl.category.es2" />
             </intent-filter>
         </activity>
+        -->
         
          <activity
             android:name="jet.learning.opengl.samples.Volumelines"
@@ -347,6 +353,17 @@
             android:configChanges="keyboardHidden|orientation"
             android:screenOrientation="landscape"
             android:label="ShinySprites" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.Mickey3D"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="Mickey3D" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="jet.learning.opengl.category.es2" />

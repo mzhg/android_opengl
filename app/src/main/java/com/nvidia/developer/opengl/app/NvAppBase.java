@@ -80,6 +80,15 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks {
 //		GLObj doOGLThreadTask(Pair<Integer, UIObj> uiThreadResult);
 	}
 
+	@Override
+	public final void setTitle(CharSequence title) {
+		if(uiTread == Thread.currentThread()){
+			super.setTitle(title);
+		}else{
+			runOnUiThread(()->super.setTitle(title));
+		}
+	}
+
 	public static void throwExp(RuntimeException throwable){
 		Message msg = Message.obtain();
 		msg.what = MSG_EXCEPTION;
@@ -150,7 +159,11 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks {
 		return false;
 	}
 
-
+	@Override
+	public void onBackPressed() {
+		super.onBackPressed();
+		finish();
+	}
 
 	/**
 	 * Pull all of the events, sub-class must be call this method every frame.
@@ -298,19 +311,16 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks {
 
 	@Override
 	public boolean keyInput(int code, int action) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean characterInput(char c) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean gamepadChanged(int changedPadFlags) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 

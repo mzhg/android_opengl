@@ -85,7 +85,7 @@ public class ShinySprites extends NvSampleApp {
             shines[i] = new Vector3f();
         }
 
-        setTitle("Shiny Sprites Demo");
+//        setTitle("Shiny Sprites Demo");
 
         /*glClearColor(.25f, .25f, .25f, 1);
         glEnable(GL_LIGHTING);

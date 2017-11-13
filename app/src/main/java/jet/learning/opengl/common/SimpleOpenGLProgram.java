@@ -7,7 +7,6 @@ import android.opengl.GLES20;
  */
 
 public class SimpleOpenGLProgram {
-
     protected int posLoc = 0;
     protected int texLoc = 1;
 

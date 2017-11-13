@@ -5,6 +5,7 @@ import android.opengl.GLES30;
 import android.os.Bundle;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
+import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.NvAssetLoader;
@@ -20,6 +21,7 @@ import org.lwjgl.util.vector.Vector3f;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.ShortBuffer;
 
 import javax.microedition.khronos.opengles.GL11;
 
@@ -218,9 +220,10 @@ public class BlendApp extends NvSampleApp {
         GLES.checkGLError();
         GLES30.glBindTexture(GL11.GL_TEXTURE_2D, mBoxMapSRV);
 
-        GLES30.glBindVertexArray(mBoxVBO);GLES.checkGLError();
+        /*GLES30.glBindVertexArray(mBoxVBO);
         GLES30.glDrawElements(GL11.GL_TRIANGLES, 36, GL11.GL_UNSIGNED_SHORT, 0);
-        GLES.checkGLError();
+        GLES30.glBindVertexArray(0);
+        GLES.checkGLError();*/
         // Draw the hill
         GLES30.glEnable(GL11.GL_CULL_FACE);
         switch (mRenderOptions) {
@@ -245,6 +248,7 @@ public class BlendApp extends NvSampleApp {
 
         GLES30.glBindVertexArray(mLandVBO);
         GLES30.glDrawElements(GL11.GL_TRIANGLES, mLandIndexCount, GL11.GL_UNSIGNED_SHORT, 0);
+        GLES30.glBindVertexArray(0);
         GLES.checkGLError();
 
         // Draw the waves
@@ -478,7 +482,7 @@ public class BlendApp extends NvSampleApp {
         // Extract the vertex elements we are interested and apply the height function to
         // each vertex.
         //
-        FloatBuffer vertices = GLUtil.getCachedFloatBuffer(8 * grid.getVertexCount());
+        FloatBuffer vertices = BufferUtils.createFloatBuffer(8 * grid.getVertexCount());
         for(int i = 0; i < grid.getVertexCount(); i++){
             Vertex p = grid.vertices.get(i);
 
@@ -552,9 +556,11 @@ public class BlendApp extends NvSampleApp {
         //
         // Pack the indices of all the meshes into one index buffer.
         //
+        ShortBuffer indices = BufferUtils.createShortBuffer(box.indices.size() * 2);
+        indices.put(box.indices.getData(), 0, box.indices.size()).flip();
         mBoxIB = GLES.glGenBuffers();
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, mBoxIB);
-        GLES.glBufferData(GLES30.GL_ELEMENT_ARRAY_BUFFER, GLUtil.wrap(box.indices.getData(), 0, box.indices.size()), GLES30.GL_STATIC_DRAW);
+        GLES.glBufferData(GLES30.GL_ELEMENT_ARRAY_BUFFER, indices, GLES30.GL_STATIC_DRAW);
 
         mBoxVBO = GLES.glGenVertexArrays();
         GLES30.glBindVertexArray(mBoxVBO);

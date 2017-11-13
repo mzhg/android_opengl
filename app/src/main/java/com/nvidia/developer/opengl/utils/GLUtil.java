@@ -48,6 +48,9 @@ public final class GLUtil {
 	}
 	
 	public static ByteBuffer getCachedByteBuffer(int size){
+		if(glThread != null && Thread.currentThread() != glThread){
+			throw new IllegalStateException("Can't use GLUtil on the non-gl-thread.");
+		}
 		if(size < 0)
 			throw new IllegalArgumentException("size < 0, size = " + size);
 		if(size > nativeBuffer.capacity())
@@ -58,6 +61,9 @@ public final class GLUtil {
 	}
 	
 	public static FloatBuffer getCachedFloatBuffer(int size){
+		if(glThread != null && Thread.currentThread() != glThread){
+			throw new IllegalStateException("Can't use GLUtil on the non-gl-thread.");
+		}
 		if(size < 0)
 			throw new IllegalArgumentException("size < 0, size = " + size);
 		if(size > floatBuffer.capacity())
@@ -68,6 +74,9 @@ public final class GLUtil {
 	}
 	
 	public static IntBuffer getCachedIntBuffer(int size){
+		if(glThread != null && Thread.currentThread() != glThread){
+			throw new IllegalStateException("Can't use GLUtil on the non-gl-thread.");
+		}
 		if(size < 0)
 			throw new IllegalArgumentException("size < 0, size = " + size);
 		if(size > intBuffer.capacity())
@@ -78,6 +87,9 @@ public final class GLUtil {
 	}
 	
 	public static ShortBuffer getCachedShortBuffer(int size){
+		if(glThread != null && Thread.currentThread() != glThread){
+			throw new IllegalStateException("Can't use GLUtil on the non-gl-thread.");
+		}
 		if(size < 0)
 			throw new IllegalArgumentException("size < 0, size = " + size);
 		if(size > shortBuffer.capacity())
@@ -88,6 +100,9 @@ public final class GLUtil {
 	}
 	
 	public static DoubleBuffer getCachedDoubleBuffer(int size){
+		if(glThread != null && Thread.currentThread() != glThread){
+			throw new IllegalStateException("Can't use GLUtil on the non-gl-thread.");
+		}
 		if(size < 0)
 			throw new IllegalArgumentException("size < 0, size = " + size);
 		if(size > doubleBuffer.capacity())
@@ -98,12 +113,18 @@ public final class GLUtil {
 	}
 	
 	public static IntBuffer wrap(int i){
+		if(glThread != null && Thread.currentThread() != glThread){
+			throw new IllegalStateException("Can't use GLUtil on the non-gl-thread.");
+		}
 		intBuffer.clear();
 		intBuffer.put(i).flip();
 		return intBuffer;
 	}
 
 	public static FloatBuffer wrap(float i){
+		if(glThread != null && Thread.currentThread() != glThread){
+			throw new IllegalStateException("Can't use GLUtil on the non-gl-thread.");
+		}
 		floatBuffer.clear();
 		floatBuffer.put(i).flip();
 		return floatBuffer;
