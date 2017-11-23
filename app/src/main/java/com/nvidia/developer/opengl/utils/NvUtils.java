@@ -36,6 +36,7 @@ package com.nvidia.developer.opengl.utils;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Formatter;
+import java.util.Random;
 
 public final class NvUtils {
 	
@@ -49,6 +50,7 @@ public final class NvUtils {
 	public static final byte[] EMPTY_BYTE = new byte[0];
 	public static final float[] EMPTY_FLOAT = new float[0];
 	public static final int[] EMPTY_INT = new int[0];
+	private static final Random g_Random = new Random();
 
 	/** A big bold constant to make pure virtual methods more visible in code. */
 	static final int NV_PURE_VIRTUAL = 0;
@@ -604,5 +606,22 @@ public final class NvUtils {
 			}
 		}
 
+	}
+
+	public static float random(){
+		return g_Random.nextFloat();
+	}
+
+	public static float random(float low, float high){
+		return g_Random.nextFloat() * (high - low) + low;
+	}
+
+	public static int randomInt(){
+		return g_Random.nextInt();
+	}
+
+	/** Return a random integer from range [0, 32767). */
+	public static int rand(){
+		return g_Random.nextInt(32767);
 	}
 }

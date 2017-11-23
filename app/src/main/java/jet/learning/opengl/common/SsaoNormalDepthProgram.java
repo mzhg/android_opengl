@@ -24,8 +24,8 @@ public class SsaoNormalDepthProgram {
 	
 	final Matrix4f tmp = new Matrix4f();
 	public void init(){
-		CharSequence vs_str = Glut.loadTextFromClassPath(Sky.class, "ssaoNormalDepth.glvs");
-		CharSequence fs_str = Glut.loadTextFromClassPath(Sky.class, "ssaoNormalDepth.glfs");
+		CharSequence vs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssaoNormalDepth.glvs");
+		CharSequence fs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssaoNormalDepth.glfs");
 		NvGLSLProgram program = NvGLSLProgram.createFromStrings(vs_str, fs_str);
 
 //		mProgram = Framework.linkProgramFromSource(Glut.loadTextFromClassPath(Sky.class, "ssaoNormalDepth.glvs"), Glut.loadTextFromClassPath(Sky.class, "ssaoNormalDepth.glfs"));

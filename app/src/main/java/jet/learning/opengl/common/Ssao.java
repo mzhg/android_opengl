@@ -7,6 +7,7 @@ import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.Glut;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
+import com.nvidia.developer.opengl.utils.NvUtils;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector4f;
@@ -389,7 +390,7 @@ public class Ssao {
     	for(int i = 0; i < 14; ++i)
     	{
     		// Create random lengths in [0.25, 1.0].
-    		float s = MathUtil.random(0.25f, 1.0f);
+    		float s = NvUtils.random(0.25f, 1.0f);
     		
 //    		XMVECTOR v = s * XMVector4Normalize(XMLoadFloat4(&mOffsets[i]));
 //    		XMStoreFloat4(&mOffsets[i], v);
@@ -415,8 +416,8 @@ public class Ssao {
     	int mSampleCount;
     	
     	void init(){
-			CharSequence vs_str = Glut.loadTextFromClassPath(Sky.class, "ssao.glvs");
-			CharSequence fs_str = Glut.loadTextFromClassPath(Sky.class, "ssao.glfs");
+			CharSequence vs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssao.glvs");
+			CharSequence fs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssao.glfs");
 			NvGLSLProgram program = NvGLSLProgram.createFromStrings(vs_str, fs_str);
 //    		mProgram = Framework.linkProgramFromSource(Glut.loadTextFromClassPath(Sky.class, "ssao.glvs"), Glut.loadTextFromClassPath(Sky.class, "ssao.glfs"));
     		mProgram = program.getProgram();
@@ -478,8 +479,8 @@ public class Ssao {
     	int mHorizontal;
     	
     	void init(){
-			CharSequence vs_str = Glut.loadTextFromClassPath(Sky.class, "ssao.glvs");
-			CharSequence fs_str = Glut.loadTextFromClassPath(Sky.class, "ssao.glfs");
+			CharSequence vs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssao.glvs");
+			CharSequence fs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssao.glfs");
 			NvGLSLProgram program = NvGLSLProgram.createFromStrings(vs_str, fs_str);
 //    		mProgram = Framework.linkProgramFromSource(Glut.loadTextFromClassPath(Sky.class, "ssaoblur.glvs"), Glut.loadTextFromClassPath(Sky.class, "ssaoblur.glfs"));
     		mProgram = program.getProgram();

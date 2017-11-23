@@ -1,5 +1,7 @@
 package com.nvidia.developer.opengl.utils;
 
+import android.util.Log;
+
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector4f;
 
@@ -24,6 +26,8 @@ public final class GLUtil {
 	static{
 		/* default to allocate 1MB memory. */
 		remolloc(INIT_CAPACITY);
+
+		Log.i("GLUtil", "Static inilized!!!");
 	}
 
 	private GLUtil(){

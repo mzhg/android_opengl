@@ -4,7 +4,7 @@ import android.app.ActivityManager;
 import android.content.pm.ConfigurationInfo;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
-import android.view.View;
+import android.util.SparseArray;
 
 import com.nvidia.developer.opengl.ui.NvFocusEvent;
 import com.nvidia.developer.opengl.ui.NvGestureEvent;
@@ -34,8 +34,6 @@ import com.nvidia.developer.opengl.utils.NvLogger;
 import com.nvidia.developer.opengl.utils.NvStopWatch;
 import com.nvidia.developer.opengl.utils.NvUtils;
 
-import java.util.HashMap;
-
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -56,11 +54,14 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 
 	protected final NvInputTransformer m_transformer = new NvInputTransformer();
 
-	protected final HashMap<Integer, NvTweakBind> mKeyBinds = new HashMap<Integer, NvTweakBind>();
-	protected final HashMap<Integer, NvTweakBind> mButtonBinds = new HashMap<Integer, NvTweakBind>();
+	protected final SparseArray<NvTweakBind> mKeyBinds = new SparseArray<>(0);
+	protected final SparseArray<NvTweakBind> mButtonBinds = new SparseArray<>(0);
 
 	private float totalTime;
-	
+	private volatile boolean mPaused;
+	private boolean mShutDownCalled;
+	private GLSurfaceView m_surfaceView;
+
 	@Override
 	public final void onSurfaceCreated(GL10 arg0, EGLConfig egl) {
 		Log.e("OpenGL ES", "onSurfaceCreated");
@@ -83,7 +84,7 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 	}
 
 	@Override
-	protected View createRenderView(NvEGLConfiguration configuration){
+	protected GLSurfaceView createRenderView(NvEGLConfiguration configuration){
 		GLSurfaceView view = new GLSurfaceView(this);
 		view.setEGLConfigChooser(configuration.redBits, configuration.greenBits, configuration.blueBits, configuration.alphaBits, configuration.depthBits, configuration.stencilBits);
 		if(configuration.apiVer == NvGfxAPIVersion.GLES1){
@@ -95,54 +96,80 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 			view.setEGLContextClientVersion(major);
 		}
 		view.setRenderer(this);
+		m_surfaceView = view;
 		return view;
 	}
-	
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		m_surfaceView.onPause();
+		mPaused = true;
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		m_surfaceView.onResume();
+		mPaused = false;
+	}
+
 	@Override
 	public final void onDrawFrame(GL10 arg0) {
-        mFrameTimer.stop();
+		if(!mPaused){
+			render();
+		}else if(isFinishing()){
+			if(!mShutDownCalled) {
+				shutdownRendering();
+				mShutDownCalled = true;
+			}
+		}
+	}
+
+	private void render(){
+		mFrameTimer.stop();
 		boolean mTestMode = false;
 		boolean isExiting = false;
-		
+
 		if (mTestMode) {
-            // Simulate 60fps
-            mFrameDelta = 1.0f / 60.0f;
+			// Simulate 60fps
+			mFrameDelta = 1.0f / 60.0f;
 
-            // just an estimate
-            totalTime += mFrameTimer.getTime();
-        } else {
-            mFrameDelta = mFrameTimer.getTime();
-            // just an estimate
-            totalTime += mFrameDelta;
-        }
-        m_transformer.update(mFrameDelta);
-        mFrameTimer.reset();
-        
-        pollEvents();
-        
-        if(!isExiting){
-        	mFrameTimer.start();
+			// just an estimate
+			totalTime += mFrameTimer.getTime();
+		} else {
+			mFrameDelta = mFrameTimer.getTime();
+			// just an estimate
+			totalTime += mFrameDelta;
+		}
+		m_transformer.update(mFrameDelta);
+		mFrameTimer.reset();
 
-            if (mAutoRepeatButton) {
-                final float elapsed = mAutoRepeatTimer.getTime();
-                if ( (!mAutoRepeatTriggered && elapsed >= 0.5f) ||
-                     (mAutoRepeatTriggered && elapsed >= 0.04f) ) { // 25hz repeat
-                    mAutoRepeatTriggered = true;
-                    gamepadButtonChanged(1, true);
-                }
-            }
-            
-            draw();
-            if (!mTestMode) {
-                baseDrawUI();
-            }
-            
-            if (mFramerate.nextFrame()) {
-                // for now, disabling console output of fps as we have on-screen.
-                // makes it easier to read USEFUL log output messages.
-                NvLogger.i("fps: %.2f", mFramerate.getMeanFramerate());
-            }
-        }
+		pollEvents();
+
+		if(!isExiting){
+			mFrameTimer.start();
+
+			if (mAutoRepeatButton) {
+				final float elapsed = mAutoRepeatTimer.getTime();
+				if ( (!mAutoRepeatTriggered && elapsed >= 0.5f) ||
+						(mAutoRepeatTriggered && elapsed >= 0.04f) ) { // 25hz repeat
+					mAutoRepeatTriggered = true;
+					gamepadButtonChanged(1, true);
+				}
+			}
+
+			draw();
+			if (!mTestMode) {
+				baseDrawUI();
+			}
+
+			if (mFramerate.nextFrame()) {
+				// for now, disabling console output of fps as we have on-screen.
+				// makes it easier to read USEFUL log output messages.
+				NvLogger.i("fps: %.2f", mFramerate.getMeanFramerate());
+			}
+		}
 	}
 
 	/**

@@ -27,7 +27,7 @@ vec4 lit(float n_l, float r_v)
     C.a = max(m_Color.a, texColor.a);
 
     vec3 color = g_LightAmbient * g_MaterialAmbient  // ambient term
-                +g_LightDiffuse * C.rgb * g_LightDiffuse * max(n_l, 0.0)
+                +g_LightDiffuse * C.rgb * g_MaterialDiffuse * max(n_l, 0.0)
                 +g_MaterialSpecular * g_LightSpecular.rgb * pow(max(r_v, 0.0), g_LightSpecular.a);
 
     return vec4(color, C.a);

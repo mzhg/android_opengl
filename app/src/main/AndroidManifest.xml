@@ -227,6 +227,17 @@
         </activity>
 
         <activity
+            android:name="jet.learning.opengl.d3dcoder.LitSkullApp"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="LitSkullApp Demo" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es3" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name="jet.learning.opengl.gui_vr.GUIDemo"
             android:configChanges="keyboardHidden|orientation"
             android:screenOrientation="landscape"

@@ -153,6 +153,11 @@ public class GLES {
 		
 		return integer[0];
 	}
+
+	public static int glGetInteger(int index, int pname){
+		GLES30.glGetIntegeri_v(index, pname, integer,0);
+		return integer[0];
+	}
 	
 	public static void glBindFramebuffer(int framebuffer, int bufferID){
 		if(useES2)

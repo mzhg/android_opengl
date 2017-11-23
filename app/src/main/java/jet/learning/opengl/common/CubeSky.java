@@ -14,7 +14,7 @@ import java.nio.FloatBuffer;
 
 import javax.microedition.khronos.opengles.GL11;
 
-public class Sky {
+public class CubeSky {
 
 	private static final int POSITION = 0;
 	
@@ -29,7 +29,7 @@ public class Sky {
 	private int mWvpLoc;
 	private int mIndexCount;
 
-	public Sky(String cubemapFilename, float skySphereRadius) {
+	public CubeSky(String cubemapFilename, float skySphereRadius) {
 		mCubeMapSRV = NvImage.uploadTextureFromDDSFile(cubemapFilename);
 		GLES30.glBindTexture(GLES30.GL_TEXTURE_CUBE_MAP, mCubeMapSRV);
 		GLES30.glTexParameteri(GLES30.GL_TEXTURE_CUBE_MAP, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
@@ -40,8 +40,8 @@ public class Sky {
 		GLES30.glBindTexture(GLES30.GL_TEXTURE_CUBE_MAP, 0);
 		
 //		mProgram = Framework.linkProgramFromSource(Glut.loadTextFromClassPath(Sky.class, "sky.glvs"), Glut.loadTextFromClassPath(Sky.class, "sky.glfs"));
-		CharSequence vs_str = Glut.loadTextFromClassPath(Sky.class, "sky.glvs");
-		CharSequence fs_str = Glut.loadTextFromClassPath(Sky.class, "sky.glfs");
+		CharSequence vs_str = Glut.loadTextFromClassPath(CubeSky.class, "sky.glvs");
+		CharSequence fs_str = Glut.loadTextFromClassPath(CubeSky.class, "sky.glfs");
 		NvGLSLProgram program = NvGLSLProgram.createFromStrings(vs_str, fs_str);
 
 		mProgram = program.getProgram();

@@ -17,7 +17,6 @@ import android.text.Html;
 import android.text.TextPaint;
 import android.util.Log;
 import android.util.Pair;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
@@ -79,7 +78,7 @@ public class GLES1SampleApp extends NvAppBase implements GLSurfaceView.Renderer{
     }
 
     @Override
-    protected View createRenderView(NvEGLConfiguration configuration){
+    protected GLSurfaceView createRenderView(NvEGLConfiguration configuration){
         GLSurfaceView view = new GLSurfaceView(this);
         view.setEGLConfigChooser(configuration.redBits, configuration.greenBits, configuration.blueBits, configuration.alphaBits, configuration.depthBits, configuration.stencilBits);
         if(configuration.apiVer == NvGfxAPIVersion.GLES1){

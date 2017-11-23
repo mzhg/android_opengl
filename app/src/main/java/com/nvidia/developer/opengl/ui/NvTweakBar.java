@@ -706,6 +706,16 @@ public class NvTweakBar extends NvUIContainer {
 	    return tvar;
 	}
 
+	/**
+	 * Add a floating-point variable to the Tweakbar as a slider.
+	 * <p>
+	 * This method adds a slider to the Tweakbar, tracking the supplied
+	 * floating-point variable.
+	 */
+	public final NvTweakVarBase addValue(String name, FieldControl var, float min, float max, float step){
+		return addValue(name, var, min, max, step, 0);
+	}
+
 	// scalars/sliders
 	/**
 	 * Add a floating-point variable to the Tweakbar as a slider.

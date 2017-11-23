@@ -12,7 +12,6 @@ import org.lwjgl.util.vector.Vector4f;
 /**
  * Created by mazhen'gui on 2017/10/20.
  */
-
 public class SimpleLightProgram extends SimpleOpenGLProgram {
     public static final String POSITION_ATTRIB_NAME = "In_Position";
     public static final String TEXTURE_ATTRIB_NAME = "In_Texcoord";
@@ -37,11 +36,7 @@ public class SimpleLightProgram extends SimpleOpenGLProgram {
     public SimpleLightProgram(boolean uniform, NvGLSLProgram.LinkerTask task){
         NvGLSLProgram program = new NvGLSLProgram();
         program.setLinkeTask(task);
-        if(uniform){
-            program.setSourceFromFiles("shaders/SimpleLightUniformColorVS.vert", "shaders/SimpleLightUniformColorPS.frag");
-        }else{
-            program.setSourceFromFiles("shaders/SimpleLightAttribColorVS.vert", "shaders/SimpleLightAttribColorPS.frag");
-        }
+        program.setSourceFromFiles(getVertexShaderFile(uniform), getFragmentShaderFile(uniform));
 
         int m_program = program.getProgram();
         m_g_ModelViewProjLoc = GLES20.glGetUniformLocation(m_program, "g_ModelViewProj");
@@ -71,6 +66,14 @@ public class SimpleLightProgram extends SimpleOpenGLProgram {
         texLoc = GLES20.glGetAttribLocation(programID, TEXTURE_ATTRIB_NAME);
         normalAttribLoc = GLES20.glGetAttribLocation(programID, NORMAL_ATTRIB_NAME);
         colorAttribLoc = GLES20.glGetAttribLocation(programID, COLOR_ATTRIB_NAME);
+    }
+
+    protected String getVertexShaderFile(boolean uniform){
+        return uniform? "shaders/SimpleLightUniformColorVS.vert":"shaders/SimpleLightAttribColorVS.vert";
+    }
+
+    protected String getFragmentShaderFile(boolean uniform){
+        return uniform? "shaders/SimpleLightUniformColorPS.frag" : "shaders/SimpleLightAttribColorPS.frag";
     }
 
     public int getNormalAttribLoc() { return normalAttribLoc;}

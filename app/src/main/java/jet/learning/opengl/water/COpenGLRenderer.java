@@ -12,7 +12,6 @@ import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.Glut;
 import com.nvidia.developer.opengl.utils.NvShapes;
 
-import org.lwjgl.util.vector.Matrix3f;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.ReadableVector3f;
 import org.lwjgl.util.vector.Vector3f;
@@ -44,9 +43,7 @@ final class COpenGLRenderer {
     static final int WNMR = 128;
 
     int width, height;
-    final Matrix3f normalMatrix = new Matrix3f();
     final Matrix4f viewMatrix = new Matrix4f();
-    final Matrix4f viewMatrixInverse = new Matrix4f();
     final Matrix4f projectionMatrix = new Matrix4f();
     final Matrix4f projectionBiasMatrixInverse = new Matrix4f();
 
@@ -154,7 +151,7 @@ final class COpenGLRenderer {
 //            GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4);
             GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE);
             GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);
-            GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RG16F, WHMR, WHMR, 0, GLES30.GL_RG, GLES30.GL_FLOAT, (FloatBuffer)null);
+            GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RG16F, WHMR, WHMR, 0, GLES30.GL_RG, GLES30.GL_FLOAT, null);
             GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D);
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
         }

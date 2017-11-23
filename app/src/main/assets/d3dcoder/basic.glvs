@@ -12,7 +12,7 @@ struct Material
 	vec4 Reflect;
 };
 
-uniform cbPerObject
+layout(binding = 0) uniform cbPerObject
 {
 	mat4 gWorld;
 	mat4 gWorldInvTranspose;

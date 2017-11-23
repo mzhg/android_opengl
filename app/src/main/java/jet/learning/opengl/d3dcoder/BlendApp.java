@@ -4,6 +4,7 @@ import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.os.Bundle;
 
+import com.google.vr.sdk.base.testing.MathUtil;
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
@@ -12,6 +13,7 @@ import com.nvidia.developer.opengl.utils.NvAssetLoader;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
 import com.nvidia.developer.opengl.utils.NvImage;
 import com.nvidia.developer.opengl.utils.NvPackedColor;
+import com.nvidia.developer.opengl.utils.NvUtils;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.ReadableVector3f;
@@ -28,7 +30,6 @@ import javax.microedition.khronos.opengles.GL11;
 import jet.learning.opengl.common.DirectionalLight;
 import jet.learning.opengl.common.GeometryGenerator;
 import jet.learning.opengl.common.Material;
-import jet.learning.opengl.common.MathUtil;
 import jet.learning.opengl.common.MeshData;
 import jet.learning.opengl.common.UniformLights;
 import jet.learning.opengl.common.UniformMatrix;
@@ -220,10 +221,10 @@ public class BlendApp extends NvSampleApp {
         GLES.checkGLError();
         GLES30.glBindTexture(GL11.GL_TEXTURE_2D, mBoxMapSRV);
 
-        /*GLES30.glBindVertexArray(mBoxVBO);
+        GLES30.glBindVertexArray(mBoxVBO);
         GLES30.glDrawElements(GL11.GL_TRIANGLES, 36, GL11.GL_UNSIGNED_SHORT, 0);
         GLES30.glBindVertexArray(0);
-        GLES.checkGLError();*/
+        GLES.checkGLError();
         // Draw the hill
         GLES30.glEnable(GL11.GL_CULL_FACE);
         switch (mRenderOptions) {
@@ -265,7 +266,7 @@ public class BlendApp extends NvSampleApp {
         GLES30.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
 
         GLES30.glBindVertexArray(mWavesVBO);
-        GLES30.glDrawElements(GL11.GL_TRIANGLES, 3*mWaves.triangleCount(), GLES30.GL_UNSIGNED_SHORT, 0);
+        GLES30.glDrawElements(GL11.GL_TRIANGLES, 3*mWaves.triangleCount(), GLES30.GL_UNSIGNED_INT, 0);
         GLES30.glDisable(GL11.GL_BLEND);
         GLES30.glBindVertexArray(0);
         GLES.checkGLError();
@@ -300,17 +301,17 @@ public class BlendApp extends NvSampleApp {
         {
             t_base += 0.25f;
 
-            int i = 5 + MathUtil.randomInt() % (mWaves.rowCount()-10);
-            int j = 5 + MathUtil.randomInt() % (mWaves.columnCount()-10);
+            int i = 5 + NvUtils.randomInt() % (mWaves.rowCount()-10);
+            int j = 5 + NvUtils.randomInt() % (mWaves.columnCount()-10);
 
-            float r = MathUtil.random(1.0f, 2.0f);
+            float r = NvUtils.random(1.0f, 2.0f);
 
             mWaves.disturb(i, j, r);
         }
 
         mWaves.update(dt);
 
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, mWavesVB);
+        /*GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, mWavesVB);
         mMapBuffer = (ByteBuffer)GLES30.glMapBufferRange(GLES20.GL_ARRAY_BUFFER, 0, 8 * mWaves.vertexCount() * 4, GLES30.GL_MAP_WRITE_BIT|GLES30.GL_MAP_INVALIDATE_BUFFER_BIT);
 
 //		System.out.println("mapbuffer remain = " + mMapBuffer.remaining() + ",  position = " + mMapBuffer.position());
@@ -327,8 +328,7 @@ public class BlendApp extends NvSampleApp {
             mMapBuffer.putFloat(0.5f - pos.z / mWaves.depth());
         }
         GLES30.glUnmapBuffer(GLES20.GL_ARRAY_BUFFER);
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);*/
 
         // Translate texture over time.
         mWaterTexOffset.y += 0.05f*dt;
