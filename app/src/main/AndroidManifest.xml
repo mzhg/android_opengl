@@ -172,6 +172,17 @@
         </activity>
 
         <activity
+            android:name="jet.learning.opengl.samples.HexagonDistort"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="HexagonDistort" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name="jet.learning.opengl.samples.GaussionBlur"
             android:configChanges="keyboardHidden|orientation"
             android:screenOrientation="landscape"

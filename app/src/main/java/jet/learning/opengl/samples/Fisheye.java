@@ -1,10 +1,13 @@
 package jet.learning.opengl.samples;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.opengl.GLUtils;
+import android.os.Build;
 import android.util.Log;
+import android.view.View;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.ui.NvUIRect;
@@ -34,6 +37,24 @@ public final class Fisheye extends NvSampleApp {
 
     private final Vector4f mKfactor = new Vector4f();
     private float mFocus = 1.0f;
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        navigationBarStatusBar(this, hasFocus);
+    }
+
+    public static void navigationBarStatusBar(Activity activity, boolean hasFocus){
+        if (hasFocus && Build.VERSION.SDK_INT >= 19) {
+            View decorView = activity.getWindow().getDecorView();
+            decorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+    }
 
     @Override
     public void initUI() {

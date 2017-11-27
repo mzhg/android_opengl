@@ -86,7 +86,8 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 	@Override
 	protected GLSurfaceView createRenderView(NvEGLConfiguration configuration){
 		GLSurfaceView view = new GLSurfaceView(this);
-		view.setEGLConfigChooser(configuration.redBits, configuration.greenBits, configuration.blueBits, configuration.alphaBits, configuration.depthBits, configuration.stencilBits);
+		view.setEGLConfigChooser(configuration.redBits, configuration.greenBits, configuration.blueBits, configuration.alphaBits,
+				configuration.depthBits, configuration.stencilBits);
 		if(configuration.apiVer == NvGfxAPIVersion.GLES1){
 			view.setEGLContextClientVersion(1);
 		}else{
@@ -231,6 +232,9 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 		mUIWindow.handleReshape(w, h);
 		m_transformer.setScreenSize(w, h);
 		reshape(w, h);
+
+		width = w;
+		height = h;
 	}
 	
 	private void baseDrawUI(){

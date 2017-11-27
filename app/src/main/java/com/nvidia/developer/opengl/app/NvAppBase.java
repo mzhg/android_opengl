@@ -31,7 +31,7 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks {
 	protected static final float PI = (float)Math.PI;
 	
 	private View m_surfaceView;
-    private int width, height;
+	int width, height;
     
     private NvEGLConfiguration glConfig;
 	private NvInputHandler mInputHandler;
@@ -101,6 +101,7 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks {
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
 		Display display = getWindow().getWindowManager().getDefaultDisplay();
 		width = display.getWidth();
 		height = display.getHeight();
