@@ -279,6 +279,10 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 		return mUIWindow;
 	}
 
+	public NvTweakBar getTweakBar() { return mTweakBar;}
+
+	public NvInputTransformer getInputTransformer() {return m_transformer;}
+
 	/**
 	 * Get the framerate counter.
 	 * <p>
@@ -580,7 +584,7 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 	}
 
 	/** Convience method used to create <code>FieldControl</code>*/
-	protected final static FieldControl createControl(Object obj, String varname){
+	public final static FieldControl createControl(Object obj, String varname){
 		return new FieldControl(obj, varname);
 	}
 

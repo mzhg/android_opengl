@@ -160,6 +160,7 @@
             </intent-filter>
         </activity>
 
+        <!--
         <activity
             android:name="jet.learning.opengl.samples.Fisheye"
             android:configChanges="keyboardHidden|orientation"
@@ -181,6 +182,7 @@
                 <category android:name="jet.learning.opengl.category.es2" />
             </intent-filter>
         </activity>
+        -->
 
         <activity
             android:name="jet.learning.opengl.samples.GaussionBlur"

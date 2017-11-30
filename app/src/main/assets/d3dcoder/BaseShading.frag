@@ -1,10 +1,11 @@
+#version 300 es
 precision highp float;
 
-varying vec3 m_PositionWS;
-varying vec3 m_NormalWS;
-varying vec2 m_Texcoord;
+in vec3 m_PositionWS;
+in vec3 m_NormalWS;
+in vec2 m_Texcoord;
 
-uniform sampler2D g_InputTex;
+layout(binding = 0) uniform sampler2D g_InputTex;
 
 uniform vec4 g_LightPos;   // w==0, means light direction, must be normalized
 
@@ -19,6 +20,8 @@ uniform vec3 g_EyePos;
 uniform vec4 g_Color;
 uniform bool g_AlphaClip;
 
+layout(location = 0) out vec4 Out_Color;
+
 vec4 lit(float n_l, float r_v, vec4 C)
 {
     vec3 color = g_LightAmbient * g_MaterialAmbient * C.rgb // ambient term
@@ -31,7 +34,7 @@ vec4 lit(float n_l, float r_v, vec4 C)
 void main()
 {
     vec4 C;
-    vec4 texColor = texture2D(g_InputTex, m_Texcoord);
+    vec4 texColor = texture(g_InputTex, m_Texcoord);
     C.rgb = (g_Color.rgb + texColor.rgb);
     C.a = max(g_Color.a, texColor.a);
 
@@ -61,5 +64,5 @@ void main()
     float n_l = dot(N,  L);
     float r_v = dot(R,  V);
 
-    gl_FragColor = lit(n_l, r_v, C);
+    Out_Color = lit(n_l, r_v, C);
 }

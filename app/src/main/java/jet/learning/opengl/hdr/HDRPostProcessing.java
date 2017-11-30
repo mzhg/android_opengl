@@ -435,8 +435,7 @@ class HDRPostProcessing {
             if(params.enableLensFlare) {
                 genGhostImage(colorModulation.filmic_ghost_modulation1st, colorModulation.filmic_ghost_modulation2nd);
             }
-        }
-        else if (params.glareType==CAMERA_GLARE) {
+        } else if (params.glareType==CAMERA_GLARE) {
             if(params.enableLightStreaker) {
                 float ratio = (float) params.viewport_width / params.viewport_height;
                 genStarStreak(0, ratio);

@@ -5,13 +5,13 @@ import android.opengl.GLES11;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
+import com.antvr.antvrsdk.AntvrSDK;
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.utils.AttribBinder;
 import com.nvidia.developer.opengl.utils.AttribBindingTask;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.Glut;
 import com.nvidia.developer.opengl.utils.NvGLModel;
-import com.nvidia.developer.opengl.utils.NvUtils;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
@@ -44,6 +44,31 @@ public final class Mickey3D extends NvSampleApp {
     private boolean m_left;
     private boolean m_pause = false;
     private float m_time;
+
+    private AntvrSDK mAntvrSDK;//for gyro data
+
+    @Override
+    protected void initBeforeGL() {
+        mAntvrSDK = AntvrSDK.getInstance(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(mAntvrSDK == null){
+//            Log.e(TAG,"mAntvrSDK is null");
+        }
+        mAntvrSDK.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if(mAntvrSDK != null){
+            mAntvrSDK.onPause();
+        }
+    }
 
     @Override
     protected void initRendering() {
@@ -87,15 +112,22 @@ public final class Mickey3D extends NvSampleApp {
             m_time = getTotalTime();
         }
 
+        float[] rotationMatrix = mAntvrSDK.getRotationMatrix();
+        m_view.load(rotationMatrix, 0);
+
         m_model.setIdentity();
         m_model.scale(MICKEY_SCALE);
         m_model.translate(-center.x, -center.y, -center.z);
-        m_model.rotate(m_time * NvUtils.PI * 2.0f, Vector3f.Y_AXIS);
+
+        Matrix4f.mul(m_view, m_model, m_model);
+
+//        m_model.rotate(m_time * NvUtils.PI * 2.0f, Vector3f.Y_AXIS);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, m_texture);
 
         m_transformer.getModelViewMat(m_view);
+
         decodeViewMat(m_view);
 
         m_program.enable();GLES.checkGLError();

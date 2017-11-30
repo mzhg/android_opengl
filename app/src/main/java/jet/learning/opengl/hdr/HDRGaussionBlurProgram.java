@@ -134,11 +134,11 @@ public class HDRGaussionBlurProgram extends SimpleOpenGLProgram {
             }
             float weight = weights2[i];
 //			ost << "texcoord = a_texCoord + vec2(" << szBuffer;
-            ost.append("texcoord = a_texCoord + vec2(").append(String.format("%f", x_offset));
+            ost.append("texcoord = a_texCoord + vec2(").append(x_offset);
 //			ost << ", " << szBuffer << ");\n";
-            ost.append(", ").append(String.format("%f", y_offset)).append(");\n");
+            ost.append(", ").append(y_offset).append(");\n");
 //			ost << "sum += texture2D(TexSampler, texcoord).rgb*" << szBuffer << ";\n";
-            ost.append("sum += texture(TexSampler, texcoord)*").append(String.format("%f", weight)).append(";\n");
+            ost.append("sum += texture(TexSampler, texcoord)*").append(weight).append(";\n");
         }
 
 //	    ost <<

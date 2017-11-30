@@ -44,6 +44,7 @@ public final class HexagonDistort extends NvSampleApp {
     private float mOffset = 0.1f;
     private float mCenterScale = 1/0.8f;
     private float mEyeOffset = 0.05f;
+    private boolean mShowLine = true;
 
     private int m_framebuffer;
     private int m_texture;
@@ -95,13 +96,14 @@ public final class HexagonDistort extends NvSampleApp {
 
             mLeftBar.addPadding(10);
             mLeftBar.addValue("EyeOffset", createControl( "mEyeOffset"), 0.0f, +.5f, 0.5f/100, 11111);
+            mLeftBar.addValue("ShowLine", createControl( "mShowLine"), false, 11112);
         }
     }
 
     @Override
     protected void initRendering() {
         NvLogger.setLevel(NvLogger.INFO);
-        m_splitProgram = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "shaders/std_hexagon.frag");
+        m_splitProgram = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "shaders/std_hexagon_blur.frag");
         m_distortProgram = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "shaders/std_distort.frag");
         m_offsetProgram = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "shaders/std_offset.frag");
 
@@ -177,12 +179,12 @@ public final class HexagonDistort extends NvSampleApp {
         int screenWidth = getWidth()/ 2;
         GLES20.glViewport(0,0, screenWidth, getHeight());
         m_offsetProgram.setUniform4f("Viewport", 0,0, screenWidth, getHeight());
-        m_offsetProgram.setUniform1f("EyeOffset", +mEyeOffset);
+        m_offsetProgram.setUniform1f("EyeOffset", /*+mEyeOffset*/0);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
 
         GLES20.glViewport(screenWidth,0, screenWidth, getHeight());
         m_offsetProgram.setUniform4f("Viewport", screenWidth,0, screenWidth, getHeight());
-        m_offsetProgram.setUniform1f("EyeOffset", -mEyeOffset);
+        m_offsetProgram.setUniform1f("EyeOffset", /*-mEyeOffset*/0);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
         m_offsetProgram.disable();
         GLES30.glBindVertexArray(0);
@@ -201,6 +203,9 @@ public final class HexagonDistort extends NvSampleApp {
         m_splitProgram.setUniform2f("iResolution", getWidth()/2, getHeight());
         m_splitProgram.setUniform1f("focuse", mFocus);
         m_splitProgram.setUniform4f("Kfactor", mKfactor.x, mKfactor.y, mKfactor.z, mKfactor.w);
+        m_splitProgram.setUniform1f("blurThreshold", mEyeOffset);
+        m_splitProgram.setUniform1i("showLine", mShowLine ? 1: 0);
+        m_splitProgram.setUniform2f("TexelSize", 1.0f/texWidth, 1.0f/texHeight);
 
         float innerRadius = (float) (mHexagonRadius * Math.cos(Math.PI/3));
         m_splitProgram.setUniform4f("HexagonData", mHexagonRadius, innerRadius, mOffset, mCenterScale);

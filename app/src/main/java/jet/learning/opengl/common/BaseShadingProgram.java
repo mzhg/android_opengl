@@ -23,6 +23,11 @@ public class BaseShadingProgram extends SimpleLightProgram {
     }
 
     @Override
+    protected String getVertexShaderFile(boolean uniform) {
+        return "d3dcoder/";
+    }
+
+    @Override
     protected String getFragmentShaderFile(boolean uniform) {
         return "d3dcoder/BaseShading.frag";
     }
