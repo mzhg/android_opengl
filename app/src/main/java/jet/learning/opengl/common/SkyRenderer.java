@@ -1,10 +1,10 @@
 package jet.learning.opengl.common;
 
+import android.opengl.GLES20;
 import android.opengl.GLES30;
 
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
-import com.nvidia.developer.opengl.utils.Glut;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
 import com.nvidia.developer.opengl.utils.NvImage;
 
@@ -14,7 +14,7 @@ import java.nio.FloatBuffer;
 
 import javax.microedition.khronos.opengles.GL11;
 
-public class CubeSky {
+public class SkyRenderer {
 
 	private static final int POSITION = 0;
 	
@@ -29,7 +29,7 @@ public class CubeSky {
 	private int mWvpLoc;
 	private int mIndexCount;
 
-	public CubeSky(String cubemapFilename, float skySphereRadius) {
+	public SkyRenderer(String cubemapFilename, float skySphereRadius) {
 		mCubeMapSRV = NvImage.uploadTextureFromDDSFile(cubemapFilename);
 		GLES30.glBindTexture(GLES30.GL_TEXTURE_CUBE_MAP, mCubeMapSRV);
 		GLES30.glTexParameteri(GLES30.GL_TEXTURE_CUBE_MAP, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
@@ -38,15 +38,11 @@ public class CubeSky {
 		GLES30.glTexParameteri(GLES30.GL_TEXTURE_CUBE_MAP, GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT);
 		GLES30.glTexParameteri(GLES30.GL_TEXTURE_CUBE_MAP, GLES30.GL_TEXTURE_WRAP_R, GL11.GL_REPEAT);
 		GLES30.glBindTexture(GLES30.GL_TEXTURE_CUBE_MAP, 0);
-		
-//		mProgram = Framework.linkProgramFromSource(Glut.loadTextFromClassPath(Sky.class, "sky.glvs"), Glut.loadTextFromClassPath(Sky.class, "sky.glfs"));
-		CharSequence vs_str = Glut.loadTextFromClassPath(CubeSky.class, "sky.glvs");
-		CharSequence fs_str = Glut.loadTextFromClassPath(CubeSky.class, "sky.glfs");
-		NvGLSLProgram program = NvGLSLProgram.createFromStrings(vs_str, fs_str);
+
+		NvGLSLProgram program = NvGLSLProgram.createFromFiles("d3dcoder/sky.glvs", "d3dcoder/sky.glfs");
 
 		mProgram = program.getProgram();
 		mCubeMapLoc = GLES30.glGetUniformLocation(mProgram, "gCubeMap");
-//		NvGLSLProgram program =
 		mWvpLoc 	= GLES30.glGetUniformLocation(mProgram, "gWorldViewProj");
 		
 		MeshData sphere = new MeshData();
@@ -77,21 +73,13 @@ public class CubeSky {
 			
 			GLES30.glVertexAttribPointer(POSITION, 3, GL11.GL_FLOAT, false, 0, 0);
 			GLES30.glEnableVertexAttribArray(POSITION);
-			
-//			IntBuffer buf = GLUtil.getCachedIntBuffer(4);
-//			GLES30.glGetVertexAttrib(POSITION, GLES30.GL_VERTEX_ATTRIB_ARRAY_ENABLED, buf);
-//			boolean enabled = buf.get(0) != 0;
-//			System.out.println("In VAO State = " + (enabled? "Enabled" : "Disabled"));
+
 			GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, mIB);
 		}
 
 		GLES30.glBindVertexArray(0);
 		GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
 		GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
-//		IntBuffer buf = GLUtil.getCachedIntBuffer(4);
-//		GLES30.glGetVertexAttrib(POSITION, GLES30.GL_VERTEX_ATTRIB_ARRAY_ENABLED, buf);
-//		boolean enabled = buf.get(0) != 0;
-//		System.out.println("Out VAO State = " + (enabled? "Enabled" : "Disabled"));
 	}
 
 	/**
@@ -99,20 +87,18 @@ public class CubeSky {
 	 * @param mvpWithoutTranslate the modelViewProjection Matrix that removed the camera translate
      */
 	public void draw(Matrix4f mvpWithoutTranslate){
-//		GL11.glDisable(GL11.GL_CULL_FACE);
-//		GL11.glDepthFunc(GL11.GL_LEQUAL);
-		GLES30.glUseProgram(mProgram);
-		GLES30.glUniformMatrix4fv(mWvpLoc, 1, false, GLUtil.wrap(mvpWithoutTranslate));
-		GLES30.glUniform1i(mCubeMapLoc, 0);
-		
-		GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
-		GLES30.glBindTexture(GLES30.GL_TEXTURE_CUBE_MAP, mCubeMapSRV);
-//		GLES30.glEnableVertexAttribArray(POSITION);
+		GLES20.glUseProgram(mProgram);
+		GLES20.glUniformMatrix4fv(mWvpLoc, 1, false, GLUtil.wrap(mvpWithoutTranslate));
+		GLES20.glUniform1i(mCubeMapLoc, 0);
+
+		GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+		GLES20.glBindTexture(GLES20.GL_TEXTURE_CUBE_MAP, mCubeMapSRV);
 
 		GLES30.glBindVertexArray(mVBO);
-		GLES30.glDrawElements(GL11.GL_TRIANGLES, mIndexCount, GL11.GL_UNSIGNED_SHORT, 0);
+		GLES20.glDrawElements(GL11.GL_TRIANGLES, mIndexCount, GL11.GL_UNSIGNED_SHORT, 0);
 		GLES30.glBindVertexArray(0);
-//		GL11.glDepthFunc(GL11.GL_LESS);
+
+		GLES20.glBindTexture(GLES20.GL_TEXTURE_CUBE_MAP, 0);
 	}
 	
 	public int cubeMapSRV() { return mCubeMapSRV;}

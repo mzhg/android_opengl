@@ -416,8 +416,8 @@ public class Ssao {
     	int mSampleCount;
     	
     	void init(){
-			CharSequence vs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssao.glvs");
-			CharSequence fs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssao.glfs");
+			CharSequence vs_str = Glut.loadTextFromClassPath(SkyRenderer.class, "ssao.glvs");
+			CharSequence fs_str = Glut.loadTextFromClassPath(SkyRenderer.class, "ssao.glfs");
 			NvGLSLProgram program = NvGLSLProgram.createFromStrings(vs_str, fs_str);
 //    		mProgram = Framework.linkProgramFromSource(Glut.loadTextFromClassPath(Sky.class, "ssao.glvs"), Glut.loadTextFromClassPath(Sky.class, "ssao.glfs"));
     		mProgram = program.getProgram();
@@ -479,8 +479,8 @@ public class Ssao {
     	int mHorizontal;
     	
     	void init(){
-			CharSequence vs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssao.glvs");
-			CharSequence fs_str = Glut.loadTextFromClassPath(CubeSky.class, "ssao.glfs");
+			CharSequence vs_str = Glut.loadTextFromClassPath(SkyRenderer.class, "ssao.glvs");
+			CharSequence fs_str = Glut.loadTextFromClassPath(SkyRenderer.class, "ssao.glfs");
 			NvGLSLProgram program = NvGLSLProgram.createFromStrings(vs_str, fs_str);
 //    		mProgram = Framework.linkProgramFromSource(Glut.loadTextFromClassPath(Sky.class, "ssaoblur.glvs"), Glut.loadTextFromClassPath(Sky.class, "ssaoblur.glfs"));
     		mProgram = program.getProgram();

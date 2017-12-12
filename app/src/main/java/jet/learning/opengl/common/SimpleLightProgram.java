@@ -56,7 +56,6 @@ public class SimpleLightProgram extends SimpleOpenGLProgram {
 
         enable();
         program.setUniform1i("g_InputTex", 0);
-        disable();
     }
 
     protected void findAttrib(){

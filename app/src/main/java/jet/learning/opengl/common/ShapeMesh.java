@@ -1,6 +1,7 @@
 package jet.learning.opengl.common;
 
 import android.opengl.GLES20;
+import android.opengl.GLES30;
 
 import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
@@ -267,30 +268,41 @@ public class ShapeMesh implements RenderMesh {
     public Matrix4f getGridWorld() { return mGridWorld;}
     public void drawGrid(){
         int offset = mGridIndexOffset * ((mIndiceType == GLES20.GL_UNSIGNED_SHORT) ? 2 : 4);
-//        glDrawElementsBaseVertex(GL11.GL_TRIANGLES, mGridIndexCount, GL11.GL_UNSIGNED_SHORT, mGridIndexOffset * 2, mGridVertexOffset);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, mGridIndexCount, mIndiceType, offset);
     }
 
     public Matrix4f getBoxWorld() { return mBoxWorld;}
     public void drawBox(){
-//        GL32.glDrawElementsBaseVertex(GL11.GL_TRIANGLES, mBoxIndexCount, GL11.GL_UNSIGNED_SHORT, mBoxIndexOffset * 2, mBoxVertexOffset);
         int offset = mBoxIndexOffset * ((mIndiceType == GLES20.GL_UNSIGNED_SHORT) ? 2 : 4);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, mBoxIndexCount, mIndiceType, offset);
     }
 
     public Matrix4f getCylinderWorld(int index) { return mCylWorld[index];}
 
-    public void drawCylinders(){
-//        GL32.glDrawElementsBaseVertex(GL11.GL_TRIANGLES, mCylinderIndexCount, GL11.GL_UNSIGNED_SHORT, mCylinderIndexOffset * 2, mCylinderVertexOffset);
+    public final void drawCylinders(){
+        drawCylinders(1);
+    }
+
+    public void drawCylinders(int instanceCount){
         int offset = mCylinderIndexOffset * ((mIndiceType == GLES20.GL_UNSIGNED_SHORT) ? 2 : 4);
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, mCylinderIndexCount, mIndiceType, offset);
+        if(instanceCount  == 1)
+            GLES20.glDrawElements(GLES20.GL_TRIANGLES, mCylinderIndexCount, mIndiceType, offset);
+        else
+            GLES30.glDrawElementsInstanced(GLES20.GL_TRIANGLES, mCylinderIndexCount, mIndiceType, offset, instanceCount);
     }
 
     public Matrix4f getCenterSphereWorld(){ return mCenterSphereWorld;}
-    public void drawSphere(){
-//        GL32.glDrawElementsBaseVertex(GL11.GL_TRIANGLES, mSphereIndexCount, GL11.GL_UNSIGNED_SHORT, mSphereIndexOffset * 2, mSphereVertexOffset);
+
+    public final void drawSphere(){
+        drawSphere(1);
+    }
+
+    public void drawSphere(int instanceCount){
         int offset = mSphereIndexOffset * ((mIndiceType == GLES20.GL_UNSIGNED_SHORT) ? 2 : 4);
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, mSphereIndexCount, mIndiceType, offset);
+        if(instanceCount == 1)
+            GLES20.glDrawElements(GLES20.GL_TRIANGLES, mSphereIndexCount, mIndiceType, offset);
+        else
+            GLES30.glDrawElementsInstanced(GLES20.GL_TRIANGLES, mSphereIndexCount, mIndiceType, offset, instanceCount);
     }
 
     public Matrix4f getSphereWorld(int index){ return mSphereWorld[index];}

@@ -5,7 +5,9 @@ in vec3 m_PositionWS;
 in vec3 m_NormalWS;
 in vec2 m_Texcoord;
 
-layout(binding = 0) uniform sampler2D g_InputTex;
+uniform sampler2D g_InputTex;  // diffuse texture
+uniform samplerCube g_ReflectTex;  // reflect texture
+//uniform sampler2DShadow g_ShadowMap;
 
 uniform vec4 g_LightPos;   // w==0, means light direction, must be normalized
 
@@ -18,7 +20,10 @@ uniform vec3 g_MaterialDiffuse;   // kb
 uniform vec4 g_MaterialSpecular;   // ks, w for power
 uniform vec3 g_EyePos;
 uniform vec4 g_Color;
+
 uniform bool g_AlphaClip;
+uniform bool g_ReflectionEnabled;
+//uniform bool g_UseShadowMap;
 
 layout(location = 0) out vec4 Out_Color;
 
@@ -65,4 +70,10 @@ void main()
     float r_v = dot(R,  V);
 
     Out_Color = lit(n_l, r_v, C);
+
+    if( g_ReflectionEnabled )
+    {
+        vec4 reflectionColor  = texture(g_ReflectTex, R);
+        Out_Color.rgb = reflectionColor.rgb * 0.9;
+    }
 }
