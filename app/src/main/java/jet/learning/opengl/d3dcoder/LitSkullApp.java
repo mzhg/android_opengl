@@ -2,12 +2,10 @@ package jet.learning.opengl.d3dcoder;
 
 
 import android.opengl.GLES20;
-import android.opengl.GLES30;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.utils.AttribBinder;
 import com.nvidia.developer.opengl.utils.AttribBindingTask;
-import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.NvPackedColor;
 
@@ -15,12 +13,8 @@ import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.ReadableVector3f;
 import org.lwjgl.util.vector.Vector3f;
 
-import java.nio.ByteBuffer;
-
 import javax.microedition.khronos.opengles.GL11;
 
-import jet.learning.opengl.common.BaseShadingProgram;
-import jet.learning.opengl.common.FrameData;
 import jet.learning.opengl.common.RenderMesh;
 import jet.learning.opengl.common.ShapeMesh;
 import jet.learning.opengl.common.SimpleLightProgram;
@@ -35,11 +29,8 @@ import jet.learning.opengl.common.SkyRenderer;
 
 public final class LitSkullApp extends NvSampleApp {
     SimpleLightProgram mLightProgram;
-    BaseShadingProgram mLightInstanceProgram;
 
     final SimpleLightProgram.LightParams mLightParams = new SimpleLightProgram.LightParams();
-    final FrameData mFrameData = new FrameData(1);
-
     final Matrix4f mSkullWorld = new Matrix4f();
     final Matrix4f mProj = new Matrix4f();
     final Matrix4f mView = new Matrix4f();
@@ -48,16 +39,6 @@ public final class LitSkullApp extends NvSampleApp {
     ShapeMesh mShapeVBO;
     SkullMesh mSkullVBO;
     SkyRenderer mSky;
-
-    int mFrameBuffer;
-    ByteBuffer mFrameMemory;
-
-    boolean mUseInstance;
-
-    @Override
-    public void initUI() {
-        mTweakBar.addValue("Enable Instance", createControl("mUseInstance"));
-    }
 
     @Override
     protected void initRendering() {
@@ -71,12 +52,6 @@ public final class LitSkullApp extends NvSampleApp {
         buildFX();
         buildGeometryBuffers();
 
-        float mRadius = 15;
-        float mTheta = 1.5f * PI;
-        float mPhi   = 0.1f * PI;
-        float x = (float) (mRadius*Math.sin(mPhi)*Math.cos(mTheta));
-        float z = (float) (mRadius*Math.sin(mPhi)*Math.sin(mTheta));
-        float y = (float) (mRadius*Math.cos(mPhi));
         m_transformer.setTranslation(0,-5,-15);
         m_transformer.setRotationVec(new Vector3f(0, PI, 0));
 
@@ -115,11 +90,7 @@ public final class LitSkullApp extends NvSampleApp {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
 
-        if(mUseInstance){
-            drawSceneWithInstances();
-        }else{
-            drawScene();
-        }
+        drawScene();
     }
 
     private void drawScene(){
@@ -174,81 +145,6 @@ public final class LitSkullApp extends NvSampleApp {
         }
     }
 
-    private void drawSceneWithInstances(){
-        mLightInstanceProgram.enable();
-        mLightInstanceProgram.setAlphaClip(false);
-        mLightInstanceProgram.setReflection(false);
-
-        mShapeVBO.bind();
-        mFrameData.viewProj.load(mProjView);
-
-        {
-            // Draw the grid
-            mFrameData.setInstanceCount(1);
-            buildFrameInstance(0, mShapeVBO.getGridWorld());
-            setupGridMat();
-            updateAndBindFramebuffer();
-            mLightInstanceProgram.setLightParams(mLightParams);
-            mShapeVBO.drawGrid();
-            GLES.checkGLError();
-        }
-
-        {//		 Draw the box
-            mFrameData.setInstanceCount(1);
-            buildFrameInstance(0, mShapeVBO.getBoxWorld());
-            setupBoxMat();
-            updateAndBindFramebuffer();
-            mLightInstanceProgram.setLightParams(mLightParams);
-            mShapeVBO.drawBox();
-            GLES.checkGLError();
-        }
-
-        { //  Draw the cylinders.
-            mFrameData.setInstanceCount(10);
-            setupCylinderMat();
-            for(int i = 0; i < 10; i++){
-                buildFrameInstance(i, mShapeVBO.getCylinderWorld(i));
-            }
-            updateAndBindFramebuffer();
-            mLightInstanceProgram.setLightParams(mLightParams);
-            mShapeVBO.drawCylinders(10);
-            GLES.checkGLError();
-        }
-
-        { // Draw the spheres.
-            mFrameData.setInstanceCount(10);
-            setupSphereMat();
-            for(int i = 0; i < 10; i++){
-                buildFrameInstance(i, mShapeVBO.getSphereWorld(i));
-            }
-
-            updateAndBindFramebuffer();
-            mLightInstanceProgram.setLightParams(mLightParams);
-            mShapeVBO.drawSphere(10);
-            GLES.checkGLError();
-        }
-
-        mShapeVBO.unbind();
-
-        { // Draw the skull
-            mFrameData.setInstanceCount(1);
-            buildFrameInstance(0, mSkullWorld);
-            setupSkullMat();
-            updateAndBindFramebuffer();
-            mLightInstanceProgram.setLightParams(mLightParams);
-            mLightInstanceProgram.setReflection(true);
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_CUBE_MAP, mSky.cubeMapSRV());
-            mSkullVBO.draw();
-
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_CUBE_MAP, 0);
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            mLightInstanceProgram.setReflection(false);
-            GLES.checkGLError();
-        }
-
-        GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 0, 0);
-    }
 
     @Override
     protected void reshape(int width, int height) {
@@ -259,19 +155,6 @@ public final class LitSkullApp extends NvSampleApp {
     private void buildFrame(Matrix4f world){
         mLightParams.model.load(world);
         Matrix4f.mul(mProjView, world, mLightParams.modelViewProj);
-    }
-
-    private void buildFrameInstance(int idx, Matrix4f world){
-        mFrameData.models[idx].load(world);
-        Matrix4f normal = mFrameData.models[idx];
-        normal.load(world);
-//        normal.invert().transpose();
-    }
-
-    private void updateAndBindFramebuffer(){
-        GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 0, mFrameBuffer);
-        mFrameData.store(mFrameMemory).flip();
-        GLES20.glBufferSubData(GLES30.GL_UNIFORM_BUFFER, 0, mFrameMemory.remaining(), mFrameMemory);
     }
 
     private void setupGridMat(){
@@ -309,10 +192,6 @@ public final class LitSkullApp extends NvSampleApp {
                 new AttribBinder(SimpleLightProgram.POSITION_ATTRIB_NAME, 0),
                 new AttribBinder(SimpleLightProgram.TEXTURE_ATTRIB_NAME, 1),
                 new AttribBinder(SimpleLightProgram.NORMAL_ATTRIB_NAME, 2)));
-
-        mLightInstanceProgram = new BaseShadingProgram(null);
-        int index = GLES30.glGetUniformBlockIndex(mLightInstanceProgram.getProgram(), "FrameData");
-        GLES30.glUniformBlockBinding(mLightInstanceProgram.getProgram(), index, 0);
     }
 
     void buildGeometryBuffers(){
@@ -330,14 +209,5 @@ public final class LitSkullApp extends NvSampleApp {
         mSkullWorld.setIdentity();
         mSkullWorld.translate(0.0f, 1.0f, 0.0f);
         mSkullWorld.scale(0.5f, 0.5f, 0.5f);
-
-        // Create the uniform buffer
-        mFrameBuffer = GLES.glGenBuffers();
-        GLES20.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, mFrameBuffer);
-        GLES20.glBufferData(GLES30.GL_UNIFORM_BUFFER, FrameData.SIZE, null, GLES30.GL_DYNAMIC_DRAW);
-        GLES20.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, 0);
-
-        if(mFrameMemory == null)
-            mFrameMemory = BufferUtils.createByteBuffer(FrameData.SIZE);
     }
 }

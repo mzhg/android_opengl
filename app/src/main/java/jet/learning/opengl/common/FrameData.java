@@ -11,11 +11,12 @@ import java.nio.ByteBuffer;
 
 public class FrameData {
     public static final int MAX_INSTANCE_COUNT = 10;
-    public static final int SIZE = Matrix4f.SIZE * (MAX_INSTANCE_COUNT * 2 + 1);
+    public static final int SIZE = Matrix4f.SIZE * (MAX_INSTANCE_COUNT * 2 + 2);
 
     public final Matrix4f viewProj = new Matrix4f();
     public final Matrix4f[] models = new Matrix4f[MAX_INSTANCE_COUNT];
     public final Matrix4f[] normalMats = new Matrix4f[MAX_INSTANCE_COUNT];
+    public final Matrix4f texMat = new Matrix4f();
 
     private int instanceCount;
 
@@ -57,6 +58,7 @@ public class FrameData {
         old_pos += MAX_INSTANCE_COUNT * Matrix4f.SIZE;
         buffer.position(old_pos);
 
+        texMat.store(buffer);
         return buffer;
     }
 }

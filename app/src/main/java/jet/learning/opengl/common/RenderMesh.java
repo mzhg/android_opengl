@@ -18,5 +18,6 @@ public interface RenderMesh extends NvDisposeable{
         public int posAttribLoc;
         public int norAttribLoc;
         public int texAttribLoc;
+        public int tanAttribLoc = -1;  // tangent attribution is diabled default.
     }
 }

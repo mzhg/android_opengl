@@ -47,8 +47,11 @@ public class ShapeMesh implements RenderMesh {
     int mfxPosition;
     int mfxNormal;
     int mfxTex;
+    int mfxTangent;
 
     int mIndiceType;
+
+    private boolean mEnableTangent;
 
     @Override
     public void dispose() {
@@ -61,6 +64,8 @@ public class ShapeMesh implements RenderMesh {
         mfxPosition = params.posAttribLoc;
         mfxNormal = params.norAttribLoc;
         mfxTex = params.texAttribLoc;
+        mfxTangent = params.tanAttribLoc;
+        mEnableTangent = mfxTangent >= 0;
 
         mBoxWorld.translate(0.0f, 0.5f, 0.0f);
         mBoxWorld.scale(3.0f, 1.0f, 3.0f);
@@ -130,8 +135,8 @@ public class ShapeMesh implements RenderMesh {
         // vertices of all the meshes into one vertex buffer.
         //
 
-//		std::vector<Vertex> vertices(totalVertexCount);
-        FloatBuffer vertices = BufferUtils.createFloatBuffer(totalVertexCount * 8 /* 3-tuple position + 3-tuple color */);
+        final int vertexCmpSize = mEnableTangent ? 11 : 8;
+        FloatBuffer vertices = BufferUtils.createFloatBuffer(totalVertexCount * vertexCmpSize /* 3-tuple position + 3-tuple color */);
 
 //		XMFLOAT4 black(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -141,6 +146,8 @@ public class ShapeMesh implements RenderMesh {
             vertices.put(v.positionX).put(v.positionY).put(v.positionZ);
             vertices.put(v.normalX).put(v.normalY).put(v.normalZ);
             vertices.put(v.texCX).put(v.texCY);
+            if(mEnableTangent)
+                vertices.put(v.tangentUX).put(v.tangentUY).put(v.tangentUZ);
         }
 
         for(int i = 0; i < grid.vertices.size(); ++i)
@@ -149,6 +156,8 @@ public class ShapeMesh implements RenderMesh {
             vertices.put(v.positionX).put(v.positionY).put(v.positionZ);
             vertices.put(v.normalX).put(v.normalY).put(v.normalZ);
             vertices.put(v.texCX).put(v.texCY);
+            if(mEnableTangent)
+                vertices.put(v.tangentUX).put(v.tangentUY).put(v.tangentUZ);
         }
 
         for(int i = 0; i < sphere.vertices.size(); ++i)
@@ -157,6 +166,8 @@ public class ShapeMesh implements RenderMesh {
             vertices.put(v.positionX).put(v.positionY).put(v.positionZ);
             vertices.put(v.normalX).put(v.normalY).put(v.normalZ);
             vertices.put(v.texCX).put(v.texCY);
+            if(mEnableTangent)
+                vertices.put(v.tangentUX).put(v.tangentUY).put(v.tangentUZ);
         }
 
         for(int i = 0; i < cylinder.vertices.size(); ++i)
@@ -165,6 +176,8 @@ public class ShapeMesh implements RenderMesh {
             vertices.put(v.positionX).put(v.positionY).put(v.positionZ);
             vertices.put(v.normalX).put(v.normalY).put(v.normalZ);
             vertices.put(v.texCX).put(v.texCY);
+            if(mEnableTangent)
+                vertices.put(v.tangentUX).put(v.tangentUY).put(v.tangentUZ);
         }
         vertices.flip();
 
@@ -308,10 +321,15 @@ public class ShapeMesh implements RenderMesh {
     public Matrix4f getSphereWorld(int index){ return mSphereWorld[index];}
 
     public void bind(){
+        final int vertexCmpSize = mEnableTangent ? 11 : 8;
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, mShapesVB);
-        GLES20.glVertexAttribPointer(mfxPosition, 3, GL11.GL_FLOAT, false, 8 * 4, 0);
-        GLES20.glVertexAttribPointer(mfxNormal, 3, GL11.GL_FLOAT, false, 8 * 4, 3 * 4);
-        GLES20.glVertexAttribPointer(mfxTex, 2, GL11.GL_FLOAT, false, 8 * 4, 6 * 4);
+        GLES20.glVertexAttribPointer(mfxPosition, 3, GL11.GL_FLOAT, false, vertexCmpSize * 4, 0);
+        GLES20.glVertexAttribPointer(mfxNormal, 3, GL11.GL_FLOAT, false, vertexCmpSize * 4, 3 * 4);
+        GLES20.glVertexAttribPointer(mfxTex, 2, GL11.GL_FLOAT, false, vertexCmpSize * 4, 6 * 4);
+        if(mEnableTangent){
+            GLES20.glVertexAttribPointer(mfxTangent, 3, GL11.GL_FLOAT, false, vertexCmpSize * 4, 8 * 4);
+            GLES20.glEnableVertexAttribArray(mfxTangent);
+        }
         GLES20.glEnableVertexAttribArray(mfxPosition);
         GLES20.glEnableVertexAttribArray(mfxNormal);
         GLES20.glEnableVertexAttribArray(mfxTex);
@@ -323,6 +341,9 @@ public class ShapeMesh implements RenderMesh {
         GLES20.glDisableVertexAttribArray(mfxPosition);
         GLES20.glDisableVertexAttribArray(mfxNormal);
         GLES20.glDisableVertexAttribArray(mfxTex);
+        if(mEnableTangent){
+            GLES20.glDisableVertexAttribArray(mfxTangent);
+        }
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
     }

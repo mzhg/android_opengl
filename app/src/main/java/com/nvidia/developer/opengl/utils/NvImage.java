@@ -1,6 +1,7 @@
 package com.nvidia.developer.opengl.utils;
 
 import android.opengl.GLES10;
+import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 
 import java.io.BufferedInputStream;
@@ -37,7 +38,7 @@ public class NvImage {
 
     protected static boolean upperLeftOrigin = true;
     protected static boolean m_expandDXT = true;
-    protected static NvGfxAPIVersion m_gfxAPIVersion = NvGfxAPIVersion.GLES2;
+    protected static NvGfxAPIVersion m_gfxAPIVersion = NvGfxAPIVersion.GLES3_0;
     protected static FormatInfo[] formatTable = new FormatInfo[]{new FormatInfo("dds", new ReadDDS(), null)};
 
     protected List<byte[]> _data = new ArrayList<byte[]>();
@@ -1517,7 +1518,7 @@ public class NvImage {
 
                 final NvGfxAPIVersion api = getAPIVersion();
 
-                boolean isES = (api == NvGfxAPIVersion.GLES2 || api ==NvGfxAPIVersion.GLES3_0 || api == NvGfxAPIVersion.GLES3_1);
+                boolean isES = (api == NvGfxAPIVersion.GLES2 /*|| api ==NvGfxAPIVersion.GLES3_0 || api == NvGfxAPIVersion.GLES3_1*/);
                 boolean mustExpandDXT = m_expandDXT &&
                         ((i._format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ||
                                 (i._format == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT) ||
@@ -2323,7 +2324,7 @@ public class NvImage {
 
     private static final int GL_DEPTH_COMPONENT16  = 33189;
 
-    private static final int GL_BGRA  = 32993;
+    private static final int GL_BGRA  = GLES11Ext.GL_BGRA;
     private static final int GL_BGR  = 32992;
     private static final int GL_UNSIGNED_INT_2_10_10_10_REV  = 33640;
     private static final int GL_UNSIGNED_SHORT_5_5_5_1  = 32820;

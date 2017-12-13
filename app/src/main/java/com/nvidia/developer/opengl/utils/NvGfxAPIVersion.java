@@ -34,10 +34,9 @@
 package com.nvidia.developer.opengl.utils;
 public enum NvGfxAPIVersion implements Comparable<NvGfxAPIVersion>{
 	GLES1(1, 0, true),
-    GLES2(2,0, true), GLES3_0(3,0, true), GLES3_1(3,1, true), 
-    GL4(4,0, false), GL4_1(4,1, false), GL4_3(4,3, false),
-    GL4_4(4,4, false);
-	
+    GLES2(2,0, true), GLES3_0(3,0, true), GLES3_1(3,1, true),
+	GLES3_2(3,2, true);
+
 	/** The major version (X.0) */
 	public final int majVersion;
 	/** The minor version (0.Y) */
@@ -46,29 +45,16 @@ public enum NvGfxAPIVersion implements Comparable<NvGfxAPIVersion>{
 	public final boolean isGLES;
 	
 	public static NvGfxAPIVersion queryVersion(boolean isES, int major, int minor){
-		if(isES){
-			if(major == 1 && minor == 0){
-				return GLES1;
-			}else if(major == 2 && minor == 0){
-					return GLES2;
-			}else if(major == 3){
-				if(minor == 0)
-					return GLES3_0;
-				else if(minor == 1)
-					return GLES3_1;
-			}
-		}else{
-			if(major == 4){
-				if(minor == 0)
-					return GL4;
-				else if(minor == 1)
-					return GL4_1;
-				else if(minor == 3)
-					return GL4_3;
-				else if(minor == 4){
-					return GL4_4;
-				}
-			}
+		assert (isES);
+		if(major == 1 && minor == 0){
+			return GLES1;
+		}else if(major == 2 && minor == 0){
+			return GLES2;
+		}else if(major == 3){
+			if(minor == 0)
+				return GLES3_0;
+			else if(minor == 1)
+				return GLES3_1;
 		}
 		
 		throw null;
