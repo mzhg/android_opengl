@@ -8,6 +8,7 @@ import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 
+@Deprecated
 public class VectorUtil {
 
 	public static final Vector3f UNIT_X = new Vector3f(1, 0, 0);
@@ -51,18 +52,6 @@ public class VectorUtil {
 		m.m31 = buffer[13];
 		m.m32 = buffer[14];
 		m.m33 = buffer[15];
-	}
-
-	public static final Vector3f unit_x() {
-		return new Vector3f(1, 0, 0);
-	}
-
-	public static final Vector3f unit_y() {
-		return new Vector3f(0, 1, 0);
-	}
-
-	public static final Vector3f unit_z() {
-		return new Vector3f(0, 0, 1);
 	}
 
 	public static final Vector3f transformVector3(Vector3f point,
@@ -118,66 +107,6 @@ public class VectorUtil {
 			out = new Vector4f();
 		out.set(v3.x, v3.y, v3.z);
 		out.w = -Vector3f.dot(v3, p3);
-		return out;
-	}
-
-	/**
-	 * Create a projection to "squish" an object into the plane. Use
-	 * m3dGetPlaneEquationf(planeEq, point1, point2, point3); to get a plane
-	 * equation.
-	 * 
-	 * @param planeEq
-	 * @param lightPos
-	 * @param proj
-	 * @return
-	 */
-	public static final Matrix4f makePlanarShadowMatrix(Vector4f planeEq,
-			Vector3f lightPos, Matrix4f proj) {
-		// These just make the code below easier to read. They will be
-		// removed by the optimizer.
-		float a = planeEq.x;
-		float b = planeEq.y;
-		float c = planeEq.z;
-		float d = planeEq.w;
-
-		float dx = -lightPos.x;
-		float dy = -lightPos.y;
-		float dz = -lightPos.z;
-
-		if (proj == null)
-			proj = new Matrix4f();
-		// Now build the projection matrix
-		proj.m00 = b * dy + c * dz;
-		proj.m01 = -a * dy;
-		proj.m02 = -a * dz;
-		proj.m03 = 0;
-
-		proj.m10 = -b * dx;
-		proj.m11 = a * dx + c * dz;
-		proj.m12 = -b * dz;
-		proj.m13 = 0;
-
-		proj.m20 = -c * dx;
-		proj.m21 = -c * dy;
-		proj.m22 = a * dx + b * dy;
-		proj.m23 = 0;
-
-		proj.m30 = -d * dx;
-		proj.m31 = -d * dy;
-		proj.m32 = -d * dz;
-		proj.m33 = a * dx + b * dy + c * dz;
-		return proj;
-	}
-
-	public static final Vector3f findNormal(Vector3f point1, Vector3f point2,
-			Vector3f point3, Vector3f out) {
-		Vector3f v1 = Vector3f.sub(point1, point2, null);
-		Vector3f v2 = Vector3f.sub(point2, point3, null);
-
-		if (out == null)
-			out = new Vector3f();
-
-		Vector3f.cross(v1, v2, out);
 		return out;
 	}
 

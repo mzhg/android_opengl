@@ -1,0 +1,224 @@
+package jet.learning.opengl.d3dcoder;
+
+import android.opengl.GLES20;
+import android.opengl.GLES30;
+
+import com.nvidia.developer.opengl.app.NvSampleApp;
+import com.nvidia.developer.opengl.utils.BufferUtils;
+import com.nvidia.developer.opengl.utils.GLES;
+import com.nvidia.developer.opengl.utils.GLUtil;
+import com.nvidia.developer.opengl.utils.NvImage;
+import com.nvidia.developer.opengl.utils.NvUtils;
+
+import org.lwjgl.util.vector.Matrix4f;
+
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+
+import javax.microedition.khronos.opengles.GL11;
+
+import jet.learning.opengl.common.BaseShadingProgram;
+import jet.learning.opengl.common.BoxMesh;
+import jet.learning.opengl.common.FrameData;
+import jet.learning.opengl.common.GenerateShadowMapProgram;
+import jet.learning.opengl.common.LandMesh;
+import jet.learning.opengl.common.RenderMesh;
+
+/**
+ * Created by mazhen'gui on 2017/12/14.
+ */
+public final class TreeBillboardApp extends NvSampleApp {
+    private static final int TREE_COUNT = 16;
+
+    // Meshes
+    private BoxMesh mBoxMesh;
+    private LandMesh mLandMesh;
+
+    // Programs
+    private final BaseShadingProgram.ShadingParams mLightParams = new BaseShadingProgram.ShadingParams();
+    private final FrameData mFrameData = new FrameData(1);
+    private BaseShadingProgram mLightInstanceProgram;
+    private GenerateShadowMapProgram mShadowmapProgram;
+
+    // Uniform buffers
+    private int mFrameBuffer;
+    private ByteBuffer mFrameMemory;
+
+    private int mTreeSpritesVB;
+    private int mTreeSpritesVBO;
+
+    // Textures
+    private int mGrassMapSRV;
+    private int mWavesMapSRV;
+    private int mBoxMapSRV;
+    private int mTreeTextureMapArraySRV;
+
+    // Internal variables
+    private final Matrix4f mProj = new Matrix4f();
+    private final Matrix4f mView = new Matrix4f();
+    private final Matrix4f mProjView = new Matrix4f();
+
+    @Override
+    protected void initRendering() {
+        mLightParams.lightAmbient.set(0.4f, 0.4f, 0.4f);
+        mLightParams.lightDiffuse.set(0.8f, 0.8f, 0.7f);
+        mLightParams.lightSpecular .set(0.8f, 0.8f, 0.7f);
+        mLightParams.lightPos .set(0.57735f, 0.57735f, -0.57735f, 0);
+        mLightParams.lightPos.normalise();
+        mLightParams.color.set(0.f,0.f,0.f,0.0f);
+
+        mLightParams.enableShadowMap = false;
+        mLightParams.enableReflection = false;
+        mLightParams.enableNormalMap = false;
+
+        buildFX();
+        buildGeometryBuffers();
+        loadTextures();
+    }
+
+    @Override
+    protected void reshape(int width, int height) {
+        Matrix4f.perspective((float)Math.toDegrees(0.25 * PI), (float)width/height, 1.0f, 1000.0f, mProj);
+        GLES20.glViewport(0,0, width, height);
+    }
+
+    private void setupBoxMat(){
+        mLightParams.materialAmbient  .set(0.5f, 0.5f, 0.5f);
+        mLightParams.materialDiffuse  .set(1.0f, 1.0f, 1.0f);
+        mLightParams.materialSpecular .set(0.4f, 0.4f, 0.4f, 16.0f);
+    }
+
+    private void setupLandMat(){
+        mLightParams.materialAmbient  .set(0.5f, 0.5f, 0.5f);
+        mLightParams.materialDiffuse  .set(1.0f, 1.0f, 1.0f);
+        mLightParams.materialSpecular .set(0.2f, 0.2f, 0.2f, 16.0f);
+    }
+
+    private void setupWaveMat(){
+        mLightParams.materialAmbient  .set(0.5f, 0.5f, 0.5f);
+        mLightParams.materialDiffuse  .set(1.0f, 1.0f, 1.0f);
+        mLightParams.materialSpecular .set(0.8f, 0.8f, 0.8f, 32.0f);
+    }
+
+    private void setupTreeMat(){
+        mLightParams.materialAmbient  .set(0.5f, 0.5f, 0.5f);
+        mLightParams.materialDiffuse  .set(1.0f, 1.0f, 1.0f);
+        mLightParams.materialSpecular .set(0.2f, 0.2f, 0.2f, 16.0f);
+    }
+
+    private void buildGeometryBuffers(){
+        RenderMesh.MeshParams params = new RenderMesh.MeshParams();
+        params.posAttribLoc = 0;
+        params.norAttribLoc = 2;
+        params.texAttribLoc = 1;
+
+        mBoxMesh = new BoxMesh();
+        mBoxMesh.initlize(params);
+
+        mLandMesh = new LandMesh();
+        mLandMesh.initlize(params);
+
+        // Create the uniform buffer
+        mFrameBuffer = GLES.glGenBuffers();
+        GLES20.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, mFrameBuffer);
+        GLES20.glBufferData(GLES30.GL_UNIFORM_BUFFER, FrameData.SIZE, null, GLES30.GL_DYNAMIC_DRAW);
+        GLES20.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, 0);
+
+        if(mFrameMemory == null)
+            mFrameMemory = BufferUtils.createByteBuffer(FrameData.SIZE);
+    }
+
+    private void buildTreeSpritesBuffer(){
+        final int mtPosition = 0;
+        final int mtSize = 1;
+        FloatBuffer v = BufferUtils.createFloatBuffer(TREE_COUNT * 5);
+        for(int i = 0; i < TREE_COUNT; ++i)
+        {
+            float x = NvUtils.random(-35.0f, 35.0f);
+            float z = NvUtils.random(-35.0f, 35.0f);
+            float y = mLandMesh.getHillHeight(x,z);
+
+            // Move tree slightly above land height.
+            y += 10.0f;
+
+//			v[i].Pos  = XMFLOAT3(x,y,z);
+//			v[i].Size = XMFLOAT2(24.0f, 24.0f);
+            v.put(x).put(y).put(z);  // position
+            v.put(24.0f).put(24.0f);  // size
+        }
+        v.flip();
+
+        mTreeSpritesVB = GLES.glGenBuffers();
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, mTreeSpritesVB);
+        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER,v.remaining() << 2,  v, GLES20.GL_STATIC_DRAW);
+
+        mTreeSpritesVBO = GLES.glGenVertexArrays();
+        GLES30.glBindVertexArray(mTreeSpritesVBO);
+        {
+            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, mTreeSpritesVB);
+            GLES20.glVertexAttribPointer(mtPosition, 3, GL11.GL_FLOAT, false, 5 * 4, 0);
+            GLES20.glVertexAttribPointer(mtSize, 2, GL11.GL_FLOAT, false, 5 * 4, 3 * 4);
+
+            GLES20.glEnableVertexAttribArray(mtPosition);
+            GLES20.glEnableVertexAttribArray(mtSize);
+        }
+        GLES30.glBindVertexArray(0);
+    }
+
+    private void buildFX(){
+        mLightInstanceProgram = new BaseShadingProgram(null);
+        int index = GLES30.glGetUniformBlockIndex(mLightInstanceProgram.getProgram(), "FrameData");
+        GLES30.glUniformBlockBinding(mLightInstanceProgram.getProgram(), index, 0);
+
+        mShadowmapProgram = new GenerateShadowMapProgram(null, true);
+        index = GLES30.glGetUniformBlockIndex(mShadowmapProgram.getProgram(), "FrameData");
+        GLES30.glUniformBlockBinding(mShadowmapProgram.getProgram(), index, 0);
+    }
+
+    private void loadTextures(){
+        mGrassMapSRV = NvImage.uploadTextureFromDDSFile("textures/grass.dds");
+        makeTextureProperties(false);
+        mWavesMapSRV = NvImage.uploadTextureFromDDSFile("textures/water2.dds");
+        makeTextureProperties(false);
+        mBoxMapSRV = NvImage.uploadTextureFromDDSFile("textures/WireFence.dds");
+        makeTextureProperties(false);
+
+        mTreeTextureMapArraySRV = GLES.glGenTextures();
+        GLES20.glBindTexture(GLES30.GL_TEXTURE_2D_ARRAY, mTreeTextureMapArraySRV);
+        GLES30.glTexStorage3D(GLES30.GL_TEXTURE_2D_ARRAY, 10, GLES30.GL_RGBA8, 512, 512, 4);
+        NvImage.setDXTExpansion(true);
+        NvImage.upperLeftOrigin(false);
+        for(int i = 0; i < 4; i++){
+            NvImage image = new NvImage();
+            image.loadImageFromFile(String.format("textures/tree%d.dds", i));
+
+            int w = image.getWidth();
+            int h = image.getHeight();
+            for (int l = 0; l < image.getMipLevels(); l++) {
+                if (image.isCompressed()) {
+                    ByteBuffer buffer = GLUtil.wrap(image.getLevel(l));
+                    GLES30.glCompressedTexSubImage3D(GLES30.GL_TEXTURE_2D_ARRAY, l, 0, 0, i, w, h, 1, image.getFormat(), buffer.remaining(), buffer);
+                } else {
+                    GLES30.glTexSubImage3D(GLES30.GL_TEXTURE_2D_ARRAY, l, 0, 0, i, w, h, 1, image.getFormat(), GL11.GL_UNSIGNED_BYTE, GLUtil.wrap(image.getLevel(l)));
+                }
+
+                w >>= 1;
+                h >>= 1;
+                w = (w != 0) ? w : 1;
+                h = (h != 0) ? h : 1;
+            }
+        }
+
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE);
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);
+    }
+
+    private void makeTextureProperties( boolean mipmap){
+        GLES20.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        GLES20.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, mipmap? GLES20.GL_LINEAR_MIPMAP_LINEAR: GL11.GL_LINEAR);
+        GLES20.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL11.GL_REPEAT);
+        GLES20.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT);
+    }
+}

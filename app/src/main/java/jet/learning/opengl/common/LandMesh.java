@@ -98,7 +98,7 @@ public class LandMesh implements RenderMesh{
         GLES30.glBindVertexArray(0);
     }
 
-    void getHillNormal(float x, float z, Vector3f n){
+    public void getHillNormal(float x, float z, Vector3f n){
         // n = (-df/dx, 1, -df/dz)
         n.set(
                 -0.03f*z*(float)Math.cos(0.1f*x) - 0.3f*(float)Math.cos(0.1f*z),
@@ -108,7 +108,7 @@ public class LandMesh implements RenderMesh{
         n.normalise();
     }
 
-    float getHillHeight(float x, float z){
+    public float getHillHeight(float x, float z){
         return 0.3f*( z* (float)Math.sin(0.1f*x) + x*(float)Math.cos(0.1f*z) );
     }
 }

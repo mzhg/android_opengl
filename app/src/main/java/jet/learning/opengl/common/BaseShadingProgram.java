@@ -15,6 +15,7 @@ public class BaseShadingProgram extends SimpleLightProgram {
     private int m_reflectionEnabled;
     private int m_materialReflectIdx;
     private int m_normalMapEnabled;
+    private int m_shadowMapEnabled;
 
     public BaseShadingProgram( NvGLSLProgram.LinkerTask task) {
         super(true, task);
@@ -22,6 +23,7 @@ public class BaseShadingProgram extends SimpleLightProgram {
         m_alphaClip = GLES20.glGetUniformLocation(getProgram(), "g_AlphaClip");
         m_reflectionEnabled = GLES20.glGetUniformLocation(getProgram(), "g_ReflectionEnabled");
         m_normalMapEnabled = GLES20.glGetUniformLocation(getProgram(), "g_NormalMapEnabled");
+        m_shadowMapEnabled = GLES20.glGetUniformLocation(getProgram(), "g_UseShadowMap");
 
         int reflectTex = GLES20.glGetUniformLocation(getProgram(), "g_ReflectTex");
         m_materialReflectIdx = GLES20.glGetUniformLocation(getProgram(), "g_MaterialReflect");
@@ -31,6 +33,10 @@ public class BaseShadingProgram extends SimpleLightProgram {
         int normalTex = GLES20.glGetUniformLocation(getProgram(), "g_NormalMap");
         assert (normalTex >=0);
         GLES20.glUniform1i(normalTex, 2);
+
+        int shadowMapTex = GLES20.glGetUniformLocation(getProgram(), "g_ShadowMap");
+        assert (shadowMapTex >= 0);
+        GLES20.glUniform1i(shadowMapTex, 3);
     }
 
     public void setAlphaClip(boolean flag){
@@ -51,11 +57,18 @@ public class BaseShadingProgram extends SimpleLightProgram {
         }
     }
 
+    public void setShadowMap(boolean flag){
+        if(m_shadowMapEnabled >= 0){
+            GLES20.glUniform1i(m_shadowMapEnabled, flag?1:0);
+        }
+    }
+
     public void setMaterialReflect(float x,float y, float z){
         if(m_materialReflectIdx >= 0){
             GLES20.glUniform3f(m_materialReflectIdx,x,y,z);
         }
     }
+
 
     public void setShadingParams(ShadingParams params) {
         super.setLightParams(params);
@@ -64,6 +77,7 @@ public class BaseShadingProgram extends SimpleLightProgram {
         setAlphaClip(params.alphaClip);
         setReflection(params.enableReflection);
         setNormalMap(params.enableNormalMap);
+        setShadowMap(params.enableShadowMap);
     }
 
     @Override
@@ -83,6 +97,7 @@ public class BaseShadingProgram extends SimpleLightProgram {
         public boolean alphaClip = false;
         public boolean enableReflection;
         public boolean enableNormalMap;
+        public boolean enableShadowMap;
         public final Vector3f materialReflect = new Vector3f();
     }
 }

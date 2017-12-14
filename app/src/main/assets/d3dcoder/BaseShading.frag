@@ -5,11 +5,12 @@ in vec3 m_PositionWS;
 in vec3 m_NormalWS;
 in vec3 m_TangentWS;
 in vec2 m_Texcoord;
+in vec4 m_ShadowPosH;
 
 uniform sampler2D g_InputTex;  // diffuse texture   slot 0
 uniform samplerCube g_ReflectTex;  // reflect texture  slot 1
 uniform sampler2D g_NormalMap;  // normal map slot 2
-//uniform sampler2DShadow g_ShadowMap;
+uniform sampler2DShadow g_ShadowMap;  // shadow map slot 3
 
 uniform vec4 g_LightPos;   // w==0, means light direction, must be normalized
 
@@ -27,15 +28,15 @@ uniform vec4 g_Color;
 uniform bool g_AlphaClip;
 uniform bool g_ReflectionEnabled;
 uniform bool g_NormalMapEnabled;
-//uniform bool g_UseShadowMap;
+uniform bool g_UseShadowMap;
 
 layout(location = 0) out vec4 Out_Color;
 
-vec4 lit(float n_l, float r_v, vec4 C)
+vec4 lit(float n_l, float r_v, vec4 C, float shadow)
 {
     vec3 color = g_LightAmbient * g_MaterialAmbient * C.rgb // ambient term
-                +g_LightDiffuse * C.rgb * g_MaterialDiffuse * max(n_l, 0.0)
-                +g_MaterialSpecular.rgb * g_LightSpecular * pow(max(r_v, 0.0), g_MaterialSpecular.a);
+                +g_LightDiffuse * C.rgb * g_MaterialDiffuse * max(n_l, 0.0) * shadow
+                +g_MaterialSpecular.rgb * g_LightSpecular * pow(max(r_v, 0.0), g_MaterialSpecular.a) * shadow;
 
     return vec4(color, C.a);
 }
@@ -103,7 +104,16 @@ void main()
     float n_l = dot(N,  L);
     float r_v = dot(R,  V);
 
-    Out_Color = lit(n_l, r_v, C);
+    float shadow = 1.0;
+    if(g_UseShadowMap && m_ShadowPosH.w > 0.0)
+    {
+        vec3 shadowProj = m_ShadowPosH.xyz/m_ShadowPosH.w;
+        shadowProj = shadowProj * 0.5 + 0.5;
+        shadowProj.z -= 0.001;  // avoid the self-shadow
+        shadow = texture(g_ShadowMap, shadowProj);
+    }
+
+    Out_Color = lit(n_l, r_v, C, shadow);
 
     if( g_ReflectionEnabled )
     {
@@ -111,4 +121,6 @@ void main()
         vec4 reflectionColor  = texture(g_ReflectTex, R);
         Out_Color.rgb += g_MaterialReflect * reflectionColor.rgb;
     }
+
+
 }
