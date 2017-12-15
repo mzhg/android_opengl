@@ -6,6 +6,7 @@ import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
 
+import org.lwjgl.util.vector.ReadableVector3f;
 import org.lwjgl.util.vector.Vector3f;
 
 import java.nio.FloatBuffer;
@@ -22,6 +23,9 @@ public class LandMesh implements RenderMesh{
     int mLandVBO;
 
     int mLandIndexCount;
+
+    final Vector3f min = new Vector3f();
+    final Vector3f max = new Vector3f();
     @Override
     public void dispose() {
         GLES.glDeleteBuffers(mLandVB);
@@ -38,6 +42,11 @@ public class LandMesh implements RenderMesh{
         geoGen.createGrid(160.0f, 160.0f, 50, 50, grid);
 
         mLandIndexCount = grid.getIndiceCount();
+
+        final float FLT_MAX = Float.MAX_VALUE;
+        min.set(+FLT_MAX,+FLT_MAX,+FLT_MAX);
+        max.set(-FLT_MAX,-FLT_MAX,-FLT_MAX);
+
         //
         // Extract the vertex elements we are interested and apply the height function to
         // each vertex.
@@ -53,6 +62,9 @@ public class LandMesh implements RenderMesh{
             vertices.put(n.x).put(n.y).put(n.z);
 
             vertices.put(p.texCX).put(p.texCY);
+
+            min.set(Math.min(min.x, p.positionX), Math.min(min.y, p.positionY), Math.min(min.z, p.positionZ));
+            max.set(Math.max(max.x, p.positionX), Math.max(max.y, p.positionY), Math.max(max.z, p.positionZ));
         }
 
         vertices.flip();
@@ -90,6 +102,9 @@ public class LandMesh implements RenderMesh{
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
+
+    public ReadableVector3f getMin() { return min;}
+    public ReadableVector3f getMax() { return max;}
 
     @Override
     public void draw() {

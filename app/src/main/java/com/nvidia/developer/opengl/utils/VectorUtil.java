@@ -4,18 +4,24 @@ import org.lwjgl.util.vector.Matrix2f;
 import org.lwjgl.util.vector.Matrix3f;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Quaternion;
+import org.lwjgl.util.vector.ReadableVector3f;
 import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
+import org.lwjgl.util.vector.WritableVector3f;
 
-@Deprecated
 public class VectorUtil {
 
+	@Deprecated
 	public static final Vector3f UNIT_X = new Vector3f(1, 0, 0);
+	@Deprecated
 	public static final Vector3f UNIT_Y = new Vector3f(0, 1, 0);
+	@Deprecated
 	public static final Vector3f UNIT_Z = new Vector3f(0, 0, 1);
+	@Deprecated
 	public static final Vector3f ZERO3 = new Vector3f(0, 0, 0);
 
+	@Deprecated
 	public static void store(Matrix4f m, float[][] mat) {
 		mat[0][0] = m.m00;
 		mat[0][1] = m.m01;
@@ -35,6 +41,7 @@ public class VectorUtil {
 		mat[3][3] = m.m33;
 	}
 
+	@Deprecated
 	public static void load(Matrix4f m, float[] buffer) {
 		m.m00 = buffer[0];
 		m.m01 = buffer[1];
@@ -54,6 +61,7 @@ public class VectorUtil {
 		m.m33 = buffer[15];
 	}
 
+	@Deprecated
 	public static final Vector3f transformVector3(Vector3f point,
 			Matrix4f transform, Vector3f out) {
 		if (out == null)
@@ -69,6 +77,7 @@ public class VectorUtil {
 		return out;
 	}
 
+	@Deprecated
 	public static final Vector3f transformNormal(Vector3f point,
 			Matrix4f transform, Vector3f out) {
 		if (out == null)
@@ -110,6 +119,7 @@ public class VectorUtil {
 		return out;
 	}
 
+	@Deprecated
 	public static final Matrix4f lookAt(Vector3f eye, Vector3f center,
 			Vector3f pUp, Matrix4f out) {
 		if (out == null) {
@@ -148,6 +158,7 @@ public class VectorUtil {
 		return out;
 	}
 
+	@Deprecated
 	public static final Matrix4f perspective(float fov, float aspect,
 			float zNear, float zFar, Matrix4f out) {
 		float r = (float) Math.toRadians(fov / 2);
@@ -185,6 +196,7 @@ public class VectorUtil {
 		return frustum_inverse(-x, x, -y, y, zNear, zFar,out);
 	}
 
+
 	public static final Matrix4f frustum_inverse(float left, float right,
 			float bottom, float top, float zNear, float zFar, Matrix4f out) {
 		if (out == null)
@@ -207,6 +219,7 @@ public class VectorUtil {
 		return out;
 	}
 
+	@Deprecated
 	public static final Matrix4f ortho(float left, float right, float bottom,
 			float top, float near, float far, Matrix4f out) {
 		float tx = -((right + left) / (right - left));
@@ -228,6 +241,7 @@ public class VectorUtil {
 		return out;
 	}
 
+	@Deprecated
 	public static final Matrix4f lookAt(float eyex, float eyey, float eyez,
 			float centerx, float centery, float centerz, float upx, float upy,
 			float upz, Matrix4f out) {
@@ -293,7 +307,8 @@ public class VectorUtil {
 
 		return out;
 	}
-	
+
+	@Deprecated
 	public static final Vector3f transformCoord(Matrix4f m, Vector3f v, Vector3f out){
 		if(out == null)
 			out = new Vector3f();
@@ -349,6 +364,7 @@ public class VectorUtil {
 	    return frustum(xmin, xmax, ymin, ymax, n, f, out);
 	}
 
+	@Deprecated
 	public static final Matrix4f frustum(float left, float right, float bottom,
 			float top, float znear, float zfar, Matrix4f out) {
 		float n2 = 2 * znear;
@@ -472,6 +488,7 @@ public class VectorUtil {
 		return out;
 	}
 
+	@Deprecated
 	public static Matrix4f toMatrix(Quaternion q, Matrix4f mat) {
 		if (mat == null)
 			mat = new Matrix4f();
@@ -507,6 +524,7 @@ public class VectorUtil {
 		return mat;
 	}
 
+	@Deprecated
 	public static Matrix3f toMatrix(Quaternion q, Matrix3f mat) {
 		if (mat == null)
 			mat = new Matrix3f();
@@ -742,6 +760,30 @@ public class VectorUtil {
 		if(yaw != 0)
 			result.rotate(yaw, UNIT_Y);
 		
+		return result;
+	}
+
+	public static<T extends WritableVector3f> T min(ReadableVector3f a, ReadableVector3f b, T result){
+		if(result == null)
+			result = (T) new Vector3f();
+
+		result.set( Math.min(a.getX(), b.getX()),
+				Math.min(a.getY(), b.getY()),
+				Math.min(a.getZ(), b.getZ())
+		);
+
+		return result;
+	}
+
+	public static<T extends WritableVector3f> T max(ReadableVector3f a, ReadableVector3f b, T result){
+		if(result == null)
+			result = (T) new Vector3f();
+
+		result.set( Math.max(a.getX(), b.getX()),
+				Math.max(a.getY(), b.getY()),
+				Math.max(a.getZ(), b.getZ())
+		);
+
 		return result;
 	}
 }

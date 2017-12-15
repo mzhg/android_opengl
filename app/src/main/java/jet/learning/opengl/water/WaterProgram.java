@@ -13,7 +13,7 @@ import jet.learning.opengl.common.SimpleOpenGLProgram;
  * Created by mazhen'gui on 2017/3/21.
  */
 
-public class WaterProgram extends SimpleOpenGLProgram{
+final class WaterProgram extends SimpleOpenGLProgram{
     private int attribPos;
     private int mvpIndex = -1;
     private int lightPosIndex = -1;

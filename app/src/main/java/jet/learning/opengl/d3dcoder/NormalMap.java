@@ -142,8 +142,6 @@ public final class NormalMap extends NvSampleApp {
         }
 
         m_transformer.getModelViewMat(mView);
-
-//        Matrix4f.lookAt(2.5f,0,0, 0,0,0, 0,1,0, mView);
         Matrix4f.mul(mProj, mView, mProjView);
         mView.invert();
         Matrix4f.transformVector(mView, Vector3f.ZERO, mLightParams.eyePos);

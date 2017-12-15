@@ -104,7 +104,7 @@ public class WaterMesh implements RenderMesh {
 
         waterVBO = GLES.glGenBuffers();
         int WMRP1 = WMR + 1;
-        FloatBuffer Vertices = BufferUtils.createFloatBuffer(WMRP1 * WMRP1 * 3);
+        FloatBuffer Vertices = BufferUtils.createFloatBuffer(WMRP1 * WMRP1 * 5);
 
         float WMSDWMR = 2.0f / WMR;
 
@@ -113,6 +113,10 @@ public class WaterMesh implements RenderMesh {
                 Vertices.put(x * WMSDWMR - 1.0f);
                 Vertices.put(0.0f);
                 Vertices.put(1.0f - y * WMSDWMR);
+
+                float u = (float)x / WMR;
+                float v = (float)y / WMR;
+                Vertices.put(u).put(v);   // texture coords
             }
         }
 
@@ -221,12 +225,19 @@ public class WaterMesh implements RenderMesh {
 
     @Override
     public void draw() {
+        final int stride = 5 * 4;
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, waterVBO);
-        GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, waterIBO);
         GLES30.glEnableVertexAttribArray(mfxPosition);
-        GLES20.glVertexAttribPointer(mfxPosition, 3, GL11.GL_FLOAT, false, 0, 0);
+        GLES20.glVertexAttribPointer(mfxPosition, 3, GL11.GL_FLOAT, false, stride, 0);
+
+        GLES30.glEnableVertexAttribArray(mfxTex);
+        GLES20.glVertexAttribPointer(mfxTex, 2, GL11.GL_FLOAT, false, stride, 3 * 4);
+
+        GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, waterIBO);
         GLES20.glDrawElements(GL11.GL_TRIANGLES, quadsVerticesCount, GLES20.GL_UNSIGNED_SHORT, 0);
         GLES20.glDisableVertexAttribArray(mfxPosition);
+        GLES20.glDisableVertexAttribArray(mfxTex);
+
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, 0);
     }

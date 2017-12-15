@@ -6,11 +6,14 @@ import android.opengl.GLES30;
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
-import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.NvImage;
+import com.nvidia.developer.opengl.utils.NvPackedColor;
 import com.nvidia.developer.opengl.utils.NvUtils;
 
 import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.ReadableVector3f;
+import org.lwjgl.util.vector.Vector2f;
+import org.lwjgl.util.vector.Vector3f;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -23,6 +26,8 @@ import jet.learning.opengl.common.FrameData;
 import jet.learning.opengl.common.GenerateShadowMapProgram;
 import jet.learning.opengl.common.LandMesh;
 import jet.learning.opengl.common.RenderMesh;
+import jet.learning.opengl.common.WaterRenderProgram;
+import jet.learning.opengl.water.WaterMesh;
 
 /**
  * Created by mazhen'gui on 2017/12/14.
@@ -33,12 +38,14 @@ public final class TreeBillboardApp extends NvSampleApp {
     // Meshes
     private BoxMesh mBoxMesh;
     private LandMesh mLandMesh;
+    private WaterMesh mWaterMesh;
 
     // Programs
     private final BaseShadingProgram.ShadingParams mLightParams = new BaseShadingProgram.ShadingParams();
     private final FrameData mFrameData = new FrameData(1);
     private BaseShadingProgram mLightInstanceProgram;
     private GenerateShadowMapProgram mShadowmapProgram;
+    private WaterRenderProgram mWaterRenderProgram;
 
     // Uniform buffers
     private int mFrameBuffer;
@@ -58,6 +65,12 @@ public final class TreeBillboardApp extends NvSampleApp {
     private final Matrix4f mView = new Matrix4f();
     private final Matrix4f mProjView = new Matrix4f();
 
+    private final Matrix4f mGrassTexTransform = new Matrix4f();
+    private final Matrix4f mWaterTexTransform = new Matrix4f();
+    private final Matrix4f mWavesWorld = new Matrix4f();
+    private final Matrix4f mBoxWorld = new Matrix4f();
+    private final Vector2f mWaterTexOffset = new Vector2f();
+
     @Override
     protected void initRendering() {
         mLightParams.lightAmbient.set(0.4f, 0.4f, 0.4f);
@@ -71,9 +84,133 @@ public final class TreeBillboardApp extends NvSampleApp {
         mLightParams.enableReflection = false;
         mLightParams.enableNormalMap = false;
 
+        mBoxWorld.translate(8.0f, 5.0f, -15.0f);
+        mBoxWorld.scale(15);
+
+        mGrassTexTransform.scale(5.0f, 5.0f, 0.0f);
+
         buildFX();
         buildGeometryBuffers();
         loadTextures();
+
+        ReadableVector3f color = NvPackedColor.SILVER;
+        GLES20.glClearColor(color.getX(), color.getY(), color.getZ(), 1);
+        GLES20.glClearDepthf(1.0f);
+
+        float mTheta = 1.3f * PI;
+        float mPhi = 0.4f * PI;
+        float mRadius = 80.0f;
+        float x = (float) (mRadius*Math.sin(mPhi)*Math.cos(mTheta));
+        float z = (float) (mRadius*Math.sin(mPhi)*Math.sin(mTheta));
+        float y = (float) (mRadius*Math.cos(mPhi));
+
+        initCamera(0, new Vector3f(-x,y,-z), Vector3f.ZERO);
+    }
+
+    @Override
+    protected void draw() {
+        update(getFrameDeltaTime());
+
+        m_transformer.getModelViewMat(mView);
+        Matrix4f.mul(mProj, mView, mProjView);
+        mView.invert();
+        Matrix4f.transformVector(mView, Vector3f.ZERO, mLightParams.eyePos);
+
+        drawScene();
+    }
+
+    private void update(float dt){
+        // Translate texture over time.
+        mWaterTexOffset.y += 0.05f*dt;
+        mWaterTexOffset.x += 0.1f*dt;
+        mWaterTexTransform.setIdentity();
+        mWaterTexTransform.translate(mWaterTexOffset);
+        mWaterTexTransform.scale(5.0f, 5.0f, 1.0f);
+
+        mWaterMesh.update(dt);
+    }
+
+    private void drawScene(){
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        GLES20.glViewport(0,0,getWidth(), getHeight());
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+        GLES20.glDepthMask(true);
+
+        mLightInstanceProgram.enable();
+        mFrameData.viewProj.load(mProjView);
+
+        { // Draw the box.
+            mLightParams.enableNormalMap = false;
+            mLightParams.enableShadowMap= false;
+            mLightParams.enableReflection = false;
+            mLightParams.alphaClip = true;
+
+            GLES20.glBindTexture(GL11.GL_TEXTURE_2D, mBoxMapSRV);
+
+            mFrameData.texMat.setIdentity();
+            mFrameData.setInstanceCount(1);
+            buildFrameInstance(0, mBoxWorld);
+            setupBoxMat();
+            updateAndBindFramebuffer();
+            mLightInstanceProgram.setShadingParams(mLightParams);
+            mBoxMesh.draw();
+
+            GLES.checkGLError();
+        }
+
+        { // Draw the land
+            mLightParams.enableNormalMap = false;
+            mLightParams.enableShadowMap= false;
+            mLightParams.enableReflection = false;
+            mLightParams.alphaClip = false;
+
+            GLES20.glBindTexture(GL11.GL_TEXTURE_2D, mGrassMapSRV);
+
+            mFrameData.texMat.load(mGrassTexTransform);
+            mFrameData.setInstanceCount(1);
+            buildFrameInstance(0, Matrix4f.IDENTITY);
+            setupLandMat();
+            updateAndBindFramebuffer();
+            mLightInstanceProgram.setShadingParams(mLightParams);
+            mLandMesh.draw();
+
+            GLES.checkGLError();
+        }
+
+        {// Draw the waves
+            mLightParams.enableNormalMap = false;
+            mLightParams.enableShadowMap= false;
+            mLightParams.enableReflection = false;
+            mLightParams.alphaClip = false;
+
+            GLES20.glBindTexture(GL11.GL_TEXTURE_2D, mWavesMapSRV);
+            GLES20.glEnable(GL11.GL_BLEND);
+            GLES20.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
+
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mWaterMesh.getWaterNormalMap());
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mWaterMesh.getWaterHeightMap());
+
+            mFrameData.texMat.load(mWaterTexTransform);
+            mFrameData.setInstanceCount(1);
+            buildFrameInstance(0, mWavesWorld);
+            setupWaveMat();
+            updateAndBindFramebuffer();
+            mWaterRenderProgram.enable();
+            mWaterRenderProgram.setLightParams(mLightParams);
+            mWaterMesh.draw();
+
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            GLES.checkGLError();
+        }
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
     }
 
     @Override
@@ -82,28 +219,44 @@ public final class TreeBillboardApp extends NvSampleApp {
         GLES20.glViewport(0,0, width, height);
     }
 
+    private void buildFrameInstance(int idx, Matrix4f world){
+        mFrameData.models[idx].load(world);
+        Matrix4f normal = mFrameData.models[idx];
+        normal.load(world);
+    }
+
+    private void updateAndBindFramebuffer(){
+        GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 0, mFrameBuffer);
+        mFrameData.store(mFrameMemory).flip();
+        GLES20.glBufferSubData(GLES30.GL_UNIFORM_BUFFER, 0, mFrameMemory.remaining(), mFrameMemory);
+    }
+
     private void setupBoxMat(){
         mLightParams.materialAmbient  .set(0.5f, 0.5f, 0.5f);
         mLightParams.materialDiffuse  .set(1.0f, 1.0f, 1.0f);
         mLightParams.materialSpecular .set(0.4f, 0.4f, 0.4f, 16.0f);
+        mLightParams.color            .set(0,0,0,0);
     }
 
     private void setupLandMat(){
         mLightParams.materialAmbient  .set(0.5f, 0.5f, 0.5f);
         mLightParams.materialDiffuse  .set(1.0f, 1.0f, 1.0f);
         mLightParams.materialSpecular .set(0.2f, 0.2f, 0.2f, 16.0f);
+        mLightParams.color            .set(0,0,0,0);
     }
 
     private void setupWaveMat(){
         mLightParams.materialAmbient  .set(0.5f, 0.5f, 0.5f);
         mLightParams.materialDiffuse  .set(1.0f, 1.0f, 1.0f);
         mLightParams.materialSpecular .set(0.8f, 0.8f, 0.8f, 32.0f);
+        mLightParams.color            .set(1,1,1,0.5f);
     }
 
     private void setupTreeMat(){
         mLightParams.materialAmbient  .set(0.5f, 0.5f, 0.5f);
         mLightParams.materialDiffuse  .set(1.0f, 1.0f, 1.0f);
         mLightParams.materialSpecular .set(0.2f, 0.2f, 0.2f, 16.0f);
+        mLightParams.color            .set(0,0,0,0);
     }
 
     private void buildGeometryBuffers(){
@@ -118,6 +271,9 @@ public final class TreeBillboardApp extends NvSampleApp {
         mLandMesh = new LandMesh();
         mLandMesh.initlize(params);
 
+        mWaterMesh = new WaterMesh();
+        mWaterMesh.initlize(params);
+
         // Create the uniform buffer
         mFrameBuffer = GLES.glGenBuffers();
         GLES20.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, mFrameBuffer);
@@ -126,6 +282,9 @@ public final class TreeBillboardApp extends NvSampleApp {
 
         if(mFrameMemory == null)
             mFrameMemory = BufferUtils.createByteBuffer(FrameData.SIZE);
+
+        ReadableVector3f max = mLandMesh.getMax();
+        mWavesWorld.scale(max.getX(), 1.0f, max.getZ());
     }
 
     private void buildTreeSpritesBuffer(){
@@ -173,6 +332,10 @@ public final class TreeBillboardApp extends NvSampleApp {
         mShadowmapProgram = new GenerateShadowMapProgram(null, true);
         index = GLES30.glGetUniformBlockIndex(mShadowmapProgram.getProgram(), "FrameData");
         GLES30.glUniformBlockBinding(mShadowmapProgram.getProgram(), index, 0);
+
+        mWaterRenderProgram = new WaterRenderProgram(null);
+        index = GLES30.glGetUniformBlockIndex(mWaterRenderProgram.getProgram(), "FrameData");
+        GLES30.glUniformBlockBinding(mWaterRenderProgram.getProgram(), index, 0);
     }
 
     private void loadTextures(){
@@ -183,7 +346,7 @@ public final class TreeBillboardApp extends NvSampleApp {
         mBoxMapSRV = NvImage.uploadTextureFromDDSFile("textures/WireFence.dds");
         makeTextureProperties(false);
 
-        mTreeTextureMapArraySRV = GLES.glGenTextures();
+        /*mTreeTextureMapArraySRV = GLES.glGenTextures();
         GLES20.glBindTexture(GLES30.GL_TEXTURE_2D_ARRAY, mTreeTextureMapArraySRV);
         GLES30.glTexStorage3D(GLES30.GL_TEXTURE_2D_ARRAY, 10, GLES30.GL_RGBA8, 512, 512, 4);
         NvImage.setDXTExpansion(true);
@@ -212,7 +375,7 @@ public final class TreeBillboardApp extends NvSampleApp {
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE);
-        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D_ARRAY, GL11.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);*/
     }
 
     private void makeTextureProperties( boolean mipmap){

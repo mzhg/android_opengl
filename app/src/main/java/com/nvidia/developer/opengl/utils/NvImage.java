@@ -1539,7 +1539,7 @@ public class NvImage {
                         if (upperLeftOrigin && !i._cubeMap)
                             i.flipSurface( pixels, w, h, d);
 
-                        if (isES)
+                        if (isES || i._format == GL_BGR)
                             i.componentSwapSurface(pixels, w, h, d);
 
                         // do we need to expand DXT?
