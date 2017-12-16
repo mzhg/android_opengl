@@ -26,6 +26,7 @@ import jet.learning.opengl.common.FrameData;
 import jet.learning.opengl.common.GenerateShadowMapProgram;
 import jet.learning.opengl.common.LandMesh;
 import jet.learning.opengl.common.RenderMesh;
+import jet.learning.opengl.common.WaterMesh2;
 import jet.learning.opengl.common.WaterRenderProgram;
 import jet.learning.opengl.water.WaterMesh;
 
@@ -39,6 +40,8 @@ public final class TreeBillboardApp extends NvSampleApp {
     private BoxMesh mBoxMesh;
     private LandMesh mLandMesh;
     private WaterMesh mWaterMesh;
+    private WaterMesh2 mWaterMesh2;
+    private WaterMesh2.WaveSettings mWaveSettings = new WaterMesh2.WaveSettings();
 
     // Programs
     private final BaseShadingProgram.ShadingParams mLightParams = new BaseShadingProgram.ShadingParams();
@@ -70,6 +73,7 @@ public final class TreeBillboardApp extends NvSampleApp {
     private final Matrix4f mWavesWorld = new Matrix4f();
     private final Matrix4f mBoxWorld = new Matrix4f();
     private final Vector2f mWaterTexOffset = new Vector2f();
+    private final boolean mUseWave2 = true;
 
     @Override
     protected void initRendering() {
@@ -127,7 +131,11 @@ public final class TreeBillboardApp extends NvSampleApp {
         mWaterTexTransform.translate(mWaterTexOffset);
         mWaterTexTransform.scale(5.0f, 5.0f, 1.0f);
 
-        mWaterMesh.update(dt);
+        if(mUseWave2){
+            mWaterMesh2.update(mWaveSettings, dt);
+        }else {
+            mWaterMesh.update(dt);
+        }
     }
 
     private void drawScene(){
@@ -190,9 +198,9 @@ public final class TreeBillboardApp extends NvSampleApp {
             GLES20.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
 
             GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mWaterMesh.getWaterNormalMap());
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mUseWave2? mWaterMesh2.getGradientMap() : mWaterMesh.getWaterNormalMap());
             GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mWaterMesh.getWaterHeightMap());
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mUseWave2? mWaterMesh2.getHeightMap() : mWaterMesh.getWaterHeightMap());
 
             mFrameData.texMat.load(mWaterTexTransform);
             mFrameData.setInstanceCount(1);
@@ -201,7 +209,11 @@ public final class TreeBillboardApp extends NvSampleApp {
             updateAndBindFramebuffer();
             mWaterRenderProgram.enable();
             mWaterRenderProgram.setLightParams(mLightParams);
-            mWaterMesh.draw();
+            if(mUseWave2){
+                mWaterMesh2.draw();
+            }else {
+                mWaterMesh.draw();
+            }
 
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
             GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
@@ -271,8 +283,13 @@ public final class TreeBillboardApp extends NvSampleApp {
         mLandMesh = new LandMesh();
         mLandMesh.initlize(params);
 
-        mWaterMesh = new WaterMesh();
-        mWaterMesh.initlize(params);
+        if(!mUseWave2) {
+            mWaterMesh = new WaterMesh();
+            mWaterMesh.initlize(params);
+        }else{
+            mWaterMesh2 = new WaterMesh2(194, 194);
+            mWaterMesh2.initlize(params);
+        }
 
         // Create the uniform buffer
         mFrameBuffer = GLES.glGenBuffers();
@@ -333,7 +350,7 @@ public final class TreeBillboardApp extends NvSampleApp {
         index = GLES30.glGetUniformBlockIndex(mShadowmapProgram.getProgram(), "FrameData");
         GLES30.glUniformBlockBinding(mShadowmapProgram.getProgram(), index, 0);
 
-        mWaterRenderProgram = new WaterRenderProgram(null);
+        mWaterRenderProgram = new WaterRenderProgram(mUseWave2);
         index = GLES30.glGetUniformBlockIndex(mWaterRenderProgram.getProgram(), "FrameData");
         GLES30.glUniformBlockBinding(mWaterRenderProgram.getProgram(), index, 0);
     }

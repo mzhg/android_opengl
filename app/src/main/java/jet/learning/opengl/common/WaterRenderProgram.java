@@ -2,18 +2,24 @@ package jet.learning.opengl.common;
 
 import android.opengl.GLES20;
 
-import com.nvidia.developer.opengl.utils.NvGLSLProgram;
-
 /**
  * Created by mazhen'gui on 2017/12/15.
  */
 public class WaterRenderProgram extends SimpleLightProgram {
-    public WaterRenderProgram(NvGLSLProgram.LinkerTask task) {
-        super(true, task);
+    private boolean mUseGraident;
+    public WaterRenderProgram(boolean useGradient) {
+        super(true, null);
+
+        mUseGraident = useGradient;
 
         int normalTex = GLES20.glGetUniformLocation(getProgram(), "g_WaterNormalMap");
-        assert (normalTex >=0);
-        GLES20.glUniform1i(normalTex, 1);
+        if(normalTex >= 0)
+            GLES20.glUniform1i(normalTex, 1);
+
+
+        int gradientTex = GLES20.glGetUniformLocation(getProgram(), "g_WaterGradientMap");
+        if(gradientTex >= 0)
+            GLES20.glUniform1i(gradientTex, 1);
 
         int heightMapTex = GLES20.glGetUniformLocation(getProgram(), "g_WaterHeightMap");
         assert (heightMapTex >= 0);
@@ -28,7 +34,7 @@ public class WaterRenderProgram extends SimpleLightProgram {
     @Override
     protected String getVertexShaderFile(boolean uniform) {
         if (uniform)
-            return "d3dcoder/WaterVS.vert";
+            return mUseGraident ? "d3dcoder/WaterGradientVS.vert" : "d3dcoder/WaterVS.vert";
         else
             throw new UnsupportedOperationException();
     }

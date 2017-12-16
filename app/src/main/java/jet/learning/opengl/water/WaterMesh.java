@@ -75,7 +75,6 @@ public class WaterMesh implements RenderMesh {
             GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE);
             GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);
             GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RG16F, WHMR, WHMR, 0, GLES30.GL_RG, GLES30.GL_FLOAT, null);
-            GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D);
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
         }
         GLES.checkGLError("COpenGLRenderer::Init waterHeightMaps!");

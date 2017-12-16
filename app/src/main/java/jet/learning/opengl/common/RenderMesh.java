@@ -12,8 +12,6 @@ public interface RenderMesh extends NvDisposeable{
 
     void draw();
 
-    default void update(float dt){}
-
     public static class MeshParams{
         public int posAttribLoc;
         public int norAttribLoc;

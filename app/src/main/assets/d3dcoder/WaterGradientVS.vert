@@ -17,7 +17,7 @@ out vec2 m_Texcoord;
 out vec4 m_ShadowPosH;
 
 uniform sampler2D g_WaterHeightMap;
-uniform sampler2D g_WaterNormalMap;
+uniform sampler2D g_WaterGradientMap;
 
 void main()
 {
@@ -28,8 +28,8 @@ void main()
     gl_Position = g_ViewProj * vec4(m_PositionWS, 1);
     m_Texcoord = vec2(g_TexTransform * vec4(In_Texcoord, 0, 1));
 
-    vec3 Normal = texture(g_WaterNormalMap, In_Texcoord).rgb;
-    vec3 N = normalize(Normal * 2. - 1.);
+    vec2 vGradient = texture(g_WaterGradientMap, In_Texcoord).xy;
+    vec3 N = normalize(vec3(vGradient.x,1, vGradient.y));
     m_NormalWS = mat3(g_NormalMats[instanceID]) * N;
 
     m_ShadowPosH = g_LightViewProj * vec4(m_PositionWS, 1);

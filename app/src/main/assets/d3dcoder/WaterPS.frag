@@ -2,8 +2,8 @@
 precision mediump float;
 
 in vec3 m_PositionWS;
-in vec2 m_Texcoord0;
-in vec2 m_Texcoord1;
+in vec3 m_NormalWS;
+in vec2 m_Texcoord;
 in vec4 m_ShadowPosH;
 
 uniform vec4 g_LightPos;   // w==0, means light direction, must be normalized
@@ -19,7 +19,6 @@ uniform vec3 g_MaterialReflect;
 uniform vec3 g_EyePos;
 uniform vec4 g_Color;
 
-uniform sampler2D g_WaterNormalMap;
 uniform sampler2D g_InputTex;
 
 layout(location = 0) out vec4 Out_Color;
@@ -35,7 +34,7 @@ vec4 lit(float n_l, float r_v, vec4 C)
 
 void main()
 {
-    vec4 C = texture(g_InputTex, m_Texcoord0)*g_Color;
+    vec4 C = texture(g_InputTex, m_Texcoord)*g_Color;
 
     vec3 L;  // light direction
     if(g_LightPos.w == 0.0)
@@ -47,9 +46,7 @@ void main()
         L = normalize(g_LightPos.xyz-m_PositionWS);
     }
 
-    vec3 Normal = texture(g_WaterNormalMap, m_Texcoord1).rgb;
-    vec3 N = normalize(Normal * 2. - 1.);
-
+    vec3 N = normalize(m_NormalWS);
     vec3 R = reflect(-L, N);
     vec3 V = normalize(g_EyePos - m_PositionWS);
 
