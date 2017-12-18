@@ -1,0 +1,30 @@
+#version 320 es
+
+layout( triangles )in;
+layout( line_strip, max_vertices = 6) out;
+
+in gl_PerVertex {
+vec4 gl_Position;
+}gl_in[];
+
+out gl_PerVertex{
+vec4 gl_Position;
+};
+
+void EmitLine(vec4 a, vec4 b)
+{
+    gl_Position = a;
+    EmitVertex();
+
+    gl_Position = b;
+    EmitVertex();
+
+    EndPrimitive();
+}
+
+void main()
+{
+    EmitLine(gl_in[0].gl_Position, gl_in[1].gl_Position);
+    EmitLine(gl_in[0].gl_Position, gl_in[2].gl_Position);
+    EmitLine(gl_in[1].gl_Position, gl_in[2].gl_Position);
+}

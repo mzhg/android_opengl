@@ -73,6 +73,30 @@
         </activity>
 
         <activity
+            android:name="jet.learning.opengl.android.base.OpenGLES31ExampleActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait"
+            android:label="OpenGL ES 3.1 Examples" >
+            <meta-data android:name="BuildVersion" android:value="21"></meta-data>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.action.sample" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.android.base.OpenGLES32ExampleActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait"
+            android:label="OpenGL ES 3.2 Examples" >
+            <meta-data android:name="BuildVersion" android:value="24"></meta-data>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.action.sample" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name="jet.learning.opengl.android.base.RenderscriptExampleActivity"
             android:configChanges="keyboardHidden|orientation"
             android:screenOrientation="portrait"
@@ -157,6 +181,28 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.DigitClock"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="DigitClock" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es2" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.samples.TessellationPatterns"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="Tessellation Patterns" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es32" />
             </intent-filter>
         </activity>
 

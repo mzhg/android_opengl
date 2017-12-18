@@ -23,7 +23,7 @@ void main()
 {
     int instanceID = gl_InstanceID;
     m_PositionWS = (g_Models[instanceID] * In_Position).xyz;
-    m_PositionWS.y += texture(g_WaterHeightMap, In_Texcoord).g;
+    m_PositionWS.y += texture(g_WaterHeightMap, In_Texcoord).y;
 
     gl_Position = g_ViewProj * vec4(m_PositionWS, 1);
     m_Texcoord = vec2(g_TexTransform * vec4(In_Texcoord, 0, 1));

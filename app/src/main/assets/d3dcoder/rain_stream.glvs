@@ -1,4 +1,4 @@
-#version 400 core
+#version 310 es
 
 layout (location  = 0) in vec3 InitialPosW;
 layout (location  = 1) in vec3 InitialVelW;
@@ -12,7 +12,7 @@ out Particle
    vec3 InitialVelW;// : VELOCITY;
    vec2 SizeW;//       : SIZE;
    float Age;//        : AGE;
-	uint Type;//       : TYPE;
+   uint Type;//       : TYPE;
 }vout;
 
 void main()

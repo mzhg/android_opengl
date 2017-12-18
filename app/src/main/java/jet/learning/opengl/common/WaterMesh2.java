@@ -17,7 +17,6 @@ import javax.microedition.khronos.opengles.GL11;
 /**
  * Created by mazhen'gui on 2017/12/16.
  */
-
 public class WaterMesh2 implements RenderMesh {
     //handles to the water's XZ VBO and Index Buffers (static and donot change)
     private int mWaterXZVBO, mWaterIBO;
@@ -206,6 +205,8 @@ public class WaterMesh2 implements RenderMesh {
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, mWaterIBO);
         GLES.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, GLUtil.wrap(indices), GLES20.GL_STATIC_DRAW);
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        GLES.checkGLError();
     }
 
     // internal variables
@@ -221,6 +222,7 @@ public class WaterMesh2 implements RenderMesh {
         final int source = mCursor;
         final int destion = 1-mCursor;
 
+        boolean addDisturbance = false;
         // add rain
         if (settings.addRain)
         {
@@ -231,6 +233,8 @@ public class WaterMesh2 implements RenderMesh {
                     mRainFrame = 0;
                     mDisturbance.set(NvUtils.random(-1.0f, 1.0f), NvUtils.random(-1.0f, 1.0f),
                             settings.size, NvUtils.random(-settings.strength, settings.strength));
+
+                    addDisturbance = true;
                 }
             }
         }
@@ -238,13 +242,13 @@ public class WaterMesh2 implements RenderMesh {
         point.set(mDisturbance.x, 0.0f, mDisturbance.y);
 
         // compute disturbance for each wave
-        if (mapPointXZToGridPos(point, gridPos))
+        if (addDisturbance && mapPointXZToGridPos(point, gridPos))
         {
             float mWaveScale = 1.0f;
             disturbance.set(gridPos.x, gridPos.y, settings.size * mWaveScale, settings.strength * mWaveScale);
         }
 
-
+        GLES.checkGLError();
         saveStates();
 
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFBO);
@@ -257,12 +261,13 @@ public class WaterMesh2 implements RenderMesh {
             mUpdateHeightMapProgram.setUniform1f("Damping", settings.damping);
             mUpdateHeightMapProgram.setUniform4f("Disturbance", disturbance.x, disturbance.y, disturbance.z, disturbance.w);
             mUpdateHeightMapProgram.setUniform1i("GridSize", mWidth);
-            mUpdateHeightMapProgram.setUniform1f("DeltaTime", dt);
+            mUpdateHeightMapProgram.setUniform1f("DeltaTime", settings.speed);
 
             GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, mHeightMaps[destion], 0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mHeightMaps[source]);
 
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
+            GLES.checkGLError();
         }
 
         { // update the gradient map
@@ -273,13 +278,16 @@ public class WaterMesh2 implements RenderMesh {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mHeightMaps[destion]);
 
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
+            GLES.checkGLError();
         }
 
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
         restoreStates();
         mDisturbance.set(0,0,0,0);
+        disturbance.set(0,0,0,0);
 
         mCursor = 1- mCursor;
+        GLES.checkGLError();
     }
 
     public int getHeightMap() { return mHeightMaps[mCursor];}
@@ -327,7 +335,7 @@ public class WaterMesh2 implements RenderMesh {
     }
 
     private void restoreStates(){
-        GLES20.glBindRenderbuffer(GLES20.GL_FRAMEBUFFER, mOldFBO);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mOldFBO);
         GLES20.glViewport(mOldViewport[0], mOldViewport[1], mOldViewport[2], mOldViewport[3]);
     }
 
@@ -335,9 +343,10 @@ public class WaterMesh2 implements RenderMesh {
         public boolean      animation = true;
         public boolean		addRain = true;
         public int 		    frequency = 5;
-        public float		strength = 1.0f;
+        public float		strength = 5.0f;
         public float		size = 8.0f;
         public float		damping = 0.99f;
+        public float        speed = 1.0f;
 
         public void set(WaveSettings settings){
             addRain = settings.addRain;

@@ -26,6 +26,8 @@ import jet.learning.opengl.common.FrameData;
 import jet.learning.opengl.common.GenerateShadowMapProgram;
 import jet.learning.opengl.common.LandMesh;
 import jet.learning.opengl.common.RenderMesh;
+import jet.learning.opengl.common.SimpleLightProgram;
+import jet.learning.opengl.common.WaterGradientRenderProgram;
 import jet.learning.opengl.common.WaterMesh2;
 import jet.learning.opengl.common.WaterRenderProgram;
 import jet.learning.opengl.water.WaterMesh;
@@ -48,7 +50,7 @@ public final class TreeBillboardApp extends NvSampleApp {
     private final FrameData mFrameData = new FrameData(1);
     private BaseShadingProgram mLightInstanceProgram;
     private GenerateShadowMapProgram mShadowmapProgram;
-    private WaterRenderProgram mWaterRenderProgram;
+    private SimpleLightProgram mWaterRenderProgram;
 
     // Uniform buffers
     private int mFrameBuffer;
@@ -74,6 +76,22 @@ public final class TreeBillboardApp extends NvSampleApp {
     private final Matrix4f mBoxWorld = new Matrix4f();
     private final Vector2f mWaterTexOffset = new Vector2f();
     private final boolean mUseWave2 = true;
+
+    @Override
+    public void initUI() {
+        // Animation params
+        mTweakBar.addValue("Animate", createControl(mWaveSettings,"animation"));
+        mTweakBar.addValue("Add Rain", createControl(mWaveSettings,"addRain"));
+        mTweakBar.addPadding();
+
+        // Wave simulation params
+        mTweakBar.addValue("Damping", createControl(mWaveSettings,"damping"), 0.8f, 1.0f, 0.01f, 0);
+        mTweakBar.addValue("Wave Size", createControl(mWaveSettings,"size"), 0.0f, 20.0f, 1.0f, 0);
+        mTweakBar.addValue("Wave Strength", createControl(mWaveSettings,"strength"), 0.0f, 5.0f, 0.1f, 0);
+        mTweakBar.addValue("Wave Speed", createControl(mWaveSettings,"speed"), 0.1f, 1.0f, 0.01f, 0);
+        mTweakBar.addValue("Rain Frequency", createControl(mWaveSettings,"frequency"), 0, 20, 1, 0);
+        mTweakBar.addPadding();
+    }
 
     @Override
     protected void initRendering() {
@@ -301,7 +319,14 @@ public final class TreeBillboardApp extends NvSampleApp {
             mFrameMemory = BufferUtils.createByteBuffer(FrameData.SIZE);
 
         ReadableVector3f max = mLandMesh.getMax();
-        mWavesWorld.scale(max.getX(), 1.0f, max.getZ());
+
+        if(mUseWave2){
+            mWavesWorld.scale(max.getX()/(194/2), 1.0f, max.getZ()/(194/2));
+            mWavesWorld.translate(-194/2, 0, -194/2);
+        }else{
+            mWavesWorld.scale(max.getX(), 1.0f, max.getZ());
+        }
+
     }
 
     private void buildTreeSpritesBuffer(){
@@ -350,7 +375,10 @@ public final class TreeBillboardApp extends NvSampleApp {
         index = GLES30.glGetUniformBlockIndex(mShadowmapProgram.getProgram(), "FrameData");
         GLES30.glUniformBlockBinding(mShadowmapProgram.getProgram(), index, 0);
 
-        mWaterRenderProgram = new WaterRenderProgram(mUseWave2);
+        if(mUseWave2)
+            mWaterRenderProgram = new WaterGradientRenderProgram();
+        else
+            mWaterRenderProgram = new WaterRenderProgram();
         index = GLES30.glGetUniformBlockIndex(mWaterRenderProgram.getProgram(), "FrameData");
         GLES30.glUniformBlockBinding(mWaterRenderProgram.getProgram(), index, 0);
     }

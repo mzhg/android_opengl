@@ -4,7 +4,7 @@ package jet.learning.opengl.android.base;
  * Created by mazhen'gui on 2017/3/29.
  */
 
-public class OpenGLES1ExampleActivity extends  BaseActivity {
+public class OpenGLES32ExampleActivity extends  BaseActivity {
 
     @Override
     protected String getAction() {
@@ -13,6 +13,6 @@ public class OpenGLES1ExampleActivity extends  BaseActivity {
 
     @Override
     protected String getCategory() {
-        return MainActivity.CATEGOTY_ES1;
+        return MainActivity.CATEGOTY_ES32;
     }
 }

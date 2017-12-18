@@ -3,6 +3,7 @@ package com.nvidia.developer.opengl.utils;
 import android.util.Log;
 
 import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 
 import java.nio.ByteBuffer;
@@ -164,6 +165,19 @@ public final class GLUtil {
 	   }
 	   buf.flip();
 	   return buf;
+	}
+
+	public static FloatBuffer wrap(Vector3f[] data){
+		return wrap(data, 0, data.length);
+	}
+
+	public static FloatBuffer wrap(Vector3f[] data, int offset, int length){
+		FloatBuffer buf = GLUtil.getCachedFloatBuffer(length * 3);
+		for(int i = 0; i < length; i++){
+			data[i + offset].store(buf);
+		}
+		buf.flip();
+		return buf;
 	}
 	
 	public static FloatBuffer wrap(float[] data){

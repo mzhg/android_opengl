@@ -22,13 +22,12 @@ float CalcDisturbance(vec2 coords)
 
 void main()
 {
-
 	ivec2 pos = ivec2(gl_FragCoord);
-	vec2 vh = texelFetch(g_WaterHeightMap, pos, 0).rg;
-	float h0 = texelFetchOffset(g_WaterHeightMap, pos, 0, ivec2(0, +1)).r;
-	float h1 = texelFetchOffset(g_WaterHeightMap, pos, 0, ivec2(0, -1)).r;
-	float h2 = texelFetchOffset(g_WaterHeightMap, pos, 0, ivec2(+1, 0)).r;
-	float h3 = texelFetchOffset(g_WaterHeightMap, pos, 0, ivec2(-1, 0)).r;
+	vec2 vh = texelFetch(g_WaterHeightMap, pos, 0).xy;
+	float h0 = texelFetchOffset(g_WaterHeightMap, pos, 0, ivec2(0, +1)).x;
+	float h1 = texelFetchOffset(g_WaterHeightMap, pos, 0, ivec2(0, -1)).x;
+	float h2 = texelFetchOffset(g_WaterHeightMap, pos, 0, ivec2(+1, 0)).x;
+	float h3 = texelFetchOffset(g_WaterHeightMap, pos, 0, ivec2(-1, 0)).x;
 
 	float d = ((h0 + h1 + h2 + h3) * 0.25 - vh.x);
 
@@ -40,7 +39,7 @@ void main()
     vh.x += vh.y * DeltaTime;
     if (Disturbance.w > 0.0)
     {
-        vh.x += CalcDisturbance(gl_FragCoord);
+        vh.x += CalcDisturbance(gl_FragCoord.xy);
     }
 
     Out_Color = vh;

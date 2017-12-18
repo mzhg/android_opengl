@@ -111,6 +111,21 @@ void main()
         shadowProj = shadowProj * 0.5 + 0.5;
         shadowProj.z -= 0.001;  // avoid the self-shadow
         shadow = texture(g_ShadowMap, shadowProj);
+
+        // PCF
+        /*shadow = 0.;
+        vec2 texelSize = 1.0/vec2(textureSize(g_ShadowMap, 0));
+        for(int i = -2; i <=2; i++)
+        {
+            for(int j = -2;j <=2; j++)
+            {
+                vec2 offset = vec2(i,j) * texelSize;
+                shadow += texture(g_ShadowMap, vec3(shadowProj.xy + offset, shadowProj.z));
+            }
+        }
+
+        shadow /= 9.0;
+        shadow = clamp(shadow, 0.0, 1.0);*/
     }
 
     Out_Color = lit(n_l, r_v, C, shadow);
@@ -121,6 +136,4 @@ void main()
         vec4 reflectionColor  = texture(g_ReflectTex, R);
         Out_Color.rgb += g_MaterialReflect * reflectionColor.rgb;
     }
-
-
 }

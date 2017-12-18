@@ -1,0 +1,18 @@
+#version 320 es
+layout (vertices = 4) out;  // quad
+
+uniform ivec4 g_outterTess;
+uniform ivec2 g_innerTess;
+
+void main()
+{
+    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+
+    gl_TessLevelInner[0] = float(g_innerTess[0]);
+    gl_TessLevelInner[1] = float(g_innerTess[1]);
+
+    gl_TessLevelOuter[0] = float(g_outterTess[0]);
+    gl_TessLevelOuter[1] = float(g_outterTess[1]);
+    gl_TessLevelOuter[2] = float(g_outterTess[2]);
+    gl_TessLevelOuter[3] = float(g_outterTess[3]);
+}
