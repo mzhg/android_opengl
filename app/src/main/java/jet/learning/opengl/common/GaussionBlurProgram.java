@@ -129,9 +129,9 @@ public class GaussionBlurProgram extends SimpleOpenGLProgram{
         for( int i = (kernelSize/2); i >= 0; i-- )
         {
             if( i == (kernelSize/2) )
-                oneSideInputs[i] = ( (float)inputKernel[i] * 0.5f );
+                oneSideInputs[i] = ( inputKernel[i] * 0.5f );
             else
-                oneSideInputs[i] = ( (float)inputKernel[i] );
+                oneSideInputs[i] = ( inputKernel[i] );
         }
 
         assert( (oneSideInputs.length % 2) == 0 );

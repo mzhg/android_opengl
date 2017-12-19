@@ -42,7 +42,7 @@ import org.lwjgl.util.vector.Vector3f;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
+public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer, ArrowController.ArrowOnTouchListener{
 
 	protected NvFramerateCounter mFramerate;
 	protected float mFrameDelta;
@@ -66,9 +66,12 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 	private volatile boolean mPaused;
 	private boolean mShutDownCalled;
 	private GLSurfaceView m_surfaceView;
+	private ArrowController controller;
 
 	@Override
 	public final void onSurfaceCreated(GL10 arg0, EGLConfig egl) {
+		super.onSurfaceCreated(egl);
+
 		Log.e("OpenGL ES", "onSurfaceCreated");
 		// check extensions and enable DXT expansion if needed
 	    boolean hasDXT = isExtensionSupported("GL_EXT_texture_compression_s3tc") ||
@@ -83,8 +86,11 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 	    
 	    mFramerate = new NvFramerateCounter();
 	    mFrameTimer.start();
-	    
-		super.onSurfaceCreated(egl);
+
+		controller = new ArrowController();
+		controller.initlizeGL();
+		controller.setArrowOnTouchListener(this);
+
 	    baseInitUI();
 	}
 
@@ -166,6 +172,7 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 			}
 
 			draw();
+			controller.draw(getWidth(), getHeight());
 			if (!mTestMode) {
 				baseDrawUI();
 			}
@@ -596,8 +603,14 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 
 		if (handlePointerInput(device, action, modifiers, count, points))
 			return true;
-		else
+		else{
+			if(controller != null && controller.processPointer(device, action, modifiers, count, points)){
+				return true;
+			}
+
 			return m_transformer.processPointer(device, action, modifiers, count, points);
+		}
+
 	}
 
 	/** Convience method used to create <code>FieldControl</code>*/
@@ -610,4 +623,8 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer{
 		return new FieldControl(obj, varname);
 	}
 
+	@Override
+	public void onArrowTouch(int arrow, boolean state) {
+		Log.i("NvSampleApp", ArrowController.getArrowName(arrow) + " is " + (state?"Touched":"Released"));
+	}
 }

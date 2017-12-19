@@ -145,11 +145,9 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks {
 
 	protected boolean isRequreOpenGLES2() { return true;}
 	
-	public final int getWidth(){
-		return width;
-	}
+	public final int getWidth(){return width;}
 	
-	public int getHeight(){
+	public final int getHeight(){
 		return height;
 	}
 	
