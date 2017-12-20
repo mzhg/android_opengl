@@ -54,6 +54,10 @@ public class ArrowController implements NvDisposeable{
         mQuadBuffer = BufferUtils.createFloatBuffer(16);
     }
 
+    public void setVisible(boolean visible){
+        mVisible = visible;
+    }
+
     public static String getArrowName(int arrow){
         switch (arrow){
             case ARROW_LEFT: return  "LEFT";
@@ -120,6 +124,7 @@ public class ArrowController implements NvDisposeable{
             return false;
 
         boolean isDown = (action == NvPointerActionType.DOWN || action == NvPointerActionType.EXTRA_DOWN);
+        boolean isUp = (action == NvPointerActionType.UP || action == NvPointerActionType.EXTRA_UP);
         boolean isMotion = (action == NvPointerActionType.MOTION);
 
         for(int i = 0; i < 4; i++){
@@ -130,22 +135,16 @@ public class ArrowController implements NvDisposeable{
                 float y = mScreenHeight - points[j].m_y;
 
                 boolean touched = data.contain(x,y);
-                if(touched){
-                    boolean newState = isDown;
-                    if(newState != mArrowStates[i]){
-                        if(mListener != null) {
-                            mListener.onArrowTouch(i, newState);
+                if(touched){  // Only handle the event that had touched.
+                    if(mArrowStates[i]){  // the button was pressed
+                        if(isUp){
+                            changeState(i, false);
                         }
-
-                        mArrowStates[i] = newState;
-                    }else if(!mArrowStates[i] && isMotion){  // Regard the motion event as the down event.
-                        if(mListener != null) {
-                            mListener.onArrowTouch(i, true);
+                    }else{  // the button was relaxed
+                        if(isDown || isMotion){  // Regard the motion event as the down event.
+                            changeState(i, true);
                         }
-
-                        mArrowStates[i] = true;
                     }
-
                     return true;
                 }
             }
@@ -153,6 +152,14 @@ public class ArrowController implements NvDisposeable{
         }
 
         return false;
+    }
+
+    private void changeState(int arrow, boolean newState){
+        if(mListener != null) {
+            mListener.onArrowTouch(arrow, newState);
+        }
+
+        mArrowStates[arrow] = newState;
     }
 
     public void draw(int screenWidth, int screenHeight){
@@ -169,6 +176,8 @@ public class ArrowController implements NvDisposeable{
         if(depthTest) GLES20.glDisable(GLES20.GL_DEPTH_TEST);
         if(stencilTest) GLES20.glDisable(GLES20.GL_STENCIL_TEST);
         if(depthWrite) GLES20.glDepthMask(false);
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA, GLES20.GL_ZERO, GLES20.GL_ONE);
 
         mArrowRenderProgram.enable();
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
@@ -195,6 +204,7 @@ public class ArrowController implements NvDisposeable{
         if(depthTest) GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         if(stencilTest) GLES20.glEnable(GLES20.GL_STENCIL_TEST);
         if(depthWrite) GLES20.glDepthMask(depthWrite);
+        GLES20.glDisable(GLES20.GL_BLEND);
 
         GLES.checkGLError();
     }
@@ -238,7 +248,7 @@ public class ArrowController implements NvDisposeable{
             final int marginRigth = 20;
             final int marginBottom = 20;
             final int padding = 10;
-            final float heightRatio = 0.1f; // the height of the image over the screenHeight
+            final float heightRatio = 0.11f; // the height of the image over the screenHeight
 
             final int height = (int) (screenHeight * heightRatio);
             final int width = (int) (height * Math.cos(Math.PI/6) + 0.5);

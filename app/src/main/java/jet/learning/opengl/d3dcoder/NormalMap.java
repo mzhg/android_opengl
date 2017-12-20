@@ -105,6 +105,8 @@ public final class NormalMap extends NvSampleApp {
 
         m_transformer.setTranslation(0,-5,-15);
         m_transformer.setRotationVec(new Vector3f(0, PI, 0));
+        /*m_transformer.setMotionMode(NvCameraMotionType.FIRST_PERSON);
+        setGameControllerVisible(true);*/
 
         mSky = new SkyRenderer("textures/snowcube1024.dds", 100.0f);
         mShadow = new ShadowMap();

@@ -33,6 +33,11 @@ public class GLES {
 		return integer[0];
 	}
 
+	public static int glGenTransformFeedbacks(){
+		GLES30.glGenTransformFeedbacks(1, integer, 0);
+		return integer[0];
+	}
+
 	public static int glGenRenderbuffers(){
 		GLES20.glGenRenderbuffers(1, integer, 0);
 		return integer[0];
@@ -144,6 +149,11 @@ public class GLES {
 		integer[0] = drawbuffer;
 		GLES30.glDrawBuffers(1, integer, 0);
 	}
+
+	public static int glGetQueryObjectuiv(int query, int pname){
+		GLES30.glGetQueryObjectuiv(query, pname, integer, 0);
+		return integer[0];
+	}
 	
 	public static int glGetInteger(int pname){
 		if(useES2)
@@ -211,6 +221,16 @@ public class GLES {
 		}else{
 			GLES10.glDeleteTextures(1, integer, 0);
 		}
+	}
+
+	public static void glDeleteTransformFeedback(int transformFeedback){
+		integer[0] = transformFeedback;
+		GLES30.glDeleteTransformFeedbacks(1, integer,0);
+	}
+
+	public static void glDeleteQueries(int query){
+		integer[0] = query;
+		GLES30.glDeleteQueries(1, integer,0);
 	}
 	
 	public static void glDeleteFramebuffers(int framebufferID){

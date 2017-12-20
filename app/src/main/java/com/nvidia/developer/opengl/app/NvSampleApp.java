@@ -28,8 +28,8 @@ import com.nvidia.developer.opengl.ui.NvUIValueText;
 import com.nvidia.developer.opengl.ui.NvUIWindow;
 import com.nvidia.developer.opengl.utils.Dimension;
 import com.nvidia.developer.opengl.utils.FieldControl;
+import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.NvGfxAPIVersion;
-import com.nvidia.developer.opengl.utils.NvImage;
 import com.nvidia.developer.opengl.utils.NvLogger;
 import com.nvidia.developer.opengl.utils.NvStopWatch;
 import com.nvidia.developer.opengl.utils.NvUtils;
@@ -68,30 +68,32 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer, Ar
 	private GLSurfaceView m_surfaceView;
 	private ArrowController controller;
 
+//	private final Vector3f mXVec = new Vector3f();
+//	private final Vector3f mZVec = new Vector3f();
+
 	@Override
 	public final void onSurfaceCreated(GL10 arg0, EGLConfig egl) {
-		super.onSurfaceCreated(egl);
+		GLUtil.markThread(Thread.currentThread());
 
-		Log.e("OpenGL ES", "onSurfaceCreated");
-		// check extensions and enable DXT expansion if needed
-	    boolean hasDXT = isExtensionSupported("GL_EXT_texture_compression_s3tc") ||
-	          isExtensionSupported("GL_EXT_texture_compression_dxt1");
-	    if (!hasDXT) {
-	    	NvLogger.i("Device has no DXT texture support - enabling DXT expansion");
-	        NvImage.setDXTExpansion(true);
-	    }
-	    
-	    NvUIText.staticCleanup();
-	    mUIWindow = null;
-	    
-	    mFramerate = new NvFramerateCounter();
-	    mFrameTimer.start();
+		NvUIText.staticCleanup();
+
+		mUIWindow = null;
+
+		mFramerate = new NvFramerateCounter();
+		mFrameTimer.start();
 
 		controller = new ArrowController();
 		controller.initlizeGL();
 		controller.setArrowOnTouchListener(this);
+		controller.setVisible(false);
+
+		super.onSurfaceCreated(egl);
 
 	    baseInitUI();
+	}
+
+	public void setGameControllerVisible(boolean visible){
+		controller.setVisible(visible);
 	}
 
 	@Override
@@ -138,7 +140,7 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer, Ar
 		}
 	}
 
-	private void render(){
+	private final void render(){
 		mFrameTimer.stop();
 		boolean mTestMode = false;
 		boolean isExiting = false;
@@ -170,6 +172,37 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer, Ar
 					gamepadButtonChanged(1, true);
 				}
 			}
+
+			// update the camera
+			/*if(m_transformer.getMotionMode() == NvCameraMotionType.FIRST_PERSON){
+				final boolean moveLeft = controller.isTouched(ArrowController.ARROW_LEFT);
+				final boolean moveRight = controller.isTouched(ArrowController.ARROW_RIGHT);
+				final boolean moveForward = controller.isTouched(ArrowController.ARROW_TOP);
+				final boolean moveBackward = controller.isTouched(ArrowController.ARROW_BOTTOM);
+
+				if(moveLeft || moveRight || moveForward || moveBackward){
+					Matrix4f mat = m_transformer.getRotationMat();
+					Matrix4f.decompseRigidMatrix(mat, null, mXVec, null, mZVec);
+
+					float translationVel = m_transformer.getMaxTranslationVel(0) * 0.1f;
+					Vector3f position = m_transformer.getTranslationVec();
+					if(moveLeft){
+						Vector3f.linear(position, mXVec, -translationVel, position);
+					}
+
+					if(moveRight){
+						Vector3f.linear(position, mXVec, +translationVel, position);
+					}
+
+					if(moveForward){
+						Vector3f.linear(position, mZVec, -translationVel, position);
+					}
+
+					if(moveBackward){
+						Vector3f.linear(position, mZVec, +translationVel, position);
+					}
+				}
+			}*/
 
 			draw();
 			controller.draw(getWidth(), getHeight());
@@ -625,6 +658,20 @@ public class NvSampleApp extends NvAppBase implements GLSurfaceView.Renderer, Ar
 
 	@Override
 	public void onArrowTouch(int arrow, boolean state) {
-		Log.i("NvSampleApp", ArrowController.getArrowName(arrow) + " is " + (state?"Touched":"Released"));
+		Log.i("ArrowController", ArrowController.getArrowName(arrow) + " is " + (state?"Touched":"Released"));
+
+		if(m_transformer.getMotionMode() == NvCameraMotionType.FIRST_PERSON){
+			final int action = state ? NvKeyActionType.DOWN : NvKeyActionType.UP;
+
+			if(arrow == ArrowController.ARROW_LEFT){
+				m_transformer.processKey(NvKey.K_A, action);
+			}else if(arrow == ArrowController.ARROW_RIGHT){
+				m_transformer.processKey(NvKey.K_D, action);
+			}else if(arrow == ArrowController.ARROW_TOP){
+				m_transformer.processKey(NvKey.K_W, action);
+			}else if(arrow == ArrowController.ARROW_BOTTOM){
+				m_transformer.processKey(NvKey.K_S, action);
+			}
+		}
 	}
 }

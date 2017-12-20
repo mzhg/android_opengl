@@ -546,18 +546,18 @@ public class NvInputTransformer {
 	        Transform xfm = m_xforms[NvCameraXformType.MAIN];
 	        Transform xfs = m_xforms[NvCameraXformType.SECONDARY];
 //	        xfm.m_rotate += xfm.m_rotateVel*deltaTime;
-	        VectorUtil.linear(xfm.m_rotate, xfm.m_rotateVel, deltaTime, xfm.m_rotate);
+			Vector3f.linear(xfm.m_rotate, xfm.m_rotateVel, deltaTime, xfm.m_rotate);
 //	        xfs.m_rotate += xfs.m_rotateVel*deltaTime;
-	        VectorUtil.linear(xfs.m_rotate, xfs.m_rotateVel, deltaTime, xfs.m_rotate);
+			Vector3f.linear(xfs.m_rotate, xfs.m_rotateVel, deltaTime, xfs.m_rotate);
 //	        xfm.m_translate += xfm.m_translateVel * deltaTime;
-	        VectorUtil.linear(xfm.m_translate, xfm.m_translateVel, deltaTime, xfm.m_translate);
+			Vector3f.linear(xfm.m_translate, xfm.m_translateVel, deltaTime, xfm.m_translate);
 
 	        updateMats(NvCameraXformType.MAIN);
 	        updateMats(NvCameraXformType.SECONDARY);
 	    } else {
 	        Transform xf = m_xforms[NvCameraXformType.MAIN];
 //	        xf.m_rotate += xf.m_rotateVel*deltaTime;
-	        VectorUtil.linear(xf.m_rotate, xf.m_rotateVel, deltaTime, xf.m_rotate);
+			Vector3f.linear(xf.m_rotate, xf.m_rotateVel, deltaTime, xf.m_rotate);
 	        Vector3f transVel;
 	        if (m_motionMode == NvCameraMotionType.FIRST_PERSON) {
 	            // obviously, this should clamp to [-1,1] for the mul, but we don't care for sample use.
@@ -567,14 +567,14 @@ public class NvInputTransformer {
 //	                nv.vec4f(-xf.m_translateVel.x, xf.m_translateVel.y, xf.m_translateVel.z, 0.0f));
 	            xf.m_rotateMat.transpose();
 	            transVel = new Vector3f(-xf.m_translateVel.x, xf.m_translateVel.y, xf.m_translateVel.z);
-	            VectorUtil.transformNormal(transVel, xf.m_rotateMat, transVel);
+	            Matrix4f.transformNormal(xf.m_rotateMat, transVel, transVel);
 	            xf.m_rotateMat.transpose();
 	        } else {
 	            transVel = xf.m_translateVel;
 	        }
 
 //	        xf.m_translate += transVel * deltaTime;
-	        VectorUtil.linear(xf.m_translate, transVel, deltaTime, xf.m_translate);
+	        Vector3f.linear(xf.m_translate, transVel, deltaTime, xf.m_translate);
 	        updateMats(NvCameraXformType.MAIN);
 	    }
 	}
@@ -736,61 +736,64 @@ public class NvInputTransformer {
 	        }
 	    } else { // down or extra_down or extra_up
 	        if (action == NvPointerActionType.DOWN) {
-	            m_touchDown = true;
-	            m_maxPointsCount = 1;
-	            xfm.m_dscale = 1.0f; // for sanity reset to 1.
+	        	if(m_motionMode != NvCameraMotionType.FIRST_PERSON || (!m_touchDown && m_maxPointsCount == 0)) {
+					m_touchDown = true;
+					m_maxPointsCount = 1;
+					xfm.m_dscale = 1.0f; // for sanity reset to 1.
 
-	            if (m_motionMode == NvCameraMotionType.PAN_ZOOM)
-	                m_mode = TRANSLATE;
-	            else
-	                m_mode = ROTATE;
+					if (m_motionMode == NvCameraMotionType.PAN_ZOOM)
+						m_mode = TRANSLATE;
+					else
+						m_mode = ROTATE;
 
-	            if (m_motionMode != NvCameraMotionType.FIRST_PERSON) {
-	                if (device == NvInputDeviceType.MOUSE) {
-	                    if (m_motionMode == NvCameraMotionType.ORBITAL) {
-	                        if ((button & NvMouseButton.MIDDLE) != 0)
-	                            m_mode = ZOOM;
-	                        else if ((button & NvMouseButton.RIGHT)!=0)
-	                            m_mode = TRANSLATE;
-	                    } else if (m_motionMode == NvCameraMotionType.DUAL_ORBITAL) {
-	                        if ((button & NvMouseButton.LEFT) != 0)
-	                            m_mode = ROTATE;
-	                        else if ((button & NvMouseButton.RIGHT) != 0)
-	                            m_mode = SECONDARY_ROTATE;
-	                    } else { // PAN_ZOOM
-	                        if ((button & NvMouseButton.RIGHT) != 0)
-	                            m_mode = ZOOM;
-	                    }
-	                }
-	            }
-	            
+					if (m_motionMode != NvCameraMotionType.FIRST_PERSON) {
+						if (device == NvInputDeviceType.MOUSE) {
+							if (m_motionMode == NvCameraMotionType.ORBITAL) {
+								if ((button & NvMouseButton.MIDDLE) != 0)
+									m_mode = ZOOM;
+								else if ((button & NvMouseButton.RIGHT) != 0)
+									m_mode = TRANSLATE;
+							} else if (m_motionMode == NvCameraMotionType.DUAL_ORBITAL) {
+								if ((button & NvMouseButton.LEFT) != 0)
+									m_mode = ROTATE;
+								else if ((button & NvMouseButton.RIGHT) != 0)
+									m_mode = SECONDARY_ROTATE;
+							} else { // PAN_ZOOM
+								if ((button & NvMouseButton.RIGHT) != 0)
+									m_mode = ZOOM;
+							}
+						}
+					}
+
 //	            m_firstTouch.set(points[0].m_x, points[0].m_y);
-	            m_firstInput.set(points[0].m_x, points[0].m_y);
-	            m_lastPointer.set(points[0].m_x, points[0].m_y);
+					m_firstInput.set(points[0].m_x, points[0].m_y);
+					m_lastPointer.set(points[0].m_x, points[0].m_y);
+				}
 	        } else if (action == NvPointerActionType.EXTRA_DOWN) {
-//	            m_maxPointsCount = (byte)count; // cache max fingers.
-	        	m_maxPointsCount ++;
-	        	if(m_maxPointsCount == 2) m_lastDownExtra = true;
-	            if ((m_motionMode != NvCameraMotionType.FIRST_PERSON) && (m_maxPointsCount==2)) {
-	                if (m_motionMode == NvCameraMotionType.DUAL_ORBITAL)
-	                    m_mode = SECONDARY_ROTATE;
-	                else
-	                    m_mode = ZOOM;
-	                // cache starting distance across pinch
-	                float dx, dy;
-	                if(count > 1){
-	                	dx = points[0].m_x - points[1].m_x;
-	                	dy = points[0].m_y - points[1].m_y;
-	                	m_lastPointer.set(points[1].m_x, points[1].m_y);
-	                }else{
-	                	dx = points[0].m_x - m_lastPointer.x;
-	                	dy = points[0].m_y - m_lastPointer.y;
-	                	m_lastPointer.set(points[0].m_x, points[0].m_y);
-	                }
-	                m_firstInput.set(dx, dy);
-	                // cache center of pinch.
-	                m_lastInput.set(points[0].m_x - (dx/2), points[0].m_y - (dy/2));
-	            }
+	        	if( m_motionMode != NvCameraMotionType.FIRST_PERSON) {
+					m_maxPointsCount++;
+					if (m_maxPointsCount == 2) m_lastDownExtra = true;
+					if ((m_motionMode != NvCameraMotionType.FIRST_PERSON) && (m_maxPointsCount == 2)) {
+						if (m_motionMode == NvCameraMotionType.DUAL_ORBITAL)
+							m_mode = SECONDARY_ROTATE;
+						else
+							m_mode = ZOOM;
+						// cache starting distance across pinch
+						float dx, dy;
+						if (count > 1) {
+							dx = points[0].m_x - points[1].m_x;
+							dy = points[0].m_y - points[1].m_y;
+							m_lastPointer.set(points[1].m_x, points[1].m_y);
+						} else {
+							dx = points[0].m_x - m_lastPointer.x;
+							dy = points[0].m_y - m_lastPointer.y;
+							m_lastPointer.set(points[0].m_x, points[0].m_y);
+						}
+						m_firstInput.set(dx, dy);
+						// cache center of pinch.
+						m_lastInput.set(points[0].m_x - (dx / 2), points[0].m_y - (dy / 2));
+					}
+				}
 	        } else {
 	            // extra up.
 	        	m_maxPointsCount --;
@@ -811,13 +814,13 @@ public class NvInputTransformer {
 	        }
 	    }
 
-	    if (m_motionMode == NvCameraMotionType.FIRST_PERSON) {
+	    /*if (m_motionMode == NvCameraMotionType.FIRST_PERSON) {
 	        m_zVel_mouse = 0;
 	        if ( (count > 1) 
 	            || ((device == NvInputDeviceType.MOUSE) && (button & NvMouseButton.MIDDLE) != 0
 	                    && m_touchDown) )
 	            m_zVel_mouse = +1;
-	    }
+	    }*/
 
 	    if ((m_maxPointsCount==1) || (m_motionMode == NvCameraMotionType.FIRST_PERSON) ||
 	        (m_motionMode == NvCameraMotionType.DUAL_ORBITAL)) {

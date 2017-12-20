@@ -19,6 +19,8 @@ import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.Glut;
 import com.nvidia.developer.opengl.utils.NvAssetLoader;
 import com.nvidia.developer.opengl.utils.NvGfxAPIVersion;
+import com.nvidia.developer.opengl.utils.NvImage;
+import com.nvidia.developer.opengl.utils.NvLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -266,6 +268,15 @@ public abstract class NvAppBase extends Activity implements NvInputCallbacks {
 	protected void configurationCallback(NvEGLConfiguration config){}
 	
 	public void onSurfaceCreated(EGLConfig config) {
+		Log.e("OpenGL ES", "onSurfaceCreated");
+		// check extensions and enable DXT expansion if needed
+		boolean hasDXT = isExtensionSupported("GL_EXT_texture_compression_s3tc") ||
+				isExtensionSupported("GL_EXT_texture_compression_dxt1");
+		if (!hasDXT) {
+			NvLogger.i("Device has no DXT texture support - enabling DXT expansion");
+			NvImage.setDXTExpansion(true);
+		}
+
 		glConfig.redBits = GLES.glGetInteger(GL10.GL_RED_BITS);
 		glConfig.greenBits = GLES.glGetInteger(GL10.GL_GREEN_BITS);
 		glConfig.blueBits = GLES.glGetInteger(GL10.GL_BLUE_BITS);

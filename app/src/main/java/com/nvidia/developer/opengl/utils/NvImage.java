@@ -3,6 +3,7 @@ package com.nvidia.developer.opengl.utils;
 import android.opengl.GLES10;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
+import android.opengl.GLES30;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -11,6 +12,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -135,9 +137,46 @@ public class NvImage {
         return texID;
     }
 
+    public static int loadTextureArrayFromDDSData(String[] ddsFile) {
+        int texID = GLES.glGenTextures();
+        GLES20.glBindTexture(GLES30.GL_TEXTURE_2D_ARRAY, texID);
+
+        int count = ddsFile.length;
+        for (int i = 0; i < count; i++) {
+            NvImage image = NvImage.createFromDDSFile(ddsFile[i]);
+
+            if (image != null) {
+                int w = image.getWidth();
+                int h = image.getHeight();
+                if (i == 0) {
+                    if (image.isCompressed())
+                    {
+                        GLES30.glCompressedTexImage3D(GLES30.GL_TEXTURE_2D_ARRAY, 0, image.getInternalFormat(), w, h, count, 0, image.getImageSize (0) * count, null);
+                    }
+                    else
+                    {
+                        GLES30.glTexImage3D(GLES30.GL_TEXTURE_2D_ARRAY, 0, image.getInternalFormat(), w, h, count, 0, image.getFormat(), image.getType(), null);
+                    }
+                }
+                if (image.isCompressed())
+                {
+                    ByteBuffer pixels = GLUtil.wrap(image.getLevel(0));
+                    GLES30.glCompressedTexSubImage3D(GLES30.GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, w, h, 1, image.getInternalFormat(),
+                            pixels.remaining(),pixels);
+                }
+                else
+                {
+                    GLES30.glTexSubImage3D(GLES30.GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, w, h, 1, image.getFormat(), image.getType(), GLUtil.wrap(image.getLevel(0)));
+                }
+            }
+        }
+
+        return texID;
+    }
+
     /**
      * Create a new GL texture directly from DDS file inputStram.
-     * @param int the image data where to read.
+     * @param in the image data where to read.
      * @return the GL texture ID on success, 0 on failure
      */
     public static int uploadTextureFromDDSFile(InputStream in){
