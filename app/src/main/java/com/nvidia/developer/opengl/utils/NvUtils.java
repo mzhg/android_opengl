@@ -624,4 +624,9 @@ public final class NvUtils {
 	public static int rand(){
 		return g_Random.nextInt(32767);
 	}
+
+	/** Divides two integers and rounds up */
+	public static int divideAndRoundUp(int dividend, int divisor) {
+		return (dividend + divisor - 1) / divisor;
+	}
 }

@@ -1,0 +1,356 @@
+#version 310 es
+
+#define TYPE_BORN 0      // particles born
+#define TYPE_UPDATE 1    // update the particles
+#define TYPE_NEBULA 2    // update the nebulas
+#define TYPE_NEBORN 3    // born the emitter nebulas
+
+struct Particle
+{
+    vec3 loc;  // position vector
+    float radius; // particle's size
+    vec3 vel;  // velocity vector
+    float age;    // current age of particle
+    float lifeSpan; // max allowed age of particle
+    float gen; 	  // number of times particle has been involved in a SPLIT
+    float bounceAge; // amount to age particle when it bounces off floor
+    float padding;   // unused
+};
+
+struct Nebula
+{
+    vec3 loc;  // position vector
+    float radius; // particle's size
+    vec3 vel;  // velocity vector
+    float age;    // current age of particle
+    float lifeSpan; // max allowed age of particle
+    float grounded; 	  // boolean variable
+    float scale; // size of the scale
+    uint color;   // a packed uint color.
+};
+
+layout(binding = 0) uniform BlockData
+{
+    float seeds[16];
+    vec3 EmitPosition;
+    float timeAmout;
+    vec3 gravity;
+    float floor_level;
+    vec3 eye_loc;
+    float pad0;
+
+    bool allow_perlin /*= true*/;
+    bool allow_gravity /*= true*/;
+    bool allow_floor /*= true*/;
+    bool allow_nebula /*= true*/;
+};
+
+layout(binding = 0) uniform sampler2D random_texture;
+
+/** Return a random value from 0.0 to 1.0 */
+vec3 random(float seed)
+{
+	return texture(random_texture, vec2(seed, 0)).xyz;
+}
+
+float map(float seed, float low, float high)
+{
+	return /*random*/seed * (high - low) + low;
+}
+
+vec3 map(vec3 seed, float low, float high)
+{
+	return /*random*/seed * (high - low) + low;
+}
+
+layout(binding = 1) buffer ParticleWrite
+{
+    Particle g_ParticleOutput[];
+};
+
+layout(binding = 2) buffer NebulaWrite
+{
+    Nebula g_NebulaOutput[];
+};
+
+layout (binding = 3, offset = 0) uniform atomic_uint g_ParticlesCounter;
+layout (binding = 4, offset = 0) uniform atomic_uint g_NebulasCounter;
+
+layout(binding = 5) buffer ParticleRead
+{
+    Particle g_ParticleInput[];
+};
+
+layout(binding = 6) buffer NebulaRead
+{
+    Nebula g_NebulaInput[];
+};
+
+void nebula_born(vec3 _loc, float _radius, bool _ISGROUNDED);
+
+void EmitStreamVertex(Particle _out)
+{
+    uint location = atomicCounterIncrement(g_ParticlesCounter);
+    g_ParticleOutput[int(location)] = _out;
+}
+
+void EmitStreamVertex(Nebula _out)
+{
+
+    uint location = atomicCounterIncrement(g_NebulasCounter);
+    g_NebulaOutput[int(location)] = _out;
+}
+
+void particle_update(Particle particle)
+{
+//	vec3 in_loc = vs[0].loc;
+//	vec3 in_vel = vs[0].vel;
+//	float in_radius = vs[0].radius;
+//	float in_age = vs[0].age;
+//	float in_bounceAge = vs[0].bounceAge;
+
+//	Particle particle = g_ParticleInput[particleID];
+
+	vec3 perlin = vec3(0.0);
+	if(allow_perlin)
+	{
+	    // TODO
+//		float xyRads = getRads(in_loc.x, in_loc.z, 20.0, 50.0);
+//		float yRads  = getRads(in_loc.x, in_loc.y, 20.0, 50.0);
+//		perlin = vec3(cos(xyRads), -sin(yRads), sin(xyRads));
+	}
+
+	if (allow_gravity)
+		particle.vel += (gravity * timeAmout);
+
+	if (allow_perlin)
+		particle.vel += (perlin * timeAmout);
+
+    vec3 randomValue = random(seed);
+    float velScale = map(randomValue.y, 0.3, 0.7);
+
+	// update the particle position
+	particle.loc += particle.vel * timeAmout;
+	bool bouncing = false;
+	if(allow_floor && particle.loc.y < 0.0)
+	{
+		// if the particle is moving fast enough, when it hits the ground it
+		// can split into a bunch of smaller particles.
+		bouncing = true;
+		float bounceVel = length(particle.vel);
+		particle.vel *= (.7f);
+		particle.vel = reflect(particle.vel, vec3(0,1,0));
+		particle.vel.y *= particle.radius/50.0 * random(particle.radius, 0.4, 1.4).x;
+		particle.loc.y *= -1.0;
+
+		if (bounceVel > 15.0 && vs[0].gen < 4.0) // split the particle
+		{
+			uint amt = min(uint(0.15 * in_radius), 8);
+			for(int i = 0; i < amt; i++)
+			{
+			    Particle _out;
+				float seed = particle.radius + float(i) + 0.123456;
+				_out.loc = particle.loc;
+				_out.vel = particle.vel * velScale /*random(seed, 0.3, 0.7).y*/;
+				_out.gen = particle.gen + 1.0;
+				_out.radius = map(randomValue.x, 10.0 - gen, 50.0 - (gen - 1.0) * 10.0);
+				_out.age = 0.0;
+				_out.lifeSpan = radius;
+				_out.bounceAge = 2.0 + map(randomValue.z + radius);
+
+				EmitStreamVertex(_out);
+
+				nebula_born(loc /*_p.loc[0]*/, map(randomValue.x, 5.0, 20.0), true);
+			}
+		}
+
+	}
+
+	if (allow_floor) {
+		if (bouncing) {
+			particle.age += in_bounceAge * timeAmout;
+			particle.bounceAge += 1.0;
+		} else {
+			particle.age += .025 * timeAmout;
+		}
+	} else {
+		particle.age+= timeAmout;
+	}
+
+	if(particle.age < particle.lifeSpan)
+	{
+	    /*Particle _out;
+		_out.loc = particle.loc;
+		_out.vel = particle.vel;
+		_out.radius = particle.radius;
+		_out.age = particle.age;
+		_out.lifeSpan = particle.lifeSpan;
+		_out.gen = particle.gen;
+		_out.bounceAge = particle.bounceAge;*/
+
+		/*if(record_tail)
+		{
+			tail3 = vs[0].tail2;
+			tail2 = vs[0].tail1;
+			tail1 = vs[0].tail0;
+			tail0 = in_loc;
+		}
+		else
+		{
+			tail3 = vs[0].tail3;
+			tail2 = vs[0].tail2;
+			tail1 = vs[0].tail1;
+			tail0 = vs[0].tail0;
+		}*/
+
+		EmitStreamVertex(particle);
+//		EndStreamPrimitive(0);
+	}
+}
+
+void nebular_update(Nebula particle)
+{
+	float out_age = particle.age + timeAmout;
+	if(out_age < particle.lifeSpan)  // Still alive
+	{
+		particle.radius = particle.radius * particle.scale;
+		particle.loc = particle.loc + particle.vel * timeAmout;
+		float agePer = 1.0 - out_age / particle.lifeSpan;
+
+
+		/*n_loc = out_loc;
+		n_vel = particle.vel;
+		n_radius = out_radius;
+		n_age = out_age;
+		n_lifeSpan = particle.lifeSpan;*/
+//		is_grounded = 0.0;
+        particle.grounded = 0.0;
+		/*n_scale = particle.scale;*/
+		vec4 color = unpackUnorm4x8(particle.color);
+		particle.color = packUnorm4x8(vec4(color.xyz, sin(agePer * 3.1415927) * 0.4));
+
+		EmitStreamVertex(particle);
+	}
+
+}
+
+void particle_born(int particleID)
+{
+	float seed = seeds[particleID];
+	Particle _out;
+
+	_out.age = 1.0;
+	vec3 randomValue = random(seed);
+	_out.radius = map(randomValue.x, 10.0 - gen, 50.0 - (gen - 1.0) * 10.0);
+	_out.loc = position + randomValue;
+
+	float angle = map(randomValue.x, 0.0, 3.1415927 * 2.0);
+	vel.z = cos(angle) * 0.7;
+	vel.x = sin(angle) * 0.7;
+	vel.y = -sqrt(1.0 - vel.x * vel.x - vel.y * vel.y);
+	vel *= map(randomValue, 10.0, 20.0);
+
+	_out.age = 0.0;
+	_out.bounceAge = 2.0;
+	_out.lifeSpan = radius;
+//	type = uint(1);
+
+//	tail0 = loc;
+//	tail1 = loc;
+//	tail2 = loc;
+//	tail3 = loc;
+
+	EmitStreamVertex(_out);
+
+	if(/*gl_PrimitiveIDIn*/particleID < 1)
+	{
+		nebula_born(position, 20.0, false);
+		nebula_born(position, 50.0, false);
+	}
+}
+
+void nebula_born(vec3 _loc, float _radius, bool _ISGROUNDED)
+{
+	/*
+	loc = new Vec3D(_loc);
+	vel = new Vec3D(pov.eyeNormal.scale(2.0f));
+	radius = random(_radius * .8f, _radius * 1.75f);
+
+	scaleFac = random(1.005f, 1.10f);
+	age = 0;
+	lifeSpan = (int) random(10, 30);
+	c = color(random(.75f, 1.0f), random(.5f, .75f), random(.2f, .8f));
+	ISGROUNDED = _ISGROUNDED;
+
+	if (ISGROUNDED) {
+		scaleFac = random(1.01f, 1.025f);
+		vel.y -= random(1.0f);
+		radius *= 2.0;
+	}*/
+
+    vec3 randomValue = random(t_seed);
+    Nebula _out;
+	float t_seed = u_seed + sin(_radius);
+	vec3 eye_normal = normalize(eye_loc);
+	_out.loc = _loc;
+	_out.vel = eye_normal * 20.0;
+	_out.radius = map(randomValue.x, _radius * .8, _radius * 1.75);
+	_out.age = 0.0;
+	_out.lifeSpan = map(randomValue.x, 10.0, 30.0) / 50.0;
+
+	float r = map(randomValue.x, 0.75, 1.00);
+	float g = map(randomValue.y, 0.50, 0.75);
+	float b = map(randomValue.z, 0.20, 0.80);
+	_out.color = packSnorm4x8(vec4(r,g,b,0));
+	_out.grounded = _ISGROUNDED ? 1.0 : 0.0;
+
+	if(_ISGROUNDED)
+	{
+		_out.scale = random(t_seed, 1.01, 1.025).x;
+		_out.vel.y -= random(t_seed).y * 10;
+	    _out.radius *= 2.0;
+	}
+	else
+	{
+		_out.scale = random(t_seed, 1.005, 1.10).x;
+	}
+
+	EmitStreamVertex(_out);
+}
+
+layout(binding = 7) uniform RenderData
+{
+    int g_Type;
+    int g_MaxParticles;
+};
+
+layout (local_size_x = 32) in;
+
+void main()
+{
+    int particleID = int(gl_GlobalInvocationID.x);
+
+    if(particleID < g_MaxParticles)
+    {
+        if(g_Type == TYPE_BORN)
+        {
+            particle_born(int(particleID));
+        }
+        else if(g_Type == TYPE_UPDATE)
+        {
+            Particle particle = g_ParticleInput[particleID];
+            particle_update(particle);
+        }
+        else if(g_Type == TYPE_NEBULA)
+        {
+            Nebula nebula = g_NebulaInput[particleID];
+            nebular_update(nebula);
+        }
+        else if(g_Type == TYPE_NEBORN)
+        {
+            // every frame we need to add two nebulas to assciate with the emitter.
+            nebula_born(EmitPosition, 10.0, false);
+            nebula_born(EmitPosition, 30.0, false);
+        }
+    }
+}

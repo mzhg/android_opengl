@@ -1,0 +1,27 @@
+#version 310 es
+
+//layout (binding = 3, offset = 0) uniform atomic_uint g_ParticlesCounter;
+layout (binding = 8, offset = 0) uniform atomic_uint g_NebulasCounter;
+
+layout(binding = 9) buffer ArgsWrite
+{
+    uint g_Args[4];
+};
+
+layout(binding = 10) buffer DirectWrite
+{
+    uint g_DispatchArgs[3];
+};
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint count = atomicCounter(g_NebulasCounter);
+    g_DispatchArgs[0] = (count + 31) / 32;
+    g_DispatchArgs[1] = 1;
+    g_DispatchArgs[2] = 1;
+
+    g_Args[0] = 2;
+    g_Args[1] = count;
+}

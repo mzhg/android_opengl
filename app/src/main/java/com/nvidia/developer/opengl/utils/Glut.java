@@ -6,7 +6,9 @@ import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.opengl.GLES20;
 import android.opengl.GLES30;
+import android.opengl.GLUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -121,6 +123,19 @@ public final class Glut {
 		}
 		
 		return null;
+	}
+
+	public static int loadTextureFromFile(String filename, int filter, int wrap){
+		int textureID = GLES.glGenTextures();
+		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureID);
+		Bitmap image = loadBitmapFromAssets(filename);
+		GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, image, 0);
+		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, filter);
+		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, filter);
+		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, wrap);
+		GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, wrap);
+
+		return textureID;
 	}
 
 	public static final StringBuilder loadTextFromClassPath(Class<?> clazz, String filename){

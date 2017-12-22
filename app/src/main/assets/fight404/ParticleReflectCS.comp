@@ -1,0 +1,121 @@
+#version 310 es
+
+layout(binding = 0) uniform RenderFrame
+{
+    mat4 projection;
+    mat4 modelView;
+
+    float render_particle;
+    float pointSize;
+};
+
+struct Particle
+{
+    vec3 loc;  // position vector
+    float radius; // particle's size
+    vec3 vel;  // velocity vector
+    float age;    // current age of particle
+    float lifeSpan; // max allowed age of particle
+    float gen; 	  // number of times particle has been involved in a SPLIT
+    float bounceAge; // amount to age particle when it bounces off floor
+    float padding;   // unused
+};
+
+struct OutParticle
+{
+    vec4 position;
+    vec4 color;    // This could get more efficent
+    vec2 texcoord;
+};
+
+layout(binding = 1) buffer ParticleWrite
+{
+    OutParticle g_ParticleOutput[];
+};
+
+layout(binding = 5) buffer ParticleRead
+{
+    Particle g_ParticleInput[];
+};
+
+layout (binding = 3, offset = 0) uniform atomic_uint g_ParticlesCounter;
+
+layout(binding = 7) uniform RenderData
+{
+    int g_Type;
+    int g_MaxParticles;
+};
+
+layout (local_size_x = 32) in;
+
+void EmitVertex(OutParticle _out)
+{
+    uint location = atomicCounterIncrement(g_ParticlesCounter);
+    g_ParticleOutput[int(location)] = _out;
+}
+
+void particleReflect(Particle particle)
+{
+    vec3 in_loc = particle.loc;
+    vec3 in_vel = particle.vel;
+    float in_radius = particle.radius;
+    float in_age = particle.age;
+    float in_bounceAge = particle.bounceAge;
+
+    // output reflect informations.
+    float altitude = in_loc.y;
+    float reflectMaxAltitude = 5.0;
+    float yPer = (1.0 - (altitude / reflectMaxAltitude)) * .5;
+
+    if(yPer > 0.05)
+    {
+        float agePer = 1.0 - in_age / particle.lifeSpan;
+
+        vec3 emiter_pos = vec3(in_loc.x, 0.0, in_loc.z);
+        float diam = in_radius * agePer * yPer;
+
+        float half_size = diam * 0.2;
+        vec4 reflect_color = vec4(agePer * .35, agePer * .25, agePer * 0.1, yPer + 0.1);
+
+        vec3 u_right = vec3(1.0, 0.0, 0.0);
+        vec3 u_up    = vec3(0.0, 0.0, -1.0);
+        vec4 pos1 = vec4(emiter_pos + u_right * half_size - u_up * half_size, 1.0);
+
+        mat4 u_mvp = projection * modelView;
+
+        OutParticle _out;
+        _out.position = u_mvp * pos1;
+        _out.texcoord = vec2(0, 1);
+        _out.color = reflect_color;
+        EmitVertex(_out);
+
+        vec4 pos2 = vec4(emiter_pos + u_right * half_size + u_up * half_size, 1.0);
+        _out.position = u_mvp * pos2;
+        _out.texcoord = vec2(0, 0);
+        _out.color = reflect_color;
+        EmitVertex(_out);
+
+        vec4 pos3 = vec4(emiter_pos - u_right * half_size - u_up * half_size, 1.0);
+        _out.position = u_mvp * pos3;
+        _out.texcoord = vec2(1, 1);
+        _out.color = reflect_color;
+        EmitVertex(_out);
+
+        vec4 pos4 = vec4(emiter_pos - u_right * half_size + u_up * half_size, 1.0);
+        _out.position = u_mvp * pos4;
+        _out.texcoord = vec2(1, 0);
+        _out.color = reflect_color;
+        EmitVertex(_out);
+    }
+}
+
+void main()
+{
+    int particleID = int(gl_GlobalInvocationID.x);
+
+    if(particleID < g_MaxParticles)
+    {
+        Particle particle = g_ParticleInput[particleID];
+        particleReflect(particle);
+    }
+}
