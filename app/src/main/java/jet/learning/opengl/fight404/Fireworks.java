@@ -3,6 +3,8 @@ package jet.learning.opengl.fight404;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
 
+import com.nvidia.developer.opengl.app.NvPointerActionType;
+import com.nvidia.developer.opengl.app.NvPointerEvent;
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
@@ -21,8 +23,6 @@ import javax.microedition.khronos.opengles.GL11;
  * Created by mazhen'gui on 2017/12/20.
  */
 public final class Fireworks extends NvSampleApp {
-    private Textures textures;
-
     private final Vector3f gravity = new Vector3f();
     private float floorLevel;
 
@@ -46,9 +46,16 @@ public final class Fireworks extends NvSampleApp {
     private final ByteBuffer mBlockMemory = BufferUtils.createByteBuffer(Math.max(BlockData.SIZE, RenderFrame.SIZE));
 
     private int mFrameBuffer;
-    private final RenderFrame mRenderFrame = new RenderFrame();
+    final RenderFrame mRenderFrame = new RenderFrame();
 
     private int mRandomTex2D;
+
+    private boolean mTouched;
+    private int mTouchID;
+    private float mTouchX, mTouchY;
+    private boolean point_sprite_switcher;
+
+    private Emitter emitter;
 
     @Override
     protected void initRendering() {
@@ -72,15 +79,31 @@ public final class Fireworks extends NvSampleApp {
         GLES20.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, 0);
 
         mRandomTex2D = createRandomTexture1D(256);
+
+        emitter = new Emitter(this);
     }
 
     private void updateCamera(){
         m_transformer.getModelViewMat(mRenderFrame.view);
+        Matrix4f.decompseRigidMatrix(mRenderFrame.view, mBlockData.eye_loc, null, null);
+
+        emitter.update();
     }
 
     @Override
     protected void draw() {
         updateCamera();
+
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE, GLES20.GL_ZERO, GLES20.GL_ZERO);
+
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+        GLES20.glDepthFunc(GLES20.GL_LEQUAL);
+        GLES20.glDepthMask(false);
+        GLES20.glDisable(GLES20.GL_CULL_FACE);
+
+        emitter.draw();
     }
 
     @Override
@@ -90,7 +113,9 @@ public final class Fireworks extends NvSampleApp {
         Matrix4f.perspective((float)Math.toDegrees(NvUtils.PI*2/3), (float)width/height, 0.1f, 1000f, mRenderFrame.projection);
     }
 
-    void updateRenderFrame(int index){
+    void updateRenderFrame(int index, float pointSize){
+        mRenderFrame.pointSize = pointSize;
+
         GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, index, mFrameBuffer);
         mBlockMemory.clear();
         mRenderFrame.store(mBlockMemory);
@@ -104,6 +129,61 @@ public final class Fireworks extends NvSampleApp {
         mBlockData.store(mBlockMemory);
         mBlockMemory.flip();
         GLES20.glBufferSubData(GLES30.GL_UNIFORM_BUFFER, 0, mBlockMemory.remaining(), mBlockMemory);
+    }
+
+    final boolean isTouched() { return mTouched;}
+    final float getTouchX()   { return mTouchX;}
+    final float getTouchY()   { return mTouchY;}
+
+    void enablePointSprite(){
+        if(!point_sprite_switcher){
+//            GLES20.glEnable(GLES20.GL_POINT_SPRITE);
+//            GLES20.glEnable(GLES30.GL_PROGRAM_POINT_SIZE);
+            point_sprite_switcher = true;
+        }
+    }
+
+    void disablePointSprite(){
+        if(point_sprite_switcher){
+//            GLES20.glDisable(GLES32.GL_POINT_SPRITE);
+//            GLES20.glDisable(GLES32.GL_PROGRAM_POINT_SIZE);
+            point_sprite_switcher = false;
+        }
+    }
+
+    @Override
+    public boolean handlePointerInput(int device, int action, int modifiers, int count, NvPointerEvent[] points) {
+        if(action == NvPointerActionType.DOWN){
+            if(!mTouched){
+                mTouched = true;
+                mTouchID = points[0].m_id;
+                mTouchX = points[0].m_x;
+                mTouchY = points[0].m_y;
+
+                return true;
+            }
+        }else if(action == NvPointerActionType.UP){
+            if(mTouched ){
+                for(int i = 0; i < count; i++){
+                    if(points[i].m_id == mTouchID){
+                        mTouched = false;
+                        return true;
+                    }
+                }
+            }
+        }else if(action == NvPointerActionType.MOTION){
+            if(mTouched){
+                for(int i = 0; i < count; i++){
+                    if(points[i].m_id == mTouchID){
+                        mTouchX = points[i].m_x;
+                        mTouchY = points[i].m_y;
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     void bindRandomTex(){
