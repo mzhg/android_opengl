@@ -44,7 +44,7 @@ final class Emitter {
     public Emitter(Fireworks context) {
         mContext = context;
 
-        reflect_program = NvGLSLProgram.createFromFiles("fight404/", "fight404/"); // TODO
+//        reflect_program = NvGLSLProgram.createFromFiles("fight404/", "fight404/"); // TODO
         render_program = NvGLSLProgram.createFromFiles("fight404/EmiterRenderVS.vert", "fight404/EmiterRenderPS.frag");
 
         emitter_sprite = Glut.loadTextureFromFile("textures/emitter.png", GLES20.GL_LINEAR, GLES20.GL_CLAMP_TO_EDGE);
@@ -130,8 +130,6 @@ final class Emitter {
         float vy = (float) ((-2.0*screenY/height + 1.0)/ projection.m11);
         Matrix4f.invertRigid(view, tempMat);
 
-        if(dir == null) dir = new Vector3f();
-
         dir.set(vx, vy, -1f);
         Matrix4f.transformNormal(tempMat, dir, dir);
 
@@ -143,7 +141,12 @@ final class Emitter {
         render_program.enable();
         /*render_program.applyPointSize(50);
         render_program.applyMVP(camera.getVP());*/
-        mContext.updateRenderFrame(0, 50);
+        mContext.updateRenderFrame(0, 0,100);
+
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE, GLES20.GL_ZERO, GLES20.GL_ZERO);
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+        GLES20.glDepthMask(false);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, emitter_sprite);
@@ -157,6 +160,9 @@ final class Emitter {
         GLES20.glDrawArrays(GL11.GL_POINTS, 0, 1);
         GLES20.glDisableVertexAttribArray(0);
         mContext.disablePointSprite();
+
+        GLES20.glDisable(GLES20.GL_BLEND);
+        GLES20.glDepthMask(true);
 
         // draw the reflect.
         /*reflect_program.enable();

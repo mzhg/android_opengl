@@ -147,6 +147,13 @@ public final class GLUtil {
 		buffer.flip();
 		return buffer;
 	}
+
+	public static IntBuffer wrap(int x, int y, int z, int w){
+		IntBuffer buffer = getCachedIntBuffer(4);
+		buffer.put(x).put(y).put(z).put(w);
+		buffer.flip();
+		return buffer;
+	}
 	
 	public static IntBuffer wrap(int[] data, int offset, int length){
 		IntBuffer buffer = getCachedIntBuffer(length);

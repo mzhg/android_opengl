@@ -56,6 +56,7 @@ public final class Fireworks extends NvSampleApp {
     private boolean point_sprite_switcher;
 
     private Emitter emitter;
+    private ParticleSystem particles;
 
     @Override
     protected void initRendering() {
@@ -81,13 +82,17 @@ public final class Fireworks extends NvSampleApp {
         mRandomTex2D = createRandomTexture1D(256);
 
         emitter = new Emitter(this);
+        particles = new ParticleSystem(this);
     }
 
     private void updateCamera(){
         m_transformer.getModelViewMat(mRenderFrame.view);
         Matrix4f.decompseRigidMatrix(mRenderFrame.view, mBlockData.eye_loc, null, null);
 
+        mBlockData.timeAmout = getFrameDeltaTime();
+        mBlockData.gravity.set(0, -9.8f, 0);
         emitter.update();
+        particles.update(isTouched());
     }
 
     @Override
@@ -95,25 +100,20 @@ public final class Fireworks extends NvSampleApp {
         updateCamera();
 
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);
-        GLES20.glEnable(GLES20.GL_BLEND);
-        GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE, GLES20.GL_ZERO, GLES20.GL_ZERO);
-
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-        GLES20.glDepthFunc(GLES20.GL_LEQUAL);
-        GLES20.glDepthMask(false);
-        GLES20.glDisable(GLES20.GL_CULL_FACE);
 
         emitter.draw();
+        particles.draw();
     }
 
     @Override
     protected void reshape(int width, int height) {
         GLES20.glViewport(0, 0, width, height);
 
-        Matrix4f.perspective((float)Math.toDegrees(NvUtils.PI*2/3), (float)width/height, 0.1f, 1000f, mRenderFrame.projection);
+        Matrix4f.perspective((float)Math.toDegrees(NvUtils.PI*2/3), (float)width/height, 0.1f, 3000f, mRenderFrame.projection);
     }
 
-    void updateRenderFrame(int index, float pointSize){
+    void updateRenderFrame(int index, int type, float pointSize){
+        mRenderFrame.render_particle = type;
         mRenderFrame.pointSize = pointSize;
 
         GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, index, mFrameBuffer);

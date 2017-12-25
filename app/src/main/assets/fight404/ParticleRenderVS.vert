@@ -52,6 +52,7 @@ void draw_particle1()
     pos2.x = pos1.x + diam * 0.5;
     vec4 ppos1 = projection * pos1;
     vec4 ppos2 = projection * pos2;
+    float psize = distance(ppos1.xyz/ppos1.w, ppos2.xyz/ppos2.w) * 40.0;
     gl_PointSize = psize * 0.5 /*distance(ppos1.xyz/ppos1.w, ppos2.xyz/ppos2.w) * 15.0*/;
     gl_Position  = ppos1;
 }

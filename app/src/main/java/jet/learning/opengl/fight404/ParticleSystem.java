@@ -6,6 +6,7 @@ import android.opengl.GLES31;
 
 import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
+import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.Glut;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
 import com.nvidia.developer.opengl.utils.NvUtils;
@@ -56,11 +57,13 @@ final class ParticleSystem {
     // Shader buffers
     private int render_data_buffer;
     private int dispatch_direct_buffer;
+    private int draw_indirect_buffer;
 
     // OpenGL Programs
     private NvGLSLProgram particle_update;
     private NvGLSLProgram particle_args;
     private NvGLSLProgram newbula_args;
+    private NvGLSLProgram particle_render;
 
     private Fireworks mContext;
 
@@ -70,6 +73,7 @@ final class ParticleSystem {
         particle_update = Fireworks.createShader("fight404/ParticleUpdateCS.comp", GLES31.GL_COMPUTE_SHADER);
         particle_args = Fireworks.createShader("fight404/ParticleComputeArgsCS.comp", GLES31.GL_COMPUTE_SHADER);
         newbula_args = Fireworks.createShader("fight404/NebulaComputeArgsCS.comp", GLES31.GL_COMPUTE_SHADER);
+        particle_render = NvGLSLProgram.createFromFiles("fight404/ParticleRenderVS.vert", "fight404/ParticleRenderPS.frag");
 
         particleChans();
         particle_sprite = Glut.loadTextureFromFile("textures/particle.png", GLES20.GL_LINEAR, GLES20.GL_CLAMP_TO_EDGE);
@@ -79,8 +83,8 @@ final class ParticleSystem {
     void update(boolean addSeed){
         // 1. update the emitter source.
         boolean needAddNewParticle = false;
-        long current_time = System.currentTimeMillis();
         if(/*camera.isRightButtonDown()*/addSeed){
+            long current_time = System.currentTimeMillis();
             if(current_time - last_update_time > 50){
                 for(int i = 0; i < MAX_EMITTER_COUNT; i++){
                     float seed = (float)Math.random();
@@ -101,7 +105,7 @@ final class ParticleSystem {
         particle_update.applyTime(getElapsedTime());
         particle_update.applyEyePos(camera.getEyePosition());
         particle_update.applySeed((float)System.currentTimeMillis());*/
-
+        mContext.updateBlockdataAndBind(0);
         particle_chains[current_chain].beginRecord(GLES20.GL_POINTS, 1, 3);
         GLES.checkGLError();
         mContext.bindRandomTex();
@@ -126,13 +130,15 @@ final class ParticleSystem {
             GL11.glFlush();
             GLError.checkError();*/
 
-
-
             {
+                GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 5, 0);
+                GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 6, 0);
                 GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 7, 0);
+
                 updateParticleArgs();
                 particle_update.enable();
 
+                particle_chains[1-current_chain].bindResource(5);
                 GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 7, render_data_buffer);
                 GLES20.glBindBuffer(GLES31.GL_DISPATCH_INDIRECT_BUFFER, dispatch_direct_buffer);
                 GLES31.glDispatchComputeIndirect(0);
@@ -141,15 +147,19 @@ final class ParticleSystem {
             }
 
             {
+                GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 5, 0);
+                GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 6, 0);
                 GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 7, 0);
                 updateNebulaArgs();
                 particle_update.enable();
 
+                particle_chains[1-current_chain].bindResource(5);
                 GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 7, render_data_buffer);
                 GLES20.glBindBuffer(GLES31.GL_DISPATCH_INDIRECT_BUFFER, dispatch_direct_buffer);
                 GLES31.glDispatchComputeIndirect(0);
                 GLES31.glMemoryBarrier(GLES31.GL_SHADER_STORAGE_BARRIER_BIT);
                 GLES20.glBindBuffer(GLES31.GL_DISPATCH_INDIRECT_BUFFER, 0);
+                GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 7, 0);
             }
         }
 
@@ -157,43 +167,100 @@ final class ParticleSystem {
         particle_chains[current_chain].endRecord();
         first_loop = true;
         count ++;
+
+        // unbind all of the resources.
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+        GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 0, 0);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 1, 0);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 2, 0);
+        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 3, 0);
+        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 4, 0);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 5, 0);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 6, 0);
+        GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 7, 0);
+    }
+
+    /** draw the particles. */
+    void draw(){
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE, GLES20.GL_ZERO, GLES20.GL_ZERO);
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+        GLES20.glDepthMask(false);
+
+        //1, draw the particles.
+        CopyStructureCount(draw_indirect_buffer, particle_chains[current_chain].getAtomicBuffer(0), 0);
+        mContext.updateRenderFrame(0,0, 1);
+        particle_render.enable();
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, particle_sprite);
+
+        GLES20.glBindBuffer(GLES31.GL_DRAW_INDIRECT_BUFFER, draw_indirect_buffer);
+        particle_chains[current_chain].drawIndirectArrays(0);
+        GLES20.glBindBuffer(GLES31.GL_DRAW_INDIRECT_BUFFER, 0);
+        GLES.checkGLError();
+
+        // 2, draw the nebulas
+        CopyStructureCount(draw_indirect_buffer, particle_chains[current_chain].getAtomicBuffer(1), 0);
+        mContext.updateRenderFrame(2,0, 1);
+        particle_render.enable();
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, nebula_sprite);
+
+        GLES20.glBindBuffer(GLES31.GL_DRAW_INDIRECT_BUFFER, draw_indirect_buffer);
+        particle_chains[current_chain].drawIndirectArrays(1);
+        GLES20.glBindBuffer(GLES31.GL_DRAW_INDIRECT_BUFFER, 0);
+
+        GLES.checkGLError();
+
+        GLES20.glDisable(GLES20.GL_BLEND);
+        GLES20.glDepthMask(true);
+
+        current_chain = 1 - current_chain;  // swap the buffer
+
     }
 
     private void updateParticleArgs(){
         particle_args.enable();
 
         // unordered acess views.
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 9, render_data_buffer);
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 10, dispatch_direct_buffer);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 6, render_data_buffer);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 7, dispatch_direct_buffer);
 
         // shader resources views
         int atomic_buffer = particle_chains[1-current_chain].getAtomicBuffer(0);
-        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 8, atomic_buffer);
+        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 5, atomic_buffer);
+
+        // Invoke the compute shader
         GLES31.glDispatchCompute(1,1, 1);
 
         // unbind the resources
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 9, 0);
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 10, 0);
-        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 8, 0);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 6, 0);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 7, 0);
+        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 5, 0);
+
+        GLES.checkGLError();
     }
 
     private void updateNebulaArgs(){
         newbula_args.enable();
 
         // unordered acess views.
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 9, render_data_buffer);
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 10, dispatch_direct_buffer);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 6, render_data_buffer);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 7, dispatch_direct_buffer);
 
         // shader resources views
         int atomic_buffer = particle_chains[1-current_chain].getAtomicBuffer(1);
-        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 8, atomic_buffer);
+        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 5, atomic_buffer);
+
+        // Invoke the compute shader
         GLES31.glDispatchCompute(1,1, 1);
 
         // unbind the resources
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 9, 0);
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 10, 0);
-        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 8, 0);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 6, 0);
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 7, 0);
+        GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, 5, 0);
+
+        GLES.checkGLError();
     }
 
     private void dispatch(int count){
@@ -201,6 +268,16 @@ final class ParticleSystem {
         assert (x >= 1);
         GLES31.glDispatchCompute(x, 1,1 );
         GLES31.glMemoryBarrier(GLES31.GL_SHADER_STORAGE_BARRIER_BIT);
+    }
+
+    private void CopyStructureCount(int dstBuffer, int srcBuffer, int offset){
+        GLES20.glBindBuffer(GLES30.GL_COPY_READ_BUFFER, srcBuffer);
+        GLES20.glBindBuffer(GLES30.GL_COPY_WRITE_BUFFER, dstBuffer);
+        GLES30.glCopyBufferSubData(GLES30.GL_COPY_READ_BUFFER, GLES30.GL_COPY_WRITE_BUFFER, offset,0, 4);
+        GLES20.glBindBuffer(GLES30.GL_COPY_READ_BUFFER, 0);
+        GLES20.glBindBuffer(GLES30.GL_COPY_WRITE_BUFFER, 0);
+
+        GLES.checkGLError();
     }
 
     private void setUniform(int type, int maxParticleCount){
@@ -230,6 +307,11 @@ final class ParticleSystem {
         GLES20.glBindBuffer(GLES31.GL_DISPATCH_INDIRECT_BUFFER, dispatch_direct_buffer);
         GLES20.glBufferData(GLES31.GL_DISPATCH_INDIRECT_BUFFER, 12, null, GLES20.GL_DYNAMIC_DRAW);
         GLES20.glBindBuffer(GLES31.GL_DISPATCH_INDIRECT_BUFFER, 0);
+
+        draw_indirect_buffer = GLES.glGenBuffers();
+        GLES20.glBindBuffer(GLES31.GL_DRAW_INDIRECT_BUFFER, draw_indirect_buffer);
+        GLES.glBufferData(GLES31.GL_DRAW_INDIRECT_BUFFER, GLUtil.wrap(0,1,0,0), GLES20.GL_DYNAMIC_DRAW);
+        GLES20.glBindBuffer(GLES31.GL_DRAW_INDIRECT_BUFFER, 0);
     }
 
     private static void vertexTailBinding(){

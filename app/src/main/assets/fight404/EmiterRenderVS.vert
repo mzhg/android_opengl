@@ -1,4 +1,4 @@
-#version 330
+#version 310 es
 
 layout (location = 0) in vec3 a_pos;
 

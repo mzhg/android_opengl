@@ -2,7 +2,7 @@
 precision highp float;
 
 in vec4 color;
-uniform sampler2D sprite_texture;
+layout(binding = 0) uniform sampler2D sprite_texture;
 layout (location = 0) out vec4 fragColor;
 
 void main( void)

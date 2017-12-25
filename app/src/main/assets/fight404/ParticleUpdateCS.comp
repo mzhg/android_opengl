@@ -126,6 +126,7 @@ void particle_update(Particle particle)
 	if (allow_perlin)
 		particle.vel += (perlin * timeAmout);
 
+    float seed = particle.radius + 0.123456;
     vec3 randomValue = random(seed);
     float velScale = map(randomValue.y, 0.3, 0.7);
 
@@ -140,27 +141,26 @@ void particle_update(Particle particle)
 		float bounceVel = length(particle.vel);
 		particle.vel *= (.7f);
 		particle.vel = reflect(particle.vel, vec3(0,1,0));
-		particle.vel.y *= particle.radius/50.0 * random(particle.radius, 0.4, 1.4).x;
+		particle.vel.y *= particle.radius/50.0 * map(randomValue.x, 0.4, 1.4);
 		particle.loc.y *= -1.0;
 
-		if (bounceVel > 15.0 && vs[0].gen < 4.0) // split the particle
+		if (bounceVel > 15.0 && particle.gen < 4.0) // split the particle
 		{
-			uint amt = min(uint(0.15 * in_radius), 8);
+			int amt = min(int(0.15 * particle.radius), 8);
 			for(int i = 0; i < amt; i++)
 			{
 			    Particle _out;
-				float seed = particle.radius + float(i) + 0.123456;
 				_out.loc = particle.loc;
 				_out.vel = particle.vel * velScale /*random(seed, 0.3, 0.7).y*/;
 				_out.gen = particle.gen + 1.0;
-				_out.radius = map(randomValue.x, 10.0 - gen, 50.0 - (gen - 1.0) * 10.0);
+				_out.radius = map(randomValue.x, 10.0 - _out.gen, 50.0 - (_out.gen - 1.0) * 10.0);
 				_out.age = 0.0;
-				_out.lifeSpan = radius;
-				_out.bounceAge = 2.0 + map(randomValue.z + radius);
+				_out.lifeSpan = _out.radius;
+				_out.bounceAge = 2.0 + randomValue.z;
 
 				EmitStreamVertex(_out);
 
-				nebula_born(loc /*_p.loc[0]*/, map(randomValue.x, 5.0, 20.0), true);
+				nebula_born(_out.loc /*_p.loc[0]*/, map(randomValue.x, 5.0, 20.0), true);
 			}
 		}
 
@@ -168,7 +168,7 @@ void particle_update(Particle particle)
 
 	if (allow_floor) {
 		if (bouncing) {
-			particle.age += in_bounceAge * timeAmout;
+			particle.age += particle.bounceAge * timeAmout;
 			particle.bounceAge += 1.0;
 		} else {
 			particle.age += .025 * timeAmout;
@@ -239,20 +239,21 @@ void particle_born(int particleID)
 	float seed = seeds[particleID];
 	Particle _out;
 
-	_out.age = 1.0;
+	_out.age = 0.0;
+	_out.gen = 1.0;
 	vec3 randomValue = random(seed);
-	_out.radius = map(randomValue.x, 10.0 - gen, 50.0 - (gen - 1.0) * 10.0);
-	_out.loc = position + randomValue;
+	_out.radius = map(randomValue.x, 10.0 - _out.gen, 50.0 - (_out.gen - 1.0) * 10.0);
+	_out.loc = EmitPosition + randomValue;
 
 	float angle = map(randomValue.x, 0.0, 3.1415927 * 2.0);
-	vel.z = cos(angle) * 0.7;
-	vel.x = sin(angle) * 0.7;
-	vel.y = -sqrt(1.0 - vel.x * vel.x - vel.y * vel.y);
-	vel *= map(randomValue, 10.0, 20.0);
+	_out.vel.z = cos(angle) * 0.7;
+	_out.vel.x = sin(angle) * 0.7;
+	_out.vel.y = -sqrt(1.0 - _out.vel.x * _out.vel.x - _out.vel.z * _out.vel.z);
+	_out.vel *= map(randomValue, 10.0, 20.0);
 
 	_out.age = 0.0;
 	_out.bounceAge = 2.0;
-	_out.lifeSpan = radius;
+	_out.lifeSpan = _out.radius;
 //	type = uint(1);
 
 //	tail0 = loc;
@@ -264,8 +265,8 @@ void particle_born(int particleID)
 
 	if(/*gl_PrimitiveIDIn*/particleID < 1)
 	{
-		nebula_born(position, 20.0, false);
-		nebula_born(position, 50.0, false);
+		nebula_born(EmitPosition, 20.0, false);
+		nebula_born(EmitPosition, 50.0, false);
 	}
 }
 
@@ -287,10 +288,10 @@ void nebula_born(vec3 _loc, float _radius, bool _ISGROUNDED)
 		vel.y -= random(1.0f);
 		radius *= 2.0;
 	}*/
-
+    float t_seed = sin(_radius);
     vec3 randomValue = random(t_seed);
     Nebula _out;
-	float t_seed = u_seed + sin(_radius);
+
 	vec3 eye_normal = normalize(eye_loc);
 	_out.loc = _loc;
 	_out.vel = eye_normal * 20.0;
@@ -306,13 +307,13 @@ void nebula_born(vec3 _loc, float _radius, bool _ISGROUNDED)
 
 	if(_ISGROUNDED)
 	{
-		_out.scale = random(t_seed, 1.01, 1.025).x;
-		_out.vel.y -= random(t_seed).y * 10;
+		_out.scale = map(randomValue.x, 1.01, 1.025);
+		_out.vel.y -= randomValue.y * 10.0;
 	    _out.radius *= 2.0;
 	}
 	else
 	{
-		_out.scale = random(t_seed, 1.005, 1.10).x;
+		_out.scale = map(randomValue.x, 1.005, 1.10);
 	}
 
 	EmitStreamVertex(_out);

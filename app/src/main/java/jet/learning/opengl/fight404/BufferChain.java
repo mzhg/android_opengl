@@ -19,6 +19,7 @@ final class BufferChain implements NvDisposeable{
 
     private int m_bufferFirstSlot;
     private int m_atomicFirstSlot;
+    private int m_bufferResourceFirstSlot;
     private int m_CurrentMode;
     private final int[] stream_vaos;
     private final int[] stream_vbos;
@@ -84,13 +85,26 @@ final class BufferChain implements NvDisposeable{
         m_CurrentMode = primitveType;
     }
 
+    public void bindResource(int slot){
+        m_bufferResourceFirstSlot = slot;
+        for(int i = 0; i < stream_vbos.length; i++){
+            GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, slot + i, stream_vbos[i]);
+        }
+    }
+
+    public void unbind(){
+        for(int i = 0; i < stream_vbos.length; i++){
+            GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, m_bufferResourceFirstSlot + i, 0);
+        }
+    }
+
     public int getBufferSize(int index){ return buffer_sizes[index];}
 
     public void endRecord(){
-        for(int i = 0; i < stream_vbos.length; i++){
+        /*for(int i = 0; i < stream_vbos.length; i++){
             GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, m_bufferFirstSlot + i, 0);
             GLES30.glBindBufferBase(GLES31.GL_ATOMIC_COUNTER_BUFFER, m_atomicFirstSlot + i, 0);
-        }
+        }*/
     }
 
     public int getVBO(int index)  { return stream_vbos[index];}
@@ -101,6 +115,12 @@ final class BufferChain implements NvDisposeable{
     public void drawArrays(int index, int primive_count){
         GLES30.glBindVertexArray(stream_vaos[index]);
         GLES30.glDrawArrays(m_CurrentMode, 0, primive_count);
+        GLES30.glBindVertexArray(0);
+    }
+
+    public void drawIndirectArrays(int index){
+        GLES30.glBindVertexArray(stream_vaos[index]);
+        GLES31.glDrawArraysIndirect(m_CurrentMode, 0);
         GLES30.glBindVertexArray(0);
     }
 }
