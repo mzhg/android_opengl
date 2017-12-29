@@ -34,8 +34,8 @@ void draw_particle0()
 	vec4 ppos1 = projection * pos1;
 	vec4 ppos2 = projection * pos2;
 
-	float psize = distance(ppos1.xyz/ppos1.w, ppos2.xyz/ppos2.w) * 40.0;
-	gl_PointSize = psize;
+	float psize = distance(ppos1.xyz/ppos1.w, ppos2.xyz/ppos2.w) * 80.0;
+	gl_PointSize = diam * 2.0;
 	gl_Position  = ppos1;
 
 }
@@ -53,7 +53,7 @@ void draw_particle1()
     vec4 ppos1 = projection * pos1;
     vec4 ppos2 = projection * pos2;
     float psize = distance(ppos1.xyz/ppos1.w, ppos2.xyz/ppos2.w) * 40.0;
-    gl_PointSize = psize * 0.5 /*distance(ppos1.xyz/ppos1.w, ppos2.xyz/ppos2.w) * 15.0*/;
+    gl_PointSize = psize * 0.5;
     gl_Position  = ppos1;
 }
 
@@ -65,7 +65,7 @@ void draw_nebula()
     vec4 ppos2 = mvp * vec4(vec3(loc.x + radius, loc.yz), 1.0);
     gl_Position = ppos1;
 
-    gl_PointSize = distance(ppos1.xyz/ppos1.w, ppos2.xyz/ppos2.w) * 10.0;
+    gl_PointSize = /*radius * 2.0*/20.;
 }
 
 void main()

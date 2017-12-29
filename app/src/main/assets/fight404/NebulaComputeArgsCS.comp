@@ -1,4 +1,5 @@
 #version 310 es
+precision highp atomic_uint;
 
 //layout (binding = 3, offset = 0) uniform atomic_uint g_ParticlesCounter;
 layout (binding = 5) uniform atomic_uint g_NebulasCounter;
@@ -24,4 +25,6 @@ void main()
 
     g_Args[0] = 2u;
     g_Args[1] = count;
+    g_Args[2] = 0u;
+    g_Args[3] = 0u;
 }

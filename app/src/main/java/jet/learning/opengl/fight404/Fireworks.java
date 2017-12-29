@@ -23,24 +23,6 @@ import javax.microedition.khronos.opengles.GL11;
  * Created by mazhen'gui on 2017/12/20.
  */
 public final class Fireworks extends NvSampleApp {
-    private final Vector3f gravity = new Vector3f();
-    private float floorLevel;
-
-    private int counter;
-    private int saveCount;
-
-    private boolean allowNebula;
-    private boolean allowGravity = true;
-    private boolean allowPerlin;
-    private boolean allowTrails;
-    private boolean allowFloor = true;
-    private boolean addParticles = true;
-
-    private float minNoise = 0.499f;
-    private float maxNoise = 0.501f;
-
-    private final Vector3f cursor = new Vector3f();
-
     private int mBlockBuffer;
     final BlockData mBlockData = new BlockData();
     private final ByteBuffer mBlockMemory = BufferUtils.createByteBuffer(Math.max(BlockData.SIZE, RenderFrame.SIZE));
@@ -87,7 +69,7 @@ public final class Fireworks extends NvSampleApp {
 
     private void updateCamera(){
         m_transformer.getModelViewMat(mRenderFrame.view);
-        Matrix4f.decompseRigidMatrix(mRenderFrame.view, mBlockData.eye_loc, null, null);
+        Matrix4f.decompseRigidMatrix(mRenderFrame.view, mBlockData.eye_loc, null, null, mBlockData.lookat);
 
         mBlockData.timeAmout = getFrameDeltaTime();
         mBlockData.gravity.set(0, -9.8f, 0);
@@ -109,7 +91,7 @@ public final class Fireworks extends NvSampleApp {
     protected void reshape(int width, int height) {
         GLES20.glViewport(0, 0, width, height);
 
-        Matrix4f.perspective((float)Math.toDegrees(NvUtils.PI*2/3), (float)width/height, 0.1f, 3000f, mRenderFrame.projection);
+        Matrix4f.perspective(NvUtils.PI*2/3, (float)width/height, 0.1f, 3000f, mRenderFrame.projection);
     }
 
     void updateRenderFrame(int index, int type, float pointSize){
@@ -218,7 +200,7 @@ public final class Fireworks extends NvSampleApp {
         GLES20.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         GLES20.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
         GLES20.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL11.GL_REPEAT);
-        GLES20.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT);
         GLES20.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
         return texture;

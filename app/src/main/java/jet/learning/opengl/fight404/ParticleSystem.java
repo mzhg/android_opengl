@@ -24,7 +24,7 @@ final class ParticleSystem {
     static final int MAX_PARTICLE_COUNT = 10_000;
     static final int MAX_EMITTER_COUNT = 16;
 
-    static final int TYPE_BORN = 0;      // particles born
+    private static final int TYPE_BORN = 0;      // particles born
     private static final int TYPE_UPDATE = 1;    // update the particles
     private static final int TYPE_NEBULA = 2;    // update the nebulas
     private static final int TYPE_NEBORN = 3;    // born the emitter nebulas
@@ -41,8 +41,6 @@ final class ParticleSystem {
     static final int PAR_TYPE_OFFSET = 44;
 
     private BufferChain[] particle_chains = new BufferChain[2];
-    private int emitter_count = MAX_EMITTER_COUNT/2;
-
     // Internal variables
     private long last_update_time;
     private int current_chain;
@@ -100,11 +98,6 @@ final class ParticleSystem {
 
         // 2. perapre the transform feedback to record the particle data.
         particle_update.enable(); // we must bind the program first.
-        /*particle_update.applyPosition(emitter.emiter_pos);  TODO
-        particle_update.applyCounter(count);
-        particle_update.applyTime(getElapsedTime());
-        particle_update.applyEyePos(camera.getEyePosition());
-        particle_update.applySeed((float)System.currentTimeMillis());*/
         mContext.updateBlockdataAndBind(0);
         particle_chains[current_chain].beginRecord(GLES20.GL_POINTS, 1, 3);
         GLES.checkGLError();
@@ -201,7 +194,7 @@ final class ParticleSystem {
 
         // 2, draw the nebulas
         CopyStructureCount(draw_indirect_buffer, particle_chains[current_chain].getAtomicBuffer(1), 0);
-        mContext.updateRenderFrame(2,0, 1);
+        mContext.updateRenderFrame(0,2, 1);
         particle_render.enable();
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, nebula_sprite);
@@ -232,6 +225,7 @@ final class ParticleSystem {
 
         // Invoke the compute shader
         GLES31.glDispatchCompute(1,1, 1);
+        GLES31.glMemoryBarrier(GLES31.GL_SHADER_STORAGE_BARRIER_BIT);
 
         // unbind the resources
         GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 6, 0);
@@ -254,6 +248,7 @@ final class ParticleSystem {
 
         // Invoke the compute shader
         GLES31.glDispatchCompute(1,1, 1);
+        GLES31.glMemoryBarrier(GLES31.GL_SHADER_STORAGE_BARRIER_BIT);
 
         // unbind the resources
         GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 6, 0);
@@ -265,7 +260,8 @@ final class ParticleSystem {
 
     private void dispatch(int count){
         int x = NvUtils.divideAndRoundUp(count, 32);
-        assert (x >= 1);
+        if(x < 1)
+            throw new IllegalArgumentException();
         GLES31.glDispatchCompute(x, 1,1 );
         GLES31.glMemoryBarrier(GLES31.GL_SHADER_STORAGE_BARRIER_BIT);
     }
@@ -329,7 +325,7 @@ final class ParticleSystem {
             GLES20.glVertexAttribPointer(8 + i, 3, GL11.GL_FLOAT, false, stride, PAR_BOUNCE_AGE_OFFSET + 4 + i * 12);
         }
 
-        for(int k = 0; k < 8 + MAX_PARTICLE_TAIL_COUNT; k++)
+        for(int k = 0; k < 7 + MAX_PARTICLE_TAIL_COUNT; k++)
             GLES20.glEnableVertexAttribArray(k);
     }
 

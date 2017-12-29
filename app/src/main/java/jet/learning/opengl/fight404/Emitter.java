@@ -40,6 +40,7 @@ final class Emitter {
 
     private Fireworks mContext;
     private final FloatBuffer emiter_reflect_buf = BufferUtils.createFloatBuffer(16);
+    private boolean mFirstFrame = true;
 
     public Emitter(Fireworks context) {
         mContext = context;
@@ -53,6 +54,20 @@ final class Emitter {
 
     void update(){
         ReadableVector3f eyePos = /*camera.getEyePosition()*/mContext.mBlockData.eye_loc;
+
+        if(mFirstFrame){
+            mFirstFrame = false;
+
+            Vector3f dir = grap(mouse_prev.x, mouse_prev.y, mContext.getWidth(), mContext.getHeight(), emiter_dir);
+
+            Vector3f plane_normal = right;
+            plane_normal.set(eyePos.getX(), 0, eyePos.getZ());
+            plane_normal.normalise();
+
+            final Vector3f emiter_pos = mContext.mBlockData.emitPosition;
+            float t = -Vector3f.dot(plane_normal, eyePos)/Vector3f.dot(plane_normal, dir);
+            Vector3f.linear(eyePos, dir, t, emiter_pos);
+        }
 
         if(mContext.isTouched()){ // update the emitter position if the finger touched
             float sx = mContext.getTouchX();

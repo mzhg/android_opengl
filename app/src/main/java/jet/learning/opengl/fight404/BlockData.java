@@ -21,6 +21,7 @@ final class BlockData implements Readable{
     float floor_level;
 
     final Vector3f eye_loc = new Vector3f();
+    final Vector3f lookat = new Vector3f();
 
     boolean allow_perlin = true;
     boolean allow_gravity = true;
@@ -37,7 +38,7 @@ final class BlockData implements Readable{
         buf.putFloat(timeAmout);
         gravity.store(buf);
         buf.putFloat(floor_level);
-        eye_loc.store(buf);
+        lookat.store(buf);
         buf.putInt(0);
 
         buf.putInt(allow_perlin ? 1:0);
