@@ -38,9 +38,6 @@ public final class ComputeBasicGLSL extends NvSampleApp{
 	
 	@Override
 	protected void initRendering() {
-		// test shader
-		NvGLSLProgram test_shader = NvGLSLProgram.createFromFiles("shaders/simple_v_t2.glvs", "shaders/simple_v_t2.glfs");
-		test_shader.dispose();
 
 		Log.i("OpenGL ES", "test_shader have no problems!");
 

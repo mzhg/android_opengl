@@ -1,2 +1,2 @@
-All of the examples in this package was ported from the tutorials of the Book 'Introduction to 3D Game Programming with Direct3D 11.0'.
+All of the examples in this package were ported from the tutorials of the Book 'Introduction to 3D Game Programming with Direct3D 11.0'.
 For more informations, please visite the website: http://www.d3dcoder.net/
