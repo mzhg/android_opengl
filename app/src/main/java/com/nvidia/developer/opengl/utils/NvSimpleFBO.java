@@ -104,7 +104,7 @@ public class NvSimpleFBO extends NvWritableFB{
 	protected int createColorTexture2D(Desc desc){
 		int texture = GLES.glGenTextures();
 		GLES.glBindTexture(GL11.GL_TEXTURE_2D, texture);
-		GLES.glTexImage2D(GL11.GL_TEXTURE_2D, 0, /*desc.color.format*/GLES30.GL_RGBA8, desc.width, desc.height, 0, desc.color.format, desc.color.type, (ByteBuffer)null);
+		GLES.glTexImage2D(GL11.GL_TEXTURE_2D, 0, desc.color.internalFormat, desc.width, desc.height, 0, desc.color.format, desc.color.type, (ByteBuffer)null);
 
 		GLES.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, desc.color.wrap);
 		GLES.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, desc.color.wrap);
@@ -117,7 +117,7 @@ public class NvSimpleFBO extends NvWritableFB{
 	public int createDepthTexture2D(Desc desc){
 		int texture = GLES.glGenTextures();
 		GLES.glBindTexture(GL11.GL_TEXTURE_2D, texture);
-		GLES.glTexImage2D(GL11.GL_TEXTURE_2D, 0, /*desc.depth.format*/GLES30.GL_DEPTH_COMPONENT16, desc.width, desc.height, 0, desc.depth.format, desc.depth.type, null);
+		GLES.glTexImage2D(GL11.GL_TEXTURE_2D, 0, desc.color.internalFormat, desc.width, desc.height, 0, desc.depth.format, desc.depth.type, null);
 
 		GLES.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, desc.depth.wrap);
 		GLES.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, desc.depth.wrap);
@@ -132,7 +132,9 @@ public class NvSimpleFBO extends NvWritableFB{
 	 * Used for creating the textures upon which the FBOs are based
 	 */
 	public static final class TextureDesc{
-		/** GL format value (e.g. GL_RGBA), also used for internal format. Default value is 0 */
+		/** GL internal format value (e.g. GL_RGBA8). Default value is 0 */
+		public int internalFormat;
+		/** GL format value (e.g. GL_RGBA). Default value is 0 */
 		public int format;
 		/** GL type value (e.g. GL_UNSIGNED_BYTE). Default value is 0 */
 		public int type;
