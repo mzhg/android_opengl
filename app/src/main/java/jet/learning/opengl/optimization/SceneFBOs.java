@@ -1,7 +1,9 @@
 package jet.learning.opengl.optimization;
 
 import android.opengl.GLES20;
+import android.opengl.GLES30;
 
+import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.NvDisposeable;
 import com.nvidia.developer.opengl.utils.NvSimpleFBO;
 import com.nvidia.developer.opengl.utils.NvWritableFB;
@@ -55,11 +57,14 @@ final class SceneFBOs implements NvDisposeable{
             desc.color.format = GL11.GL_RGBA;
             desc.color.type = GL11.GL_UNSIGNED_BYTE;
             desc.color.filter = GL11.GL_NEAREST;
+            desc.color.internalFormat = GLES30.GL_RGBA8;
 
             desc.depth.format = GLES20.GL_DEPTH_COMPONENT;
-            desc.depth.type = GLES20.GL_UNSIGNED_INT;
+            desc.depth.type = GLES20.GL_UNSIGNED_SHORT;
             desc.depth.filter = GL11.GL_NEAREST;
+            desc.depth.internalFormat = GLES30.GL_DEPTH_COMPONENT16;
 
+            GLES.checkGLError();
             if(m_particleFbo != null)
                 m_particleFbo.dispose();
             m_particleFbo = new NvSimpleFBO(desc);
@@ -80,10 +85,12 @@ final class SceneFBOs implements NvDisposeable{
             desc.color.format = GL11.GL_RGBA;
             desc.color.type = GL11.GL_UNSIGNED_BYTE;
             desc.color.filter = GL11.GL_NEAREST;
+            desc.color.internalFormat = GLES30.GL_RGBA8;
 
             desc.depth.format = GLES20.GL_DEPTH_COMPONENT;
             desc.depth.type = GLES20.GL_UNSIGNED_SHORT;
             desc.depth.filter = GL11.GL_NEAREST;
+            desc.depth.internalFormat = GLES30.GL_DEPTH_COMPONENT16;
 
             if(m_sceneFbo != null)
                 m_sceneFbo.dispose();

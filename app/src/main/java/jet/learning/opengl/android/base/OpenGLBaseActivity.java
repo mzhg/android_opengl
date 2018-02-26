@@ -54,12 +54,14 @@ public abstract class OpenGLBaseActivity extends Activity {
 			int major = (configurationInfo.reqGlEsVersion >> 16) & 0xFFFF;
 			int minor = configurationInfo.reqGlEsVersion & 0xFFFF;
 
-			if(major == 2){
+			/*if(major == 2){
 				glConfig.version = GLConfiguration.GLES2;
 			}else if(major == 3){
 				glConfig.version = (minor == 0)? GLConfiguration.GLES3_0 : GLConfiguration.GLES3_1;
 				// Fewer deviece Support the Opengl ES 3.2 so far.
-			}
+			}*/
+
+			glConfig.version = GLConfiguration.GLES2;
 		}
 		
 		if(supportGL){

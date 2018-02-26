@@ -1,10 +1,5 @@
 package jet.learning.opengl.samples;
 
-import javax.microedition.khronos.opengles.GL11;
-
-import org.lwjgl.util.vector.Matrix4f;
-import org.lwjgl.util.vector.Vector3f;
-
 import android.opengl.GLES20;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
@@ -16,6 +11,11 @@ import com.nvidia.developer.opengl.utils.ImmediateRenderer;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
 import com.nvidia.developer.opengl.utils.Pixels;
 import com.nvidia.developer.opengl.utils.VectorUtil;
+
+import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.Vector3f;
+
+import javax.microedition.khronos.opengles.GL11;
 
 public final class Volumelines extends NvSampleApp{
 
@@ -144,10 +144,8 @@ public final class Volumelines extends NvSampleApp{
          m_transformer.getModelViewMat(modelView);
          lines.program.setUniformMatrix4("modelView", modelView);
          {
-//         glh::vec3f v1;
-//         glh::vec3f v2;
-         Vector3f v1 = new Vector3f();
-         Vector3f v2 = new Vector3f();
+			 Vector3f v1 = new Vector3f();
+			 Vector3f v2 = new Vector3f();
              v1.set(0, -2, 0);
              v2.set(0,1, 2);
              lines.draw_line(v1, v2, epais, epais);
@@ -216,14 +214,6 @@ public final class Volumelines extends NvSampleApp{
          }
          lines.end();
          
-//         if(b['l']){
-//         	b['l'] = false;
-//         	
-//         	System.out.println("Color: " + lines.gl.hasColor());
-//         	System.out.println("Normal: " + lines.gl.hasNormal());
-//         	System.out.println("texcoord: " + lines.gl.hasTexCoord());
-//         }
-     //  glutWireCube(2*m_fTestConstant1);
      }
          //
          //----> Finish the scene
@@ -454,8 +444,6 @@ public final class Volumelines extends NvSampleApp{
  		
  		void setTexture(int tex){
  			texture0 = tex;
- 			
- 			System.out.println("texture0 = " + texture0);
  		}
  	}
 }

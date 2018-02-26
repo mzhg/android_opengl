@@ -1,16 +1,16 @@
 package jet.learning.opengl.samples;
 
+import android.opengl.GLES20;
+import android.util.Log;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import javax.microedition.khronos.opengles.GL11;
 
-
 import jet.learning.opengl.android.base.GLConfiguration;
 import jet.learning.opengl.android.base.OpenGLBaseActivity;
-import android.opengl.GLES20;
-import android.util.Log;
 
 public class Mandelbro extends OpenGLBaseActivity{
 
@@ -25,7 +25,7 @@ public class Mandelbro extends OpenGLBaseActivity{
 			"}";
 	
 	static final String g_ShaderCode =
-			"precision mediump float;\n"+
+			"precision highp float;\n"+
 			"uniform float halfHeight;"+
 	        "uniform float ratio;" +
 			"uniform vec4 texCoord;" +

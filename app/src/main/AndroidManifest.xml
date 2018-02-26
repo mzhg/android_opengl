@@ -152,28 +152,6 @@
         </activity>
 
         <activity
-            android:name="jet.learning.opengl.samples.RadialBlur100"
-            android:configChanges="keyboardHidden|orientation"
-            android:screenOrientation="landscape"
-            android:label="RadialBlur100" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="jet.learning.opengl.category.es2" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name="jet.learning.opengl.samples.RadialBlurNV"
-            android:configChanges="keyboardHidden|orientation"
-            android:screenOrientation="landscape"
-            android:label="RadialBlurNV" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="jet.learning.opengl.category.es2" />
-            </intent-filter>
-        </activity>
-
-        <activity
             android:name="jet.learning.opengl.samples.NightVision"
             android:configChanges="keyboardHidden|orientation"
             android:screenOrientation="landscape"
@@ -488,7 +466,7 @@
             android:name="jet.learning.opengl.upsampling.ParticleUpsampling"
             android:configChanges="keyboardHidden|orientation"
             android:screenOrientation="landscape"
-            android:label="OptimizationApp" >
+            android:label="ParticleUpsampling" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="jet.learning.opengl.category.es3" />

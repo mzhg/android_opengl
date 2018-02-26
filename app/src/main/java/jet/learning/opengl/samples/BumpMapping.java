@@ -7,6 +7,7 @@ import android.opengl.GLUtils;
 import android.util.Log;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
+import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.Glut;
@@ -258,7 +259,7 @@ public final class BumpMapping extends NvSampleApp {
         float t_step = 1.0f/(y_steps - 1);
         int vCount = x_steps * y_steps;
 
-        FloatBuffer vertexData = GLUtil.getCachedFloatBuffer(vCount * (3 + 9 + 2));
+        FloatBuffer vertexData = BufferUtils.createFloatBuffer(vCount * (3 + 9 + 2));
         final Vector3f position = new Vector3f();
         final Vector3f normal = new Vector3f();
         final Vector3f tangent = new Vector3f();

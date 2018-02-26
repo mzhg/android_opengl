@@ -2,7 +2,6 @@ package jet.learning.opengl.samples;
 
 import android.opengl.GLES20;
 import android.opengl.GLES30;
-import android.util.Log;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.utils.GLES;
@@ -51,8 +50,6 @@ public class RadialBlur extends NvSampleApp {
         m_DummyVAO = GLES.glGenVertexArray();
 
         setTitle("RadialBlur");
-
-        Log.i("RadialBlur", "initRendering done!");
     }
 
     @Override
@@ -60,22 +57,15 @@ public class RadialBlur extends NvSampleApp {
         GLES20.glViewport(0, 0, width, height);
         m_aspectRatio = (float)height/(float)width;
         m_LastPointerX = width/2.0f;
-
-        Log.i("RadialBlur", "reshape done!");
     }
 
     @Override
     protected void draw() {
-        Log.i("RadialBlur", "Start to draw");
         GLES30.glBindVertexArray(m_DummyVAO);
         m_Program.enable();
         m_Program.setUniform1i("iChannel0", 0);
         m_Program.setUniform3f("iResolution", getWidth(), getHeight(), 0);
         m_Program.setUniform1f("iGlobalTime", getTotalTime());
-
-//        m_Program.setUniform1i("toon_enable", toonEnable?1:0);
-//        m_Program.setUniform1f("edge_thres", 0.2f);
-//        m_Program.setUniform1f("edge_thres2", 5.0f);
 
         if(isTouchDown(0)){
             m_LastPointerX = getTouchX(0);
@@ -86,6 +76,5 @@ public class RadialBlur extends NvSampleApp {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
         m_Program.disable();
         GLES30.glBindVertexArray(0);
-        Log.i("RadialBlur", "draw done!");
     }
 }

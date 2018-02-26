@@ -34,7 +34,6 @@
 package com.nvidia.developer.opengl.utils;
 
 import android.opengl.GLES20;
-import android.opengl.GLES30;
 
 import java.nio.ByteBuffer;
 
@@ -117,7 +116,7 @@ public class NvSimpleFBO extends NvWritableFB{
 	public int createDepthTexture2D(Desc desc){
 		int texture = GLES.glGenTextures();
 		GLES.glBindTexture(GL11.GL_TEXTURE_2D, texture);
-		GLES.glTexImage2D(GL11.GL_TEXTURE_2D, 0, desc.color.internalFormat, desc.width, desc.height, 0, desc.depth.format, desc.depth.type, null);
+		GLES.glTexImage2D(GL11.GL_TEXTURE_2D, 0, desc.depth.internalFormat, desc.width, desc.height, 0, desc.depth.format, desc.depth.type, null);
 
 		GLES.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, desc.depth.wrap);
 		GLES.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, desc.depth.wrap);

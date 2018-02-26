@@ -13,10 +13,10 @@ public class GLConfiguration {
 	public int blueBits = 8;
 	public int alphaBits = 0;
 	
-	public int depthBits = 8;
+	public int depthBits = 24;
 	public int stencilBits = 0;
 	
-	public int version = 0;
+	public int version = 2;
 	
 	public boolean checkGLError = true;
 	public boolean logGLCallInfo = false;
