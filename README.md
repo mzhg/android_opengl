@@ -13,6 +13,8 @@
 ![index](https://github.com/mzhg/android_opengl/blob/master/screenshot/WaterWave.png)
 ### Particle Optimization
 ![index](https://github.com/mzhg/android_opengl/blob/master/screenshot/OptimizationApp.png)
+### HDR
+![index](https://github.com/mzhg/android_opengl/blob/master/screenshot/HDR.png)
 
 ## OpenGL ES2 Samples
 ### Bump Mapping

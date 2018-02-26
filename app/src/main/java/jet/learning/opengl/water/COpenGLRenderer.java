@@ -1,3 +1,18 @@
+////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2017 mzhg
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License.  You may obtain a copy
+// of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+// License for the specific language governing permissions and limitations
+// under the License.
+////////////////////////////////////////////////////////////////////////////////
 package jet.learning.opengl.water;
 
 import android.graphics.Bitmap;
@@ -77,12 +92,6 @@ final class COpenGLRenderer {
                                             "water_resources/top.jpg", "water_resources/front.jpg", "water_resources/back.jpg"};
         poolSkyCubeMap = createCubemapTexture(poolSkyCubeMapFileNames);
 
-//        waterAddDropProgram = NvGLSLProgram.createFromFiles("water_resources\\wateradddrop.vs", "water_resources\\wateradddrop.fs");
-//        waterHeightMapProgram = NvGLSLProgram.createFromFiles("water_resources\\waterheightmap.vs", "water_resources\\waterheightmap.fs");
-//        waterNormalMapProgram = NvGLSLProgram.createFromFiles("water_resources\\waternormalmap.vs", "water_resources\\waternormalmap.fs");
-//        poolSkyProgram = NvGLSLProgram.createFromFiles("water_resources\\poolsky.vs", "water_resources\\poolsky.fs");
-//        waterProgram = NvGLSLProgram.createFromFiles("water_resources\\water.vs", "water_resources\\water.fs");
-
         waterAddDropProgram = new WaterAddDropProgram();waterAddDropProgram.init();
         waterHeightMapProgram = new WaterHeightmapProgram(); waterHeightMapProgram.init();
         waterNormalMapProgram = new WaterNormalmapProgram(); waterNormalMapProgram.init();
@@ -101,25 +110,6 @@ final class COpenGLRenderer {
         };
 
         // ------------------------------------------------------------------------------------------------------------------------
-/*
-        glUseProgram(waterHeightMapProgram.getProgram());
-        glUniform1f(glGetUniformLocation(waterHeightMapProgram.getProgram(), "ODWHMR"), 1.0f / (float)WHMR);
-        glUseProgram(0);
-
-        glUseProgram(waterNormalMapProgram.getProgram());
-        glUniform1f(glGetUniformLocation(waterNormalMapProgram.getProgram(), "ODWNMR"), 1.0f / (float)WNMR);
-        glUniform1f(glGetUniformLocation(waterNormalMapProgram.getProgram(), "WMSDWNMRM2"), 2.0f / (float)WNMR * 2.0f);
-        glUseProgram(0);
-
-        glUseProgram(waterProgram.getProgram());
-        glUniform1i(glGetUniformLocation(waterProgram.getProgram(), "WaterHeightMap"), 0);
-        glUniform1i(glGetUniformLocation(waterProgram.getProgram(), "WaterNormalMap"), 1);
-        glUniform1i(glGetUniformLocation(waterProgram.getProgram(), "PoolSkyCubeMap"), 2);
-        glUniform1f(glGetUniformLocation(waterProgram.getProgram(), "ODWMS"), 1.0f / 2.0f);
-        glUniform3fv(glGetUniformLocation(waterProgram.getProgram(), "LightPosition"), 1, LightPosition, 0);
-        glUniform3fv(glGetUniformLocation(waterProgram.getProgram(), "CubeMapNormals"), 6, CubeMapNormals, 0);
-        glUseProgram(0);
-        */
         waterProgram.enable();
         waterProgram.setCubemapNormals(CubeMapNormals);
         waterProgram.setLightPosition(0.0f, 5.5f, -9.5f);
@@ -127,22 +117,7 @@ final class COpenGLRenderer {
         GLES.checkGLError("COpenGLRenderer::Init shader done!");
         // ------------------------------------------------------------------------------------------------------------------------
 
-//        dropRadiusLoc = glGetUniformLocation(waterAddDropProgram.getProgram(), "DropRadius");
-//        dropRadiusLoc = glGetUniformLocation(waterAddDropProgram.getProgram(), "Position");
-
-//        cameraPositionLoc = glGetUniformLocation(waterProgram.getProgram(), "CameraPosition");
-
-        // ------------------------------------------------------------------------------------------------------------------------
-
         GLES30.glGenTextures(2, waterHeightMaps, 0);
-/*
-        vec4 *Heights = new vec4[WHMR * WHMR];
-
-        for(int i = 0; i < WHMR * WHMR; i++)
-        {
-            Heights[i] = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-        }
-*/
         for(int i = 0; i < 2; i++)
         {
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, waterHeightMaps[i]);
@@ -156,13 +131,9 @@ final class COpenGLRenderer {
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
         }
         GLES.checkGLError("COpenGLRenderer::Init waterHeightMaps!");
-//        delete [] Heights;
-
         // ------------------------------------------------------------------------------------------------------------------------
 
         waterNormalMap = glGenTextures();
-
-//        FloatBuffer Normals = BufferUtils.createFloatBuffer(WNMR * WNMR * 4);
 
         ByteBuffer Normals = BufferUtils.createByteBuffer(WNMR * WNMR * 3);
         for(int i = 0; i < WNMR * WNMR; i++)
@@ -184,24 +155,6 @@ final class COpenGLRenderer {
         GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D);
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
         GLES.checkGLError("COpenGLRenderer::Init waterNormalMap!");
-        /*
-        // ------------------------------------------------------------------------------------------------------------------------
-        poolSkyVBO = glGenBuffers();
-
-        float PoolSkyVertices[] =
-                {	// x, y, z, x, y, z, x, y, z, x, y, z
-                        1.0f, -1.0f, -1.0f,  1.0f, -1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f, -1.0f, // +X
-                        -1.0f, -1.0f,  1.0f, -1.0f, -1.0f, -1.0f, -1.0f,  1.0f, -1.0f, -1.0f,  1.0f,  1.0f, // -X
-                        -1.0f,  1.0f, -1.0f,  1.0f,  1.0f, -1.0f,  1.0f,  1.0f,  1.0f, -1.0f,  1.0f,  1.0f, // +Y
-                        -1.0f, -1.0f,  1.0f,  1.0f, -1.0f,  1.0f,  1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, // -Y
-                        1.0f, -1.0f,  1.0f, -1.0f, -1.0f,  1.0f, -1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f, // +Z
-                        -1.0f, -1.0f, -1.0f,  1.0f, -1.0f, -1.0f,  1.0f,  1.0f, -1.0f, -1.0f,  1.0f, -1.0f  // -Z
-                };
-
-        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, poolSkyVBO);
-        GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER, 288, GLUtil.wrap(PoolSkyVertices), GLES30.GL_STATIC_DRAW);
-        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
-        */
         // ------------------------------------------------------------------------------------------------------------------------
 
         waterVBO = glGenBuffers();
@@ -261,16 +214,6 @@ final class COpenGLRenderer {
         fbo = glGenFramebuffers();
         GLES.checkGLError("COpenGLRenderer::Init waterIBO!");
 
-        // ------------------------------------------------------------------------------------------------------------------------
-
-//        Camera.Look(vec3(0.0f, 1.0f, 2.5f), vec3(0.0f, -0.5f, 0.0f), true);
-
-        // ------------------------------------------------------------------------------------------------------------------------
-
-//        srand(GetTickCount());
-
-        // ------------------------------------------------------------------------------------------------------------------------
-
         return true;
     }
 
@@ -298,17 +241,11 @@ final class COpenGLRenderer {
         Matrix4f vp = Matrix4f.mul(projectionMatrix, viewMatrix, projectionBiasMatrixInverse);
 
         // update water surface ---------------------------------------------------------------------------------------------------
-
- //       static DWORD LastTime = GetTickCount();
-
- //       DWORD Time = GetTickCount();
-
         if(currentTime - lastUpdateTime >= 16f/1000f)
         {
             lastUpdateTime = currentTime;
 
             // update water height map --------------------------------------------------------------------------------------------
-
             GLES30.glViewport(0, 0, WHMR, WHMR);
 
             int whmid = (this.whmid + 1) % 2;
@@ -320,13 +257,6 @@ final class COpenGLRenderer {
             GLES30.glActiveTexture(GL_TEXTURE0);
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, waterHeightMaps[this.whmid]);
             waterHeightMapProgram.enable();
-            /*glBegin(GL_QUADS);
-            glVertex2f(0.0f, 0.0f);
-            glVertex2f(1.0f, 0.0f);
-            glVertex2f(1.0f, 1.0f);
-            glVertex2f(0.0f, 1.0f);
-            glEnd();*/
-            // TODO
             NvShapes.drawQuad(waterHeightMapProgram.getAttribPosition(), waterHeightMapProgram.getAttribTexCoord());
             waterHeightMapProgram.disable();
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
@@ -350,13 +280,6 @@ final class COpenGLRenderer {
 
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, waterHeightMaps[this.whmid]);
             waterNormalMapProgram.enable();
-            /*glBegin(GL_QUADS);
-            glVertex2f(0.0f, 0.0f);
-            glVertex2f(1.0f, 0.0f);
-            glVertex2f(1.0f, 1.0f);
-            glVertex2f(0.0f, 1.0f);
-            glEnd();*/
-            // TODO
             NvShapes.drawQuad(waterNormalMapProgram.getAttribPosition(), waterNormalMapProgram.getAttribTexCoord());
             waterNormalMapProgram.disable();
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
@@ -369,24 +292,11 @@ final class COpenGLRenderer {
         }
 
         // render pool sky mesh ---------------------------------------------------------------------------------------------------
-
         GLES30.glViewport(0, 0, width, height);
-
-//        glMatrixMode(GL_PROJECTION);  TODO
-//        glLoadMatrixf(&ProjectionMatrix);  TODO
-
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT | GLES30.GL_DEPTH_BUFFER_BIT);
 
         GLES30.glDisable(GLES30.GL_DEPTH_TEST);
         GLES30.glEnable(GLES30.GL_CULL_FACE);
-
-//        glMatrixMode(GL_MODELVIEW);  TODO
-//        glLoadMatrixf(&ViewMatrix);  TODO
-
-        /*if(WireFrame)
-        {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        }*/
 
         GLES30.glActiveTexture(GLES30.GL_TEXTURE2);
         GLES30.glBindTexture(GLES30.GL_TEXTURE_CUBE_MAP, poolSkyCubeMap);
@@ -395,8 +305,6 @@ final class COpenGLRenderer {
         NvShapes.drawCube(poolSkyProgram.getAttribPosition());
         glUseProgram(0);
         GLES30.glBindTexture(GLES30.GL_TEXTURE_CUBE_MAP, 0);
-
-
 
         // render water surface ---------------------------------------------------------------------------------------------------
         GLES30.glEnable(GLES30.GL_DEPTH_TEST);
@@ -408,10 +316,6 @@ final class COpenGLRenderer {
         waterProgram.setCameraPosition(cameraPos.x, cameraPos.y, cameraPos.z);
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, waterVBO);
         GLES30.glBindBuffer(GLES30.GL_ELEMENT_ARRAY_BUFFER, waterIBO);
-        /*glEnableClientState(GL_VERTEX_ARRAY);
-        glVertexPointer(3, GL_FLOAT, 12, (void*)0);
-        glDrawArrays(GL_QUADS, 0, QuadsVerticesCount);
-        glDisableClientState(GL_VERTEX_ARRAY);*/
         GLES30.glEnableVertexAttribArray(waterProgram.getAttribPosition());
         GLES20.glVertexAttribPointer(waterProgram.getAttribPosition(), 3, GL11.GL_FLOAT, false, 0, 0);
         GLES20.glDrawElements(GL11.GL_TRIANGLES, quadsVerticesCount, GLES20.GL_UNSIGNED_SHORT, 0);
@@ -424,11 +328,6 @@ final class COpenGLRenderer {
         GLES30.glActiveTexture(GLES30.GL_TEXTURE1); GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0); GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
 
-        /*if(WireFrame)
-        {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }*/
-
         GLES30.glDisable(GLES30.GL_DEPTH_TEST);
         GLES.checkGLError("Rendering....");
     }
@@ -437,7 +336,6 @@ final class COpenGLRenderer {
         this.height = Height;
 
         Matrix4f.perspective(45.0f, (float)Width / (float)Height, 0.125f, 512.0f, projectionMatrix);
-//        ProjectionBiasMatrixInverse = inverse(ProjectionMatrix) * BiasMatrixInverse; TODO
     }
 
     void Destroy(){
@@ -470,24 +368,15 @@ final class COpenGLRenderer {
 
             GLES30.glActiveTexture(GL_TEXTURE0);
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, waterHeightMaps[whmid]);
-//            glUniform1f(dropRadiusLoc, DropRadius);
-//            glUniform2f(positionLoc, x * 0.5f + 0.5f, 0.5f - y * 0.5f);
             waterAddDropProgram.enable();
             waterAddDropProgram.setDropRadius(dropRadius);
             waterAddDropProgram.setPositon(x * 0.5f + 0.5f, 0.5f - y * 0.5f);
-            /*glBegin(GL_QUADS);
-            glVertex2f(0.0f, 0.0f);
-            glVertex2f(1.0f, 0.0f);
-            glVertex2f(1.0f, 1.0f);
-            glVertex2f(0.0f, 1.0f);
-            glEnd();*/
             NvShapes.drawQuad(waterAddDropProgram.getAttribPosition(), waterAddDropProgram.getAttribTexCoord());
             glUseProgram(0);
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0);
 
             GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0);
 
-//            ++whmid %= 2;
             ++whmid;
             whmid %= 2;
         }
@@ -495,7 +384,6 @@ final class COpenGLRenderer {
     }
 
     Matrix4f biasMatrix;
-
 
     boolean AddDropByMouseClick(int x, int y){
         float s = (float)x / (float)(width - 1);
