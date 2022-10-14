@@ -1,0 +1,19 @@
+#version 310 es
+precision mediump float;
+
+layout(binding = 0) uniform highp sampler2D TextureAO;
+layout(binding = 1) uniform highp sampler2D TextureColor;
+
+writeonly layout(rgba8, binding = 0) uniform highp image2D OutTexture;
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+void main()
+{
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+
+    ivec2 PixelPos = ivec2(DispatchThreadId.xy);
+    vec4 Color = texelFetch(TextureColor, PixelPos, 0);
+    float AO = texelFetch(TextureAO, PixelPos, 0).r;
+
+    imageStore(OutTexture, PixelPos,Color * AO);
+}

@@ -1,0 +1,359 @@
+
+//#include "AOCommon.hlsl"
+#include "GTAOCommon.glsl"
+
+#if SHADER_QUALITY == 0
+// very low
+#define GTAO_NUMTAPS 4
+#define GTAO_BIASMIPLEVEL 2
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#elif SHADER_QUALITY == 1
+// low
+#define GTAO_NUMTAPS 6
+#define GTAO_BIASMIPLEVEL 1
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#elif SHADER_QUALITY == 2
+// medium
+#define GTAO_NUMTAPS 8
+#define GTAO_BIASMIPLEVEL 0
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#elif SHADER_QUALITY == 3
+// high
+#define GTAO_NUMTAPS 12
+#define GTAO_BIASMIPLEVEL 0
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#else // SHADER_QUALITY == 4
+// very high
+#define GTAO_NUMTAPS 20
+#define GTAO_BIASMIPLEVEL 0
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#endif
+
+
+/*
+#if COMPUTE_SHADER
+RWTexture2D<float4> HorizonOutTexture;
+RWTexture2D<float>	DepthOutTexture;
+RWTexture2D<float2> VelocityOutTexture;
+RWTexture2D<float> DepthsTexture;
+#endif
+
+Texture2D		HistoryTexture;
+SamplerState	HistoryTextureSampler;
+float2			HistoryTextureSize;
+float2			HistoryTexturePixelSize;
+
+Texture2D		ZCurrTexture;
+SamplerState	ZCurrTextureSampler;
+
+float4 PrevScreenPositionScaleBias;
+*/
+
+//Texture2D<float> SceneDepthTexture : register(t0);
+layout(binding = 0) uniform sampler2D SceneDepthTexture;
+
+//SamplerState SamplerLinear : register(s0);
+//SamplerState SamplerPoint : register(s1);
+
+float ClampScale(float Scale)
+{
+    return clamp(Scale, 2.0, 8.0);
+}
+
+float TakeSmallerAbsDelta(float left, float mid, float right)
+{
+    float a = mid - left;
+    float b = right - mid;
+
+    return (abs(a) < abs(b)) ? a : b;
+}
+
+// max absolute error 9.0x10^-3
+// Eberly's polynomial degree 1 - respect bounds
+// 4 VGPR, 12 FR (8 FR, 1 QR), 1 scalar
+// input [-1, 1] and output [0, PI]
+float acosFast(float inX)
+{
+    float x = abs(inX);
+    float res = -0.156583f * x + (0.5 * PI);
+    res *= sqrt(1.0f - x);
+    return (inX >= 0) ? res : PI - res;
+}
+
+float3 GetNormal(float2 UV, float3 ViewSpacePosMid)
+{
+    float3 ViewSpaceNormal;
+
+#if USE_NORMALBUFFER
+
+    // Get the normal from the normal buffer
+    float3 WorldNormal = GetGBufferData(UV, false).WorldNormal;
+    ViewSpaceNormal = normalize(mul(WorldNormal, (float3x3)View.TranslatedWorldToView));
+
+#else
+    // Get the normal derived from the depth buffer
+    float2 DeltaUV = BufferSizeAndInvSize.zw;
+
+    float DeviceZ = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, UV, 0.0).r;
+    float DeviceZLeft = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, UV + float2(-DeltaUV.x, 0.0f), 0.0).r;
+    float DeviceZTop = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, UV + float2(0.0f, -DeltaUV.y), 0.0).r;
+    float DeviceZRight = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, UV + float2(DeltaUV.x, 0.0f), 0.0).r;
+    float DeviceZBottom = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, UV + float2(0.0f, DeltaUV.y), 0.0).r;
+
+    float DeviceZDdx = TakeSmallerAbsDelta(DeviceZLeft, DeviceZ, DeviceZRight);
+    float DeviceZDdy = TakeSmallerAbsDelta(DeviceZTop, DeviceZ, DeviceZBottom);
+
+    float ZRight = ScreenSpaceToViewSpaceDepth(DeviceZ + DeviceZDdx);
+    float ZDown = ScreenSpaceToViewSpaceDepth(DeviceZ + DeviceZDdy);
+
+    float3 Right = ScreenToViewPos(UV + float2(DeltaUV.x, 0.0f), ZRight) - ViewSpacePosMid;
+    float3 Down = ScreenToViewPos(UV + float2(0.0f, DeltaUV.y), ZDown) - ViewSpacePosMid;
+
+    ViewSpaceNormal = normalize(cross(Right, Down));
+#endif
+
+    return ViewSpaceNormal;
+}
+
+
+float GetLinearDepthProj(float2 ScreenUV)
+{
+    float DeviceZ = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, ScreenUV, 0.0).r;
+    //	return  1.0f / (DeviceZ * View.InvDeviceZToWorldZTransform[2] - View.InvDeviceZToWorldZTransform[3]);
+    return ScreenSpaceToViewSpaceDepth(DeviceZ);
+}
+
+float2 SearchForLargestAngleDual(uint NumSteps, float2 BaseUV, float2 ScreenDir, float SearchRadius, float InitialOffset, float3 ViewPos, float3 ViewDir, float AttenFactor)
+{
+    float SceneDepth, LenSq, OOLen, Ang, FallOff;
+    float3 V;
+    float2 SceneDepths = float2(0);
+
+    float2 BestAng = float2(-1, -1);
+    float Thickness = GTAOParams[1].y;
+
+    for (uint i = 0u; i < NumSteps; i++)
+    {
+        float fi = i;
+
+        float2 UVOffset = ScreenDir * max(SearchRadius * (fi + InitialOffset), (fi + 1.0));
+        UVOffset.y *= -1;
+        float4 UV2 = BaseUV.xyxy + float4(UVOffset.xy, -UVOffset.xy);
+
+        // Positive Direction
+        SceneDepths.x = GetLinearDepthProj(UV2.xy);
+        SceneDepths.y = GetLinearDepthProj(UV2.zw);
+
+        V = ScreenToViewPos(UV2.xy, SceneDepths.x) - ViewPos;
+        LenSq = dot(V, V);
+        OOLen = rsqrt(LenSq + 0.0001);
+        Ang = dot(V, ViewDir) * OOLen;
+
+        FallOff = saturate(LenSq * AttenFactor);
+        Ang = lerp(Ang, BestAng.x, FallOff);
+        BestAng.x = (Ang > BestAng.x) ? Ang : lerp(Ang, BestAng.x, Thickness);
+
+        // Negative Direction
+        V = ScreenToViewPos(UV2.zw, SceneDepths.y) - ViewPos;
+        LenSq = dot(V, V);
+        OOLen = rsqrt(LenSq + 0.0001);
+        Ang = dot(V, ViewDir) * OOLen;
+
+        FallOff = saturate(LenSq * AttenFactor);
+        Ang = lerp(Ang, BestAng.y, FallOff);
+
+        BestAng.y = (Ang > BestAng.y) ? Ang : lerp(Ang, BestAng.y, Thickness);
+    }
+
+    BestAng.x = acosFast(clamp(BestAng.x, -1.0, 1.0));
+    BestAng.y = acosFast(clamp(BestAng.y, -1.0, 1.0));
+
+    return BestAng;
+}
+
+float ComputeInnerIntegral(float2 UV, float2 Angles, float2 ScreenDir, float3 ViewDir, float3 ViewSpaceNormal, float SceneDepth)
+{
+    // Given the angles found in the search plane we need to project the View Space Normal onto the plane defined by the search axis and the View Direction and perform the inner integrate
+    float3 PlaneNormal = normalize(cross(float3(ScreenDir.xy, 0), ViewDir));
+    float3 Perp = cross(ViewDir, PlaneNormal);
+    float3 ProjNormal = ViewSpaceNormal - PlaneNormal * dot(ViewSpaceNormal, PlaneNormal);
+
+    float LenProjNormal = max(length(ProjNormal), 0.0001f);
+    float RecipMag = 1.0f / (LenProjNormal);
+
+    float CosAng = dot(ProjNormal, Perp) * RecipMag;
+    float Gamma = acosFast(CosAng) - PI_HALF;
+    float CosGamma = dot(ProjNormal, ViewDir) * RecipMag;
+    float SinGamma = CosAng * -2.0f;
+
+    // clamp to normal hemisphere
+    Angles.x = Gamma + max(-Angles.x - Gamma, -(PI_HALF));
+    Angles.y = Gamma + min(Angles.y - Gamma, (PI_HALF));
+
+    float AO = ((LenProjNormal) * 0.25 *
+    ((Angles.x * SinGamma + CosGamma - cos((2.0 * Angles.x) - Gamma)) +
+    (Angles.y * SinGamma + CosGamma - cos((2.0 * Angles.y) - Gamma))));
+
+    return AO;
+}
+
+float InterleavedGradientNoise(float2 iPos)
+{
+    return frac(52.9829189f * frac((iPos.x * 0.06711056) + (iPos.y * 0.00583715)));
+}
+
+float2 GetRandomAngleOffset(uint2 iPos)
+{
+    iPos.y = 4096u - iPos.y;
+    float Angle = InterleavedGradientNoise(float2(iPos));
+    float Offset = (1.0 / 4.0) * float((iPos.y - iPos.x) & 3u);
+    return float2(Angle, Offset);
+}
+
+float3 GetRandomVector(uint2 iPos)
+{
+    iPos.y = 16384u - iPos.y;
+
+    float3 RandomVec = float3(0, 0, 0);
+    float3 RandomTexVec = float3(0, 0, 0);
+    float ScaleOffset;
+
+    float TemporalCos = GTAOParams[0].x;
+    float TemporalSin = GTAOParams[0].y;
+
+    float GradientNoise = InterleavedGradientNoise(float2(iPos));
+
+    RandomTexVec.x = cos((GradientNoise * PI));
+    RandomTexVec.y = sin((GradientNoise * PI));
+
+    ScaleOffset = (1.0 / 4.0) * float((iPos.y - iPos.x) & 3u);
+    //	ScaleOffset = (1.0/5.0)  *  (( iPos.y - iPos.x) % 5);
+
+    RandomVec.x = dot(RandomTexVec.xy, float2(TemporalCos, -TemporalSin));
+    RandomVec.y = dot(RandomTexVec.xy, float2(TemporalSin, TemporalCos));
+    RandomVec.z = frac(ScaleOffset + GTAOParams[0].z);
+
+    return RandomVec;
+}
+
+/*
+*
+* HORIZON SEARCH AND INNER INTEGRATE COMBINED
+*
+*/
+void GTAOCombinedPSandCS(in float2 UV, in uint2 iPos, out float OutColor)
+{
+    OutColor = 0.0;
+
+    float2 AOSceneViewport_Extent = BufferSizeAndInvSize.xy;
+    float2 AOSceneViewport_ExtentInverse = BufferSizeAndInvSize.zw;
+    // Offset by a fraction of a pixel to unsure we don't hit between pixels when running at half res
+    float2 QuarterOffset = float2(0); // AOSceneViewport_ExtentInverse * 0.125;
+    float2 TexUV = UV + QuarterOffset;
+    UV += QuarterOffset;
+
+
+    //	float DeviceZ = LookupDeviceZ(TexUV);
+    //	float SceneDepth = ConvertFromDeviceZ(DeviceZ);
+    float SceneDepth = GetLinearDepthProj(TexUV);
+
+    if (SceneDepth > AmbientOcclusionFadeDistance /*ScreenSpaceAOParams[4].w*/)
+    {
+        OutColor = 1;
+        return;
+    }
+
+    float3 ViewSpacePos = ScreenToViewPos(TexUV, SceneDepth);
+    float3 ViewSpaceNormal = GetNormal(TexUV, ViewSpacePos);
+    float3 ViewDir = normalize(-ViewSpacePos.xyz);
+
+    const float WorldRadius = GTAOParams[3].y;
+
+    //	float InvTanHalfFov = ScreenSpaceAOParams[3].w;
+    float FOVScale = AOSceneViewport_Extent.y * InvTanHalfFov; // TODO
+
+    // Get Radius in ScreenSpace (in pixels)
+    float WorldRadiusAdj = WorldRadius * FOVScale;
+    float PixelRadius = max(min(WorldRadiusAdj / abs(ViewSpacePos.z), GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
+    float StepRadius = PixelRadius / (float(GTAO_NUMTAPS) + 1.0);
+    float AttenFactor = 2.0 / (WorldRadius * WorldRadius);
+
+    // Get the randomized Direction to sample and the step offset
+    float3 RandomAndOffset = GetRandomVector(iPos);
+    float2 RandomVec = RandomAndOffset.xy;
+    float  Offset = RandomAndOffset.z;
+
+    float Sum = 0.0;
+
+    uint NumAngles = uint( GTAOParams[4].y);
+    float SinDeltaAngle = GTAOParams[4].z;
+    float CosDeltaAngle = GTAOParams[4].w;
+
+    float2 ScreenDir = float2(RandomVec.x, RandomVec.y);
+
+    for (uint Angle = 0u; Angle < NumAngles; Angle++)
+    {
+        float2 Angles = SearchForLargestAngleDual(uint(GTAO_NUMTAPS), TexUV, ScreenDir * BufferSizeAndInvSize.zw, StepRadius,
+        Offset, ViewSpacePos, ViewDir, AttenFactor);
+
+        Sum += ComputeInnerIntegral(TexUV, Angles, ScreenDir, ViewDir, ViewSpaceNormal, SceneDepth);
+
+        // Rotate for the next angle
+        float2 TempScreenDir = ScreenDir.xy;
+        ScreenDir.x = (TempScreenDir.x * CosDeltaAngle) + (TempScreenDir.y * -SinDeltaAngle);
+        ScreenDir.y = (TempScreenDir.x * SinDeltaAngle) + (TempScreenDir.y * CosDeltaAngle);
+        Offset = frac(Offset + 0.617);
+    }
+
+    float AO = Sum;
+
+    AO = AO / float(NumAngles);
+    AO *= 2.0 / PI;
+
+    // Fade out based on user defined distance
+    float FadeRadius = max(1.0f, AmbientOcclusionFadeRadius);
+    float InvFadeRadius = 1.0f / FadeRadius;
+
+    float Mul = InvFadeRadius;
+    float Add = -(AmbientOcclusionFadeDistance - FadeRadius) * InvFadeRadius;
+    AO = lerp(AO, 1.0, saturate(SceneDepth * Mul + Add));
+
+    OutColor = AO;
+    return;
+}
+
+/*
+void GTAOCombinedPS(in float4 UVAndScreenPos : TEXCOORD0, out float OutColor : SV_Target0)
+{
+	int2 iPos = int2(UVAndScreenPos.xy * AOViewport_Extent);
+	GTAOCombinedPSandCS(UVAndScreenPos.xy, iPos, OutColor);
+}*/
+
+#ifndef OUT_FORMAT
+#define OUT_FORMAT r32f
+#endif
+
+writeonly layout(OUT_FORMAT, binding = 0) uniform image2D OutTexture;
+//[numthreads(THREADGROUP_SIZEX, THREADGROUP_SIZEY, 1)]
+layout(local_size_x = THREADGROUP_SIZEX, local_size_y = THREADGROUP_SIZEY, local_size_z = 1) in;
+void /*GTAOCombinedCS*/main(
+/*uint2 GroupId : SV_GroupID,
+uint2 DispatchThreadId : SV_DispatchThreadID,
+uint2 GroupThreadId : SV_GroupThreadID*/)
+{
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+
+    float OutColor = 0.0;
+
+    const int AOViewport_ViewportMin = 0;
+    int2   PixelPos = int2(DispatchThreadId.xy) + AOViewport_ViewportMin;
+    float2 PixelCenter = float2(PixelPos) + float2(0.5, 0.5);
+    float2 BufferUV = PixelCenter.xy * GTAOParams[2].zw;
+
+    GTAOCombinedPSandCS(BufferUV, uint2(PixelPos), OutColor);
+
+//    OutTexture[PixelPos] = OutColor;
+    imageStore(OutTexture, PixelPos, float4(OutColor, 0,0,0));
+}

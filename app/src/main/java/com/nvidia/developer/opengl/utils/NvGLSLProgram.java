@@ -1,6 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
-// Copyright 2017 mzhg
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License.  You may obtain a copy
@@ -17,11 +16,16 @@
 package com.nvidia.developer.opengl.utils;
 
 import android.opengl.GLES20;
+import android.opengl.GLES32;
 import android.opengl.GLException;
 
 import org.lwjgl.util.vector.Matrix4f;
 
+import java.io.IOException;
+
 import javax.microedition.khronos.opengles.GL11;
+
+import jet.learning.opengl.common.ShaderLoader;
 
 public class NvGLSLProgram implements NvDisposeable{
 
@@ -59,7 +63,7 @@ public class NvGLSLProgram implements NvDisposeable{
 	 * @param vertFilename the filename and partial path to the text file containing the vertex shader source
 	 * @param fragFilename the filename and partial path to the text file containing the fragment shader source
 	 * @return a reference to an <code>NvGLSLProgram</code> on success and null on failure
-	 * @see {@link #createFromStrings(String, String, boolean)}
+	 * @see {@link #createFromFiles(String, String, boolean)}
 	 */
 	public static NvGLSLProgram createFromFiles(String vertFilename, String fragFilename){
 		return createFromFiles(vertFilename, fragFilename, false);
@@ -129,7 +133,6 @@ public class NvGLSLProgram implements NvDisposeable{
 	 * @param vertFilename the filename and partial path to the text file containing the vertex shader source
 	 * @param fragFilename the filename and partial path to the text file containing the fragment shader source
 	 * @return true on success and false on failure
-	 * @see #setSourceFromFiles(String, String, boolean)
 	 */
 	public boolean setSourceFromFiles(String vertFilename, String fragFilename){
 		return setSourceFromFiles(vertFilename, fragFilename, false);
@@ -321,6 +324,83 @@ public class NvGLSLProgram implements NvDisposeable{
 	    }
 	    
 	}
+
+	private static String constructSourceImpl(ShaderSourceItem item){
+		CharSequence source = item.src;
+
+		StringBuilder result = new StringBuilder(source);
+		int versionIndex = result.indexOf("#version");
+
+		if((item.macros == null || item.macros.length == 0) && (versionIndex != -1))
+			return source.toString();
+
+
+
+		StringBuilder macroString = new StringBuilder();
+		/*GLAPIVersion version = GLFuncProviderFactory.getGLFuncProvider().getGLAPIVersion();
+
+		if(item.compileVersion == 0 && versionIndex == -1){
+			item.compileVersion = version.toInt();
+		}
+
+		if(item.compileVersion != 0){
+			if(!version.ES){
+				if(Arrays.binarySearch(GL_VERSIONS, item.compileVersion) < 0)
+					throw new IllegalArgumentException("Invalid OpenGL shader language version: " + item.compileVersion);
+
+				macroString.append("#version ").append(Integer.toString(item.compileVersion)).append('\n');
+			}else{
+				if(Arrays.binarySearch(GLES_VERSIONS, item.compileVersion) < 0)
+					throw new IllegalArgumentException("Invalid OpenGL shader language version: " + item.compileVersion);
+
+				macroString.append("#version ").append(Integer.toString(item.compileVersion)).append(" es\n");
+			}
+		}Todo: version */
+
+		if(item.macros != null){
+			for(Macro m : item.macros){
+				if(m == null /*|| StringUtils.isEmpty(m.name)*/)
+					continue;
+
+				if(!NvUtils.isEmpty(m.key)){
+					macroString.append("#define ").append(m.key).append(' ');
+				}
+				if(m.value != null){
+					if(m.value instanceof Boolean){
+						Boolean value = (Boolean)m.value;
+						macroString.append(value.booleanValue() ? 1 : 0);
+					}else if(m.value.getClass().isEnum()){
+						macroString.append(((Enum<?>)m.value).ordinal());
+					}else{
+						macroString.append(m.value.toString());
+					}
+
+				}
+				macroString.append('\n');
+			}
+		}
+
+		int versionLineEnd = -1;
+		if(versionIndex >= 0){
+			versionLineEnd = result.indexOf("\n", versionIndex + 8);
+			if(versionLineEnd < 0){
+				System.err.println("Error glsl shader source, only contain version tag!");
+				versionLineEnd = source.length();
+			}
+		}
+
+		if(item.compileVersion != 0){  // the macros string contain version tag.
+			if(versionIndex >= 0){  // replace the old version.
+				result.replace(versionIndex, versionLineEnd, macroString.toString());
+			}else{ // insert the macroString to the head of old source.
+				result.insert(0, macroString);
+			}
+		}else{
+			result.insert(versionLineEnd + 1, macroString);
+		}
+
+		return result.toString();
+	}
 	
 	private int compileProgram(ShaderSourceItem[] src, int count){
 		int program = GLES20.glCreateProgram();
@@ -328,7 +408,8 @@ public class NvGLSLProgram implements NvDisposeable{
 	    int i;
 	    for (i = 0; i < count; i++) {
 	        int shader = GLES20.glCreateShader(src[i].type);
-	        GLES20.glShaderSource(shader, src[i].src.toString());  // TODO Bad performance
+	        String shaderSource = constructSourceImpl(src[i]);
+	        GLES20.glShaderSource(shader, shaderSource);
 	        GLES20.glCompileShader(shader);
 	        if (!checkCompileError(shader, src[i].type))
 	            return 0;
@@ -942,6 +1023,11 @@ public class NvGLSLProgram implements NvDisposeable{
 		public CharSequence src;
 		/** The GL_*_SHADER enum representing the shader type */
 		public int type;
+
+		/** The predefined macros for this shader.*/
+		public Macro[] macros;
+
+		public int compileVersion;
 		
 		public ShaderSourceItem() {
 		}
@@ -955,5 +1041,112 @@ public class NvGLSLProgram implements NvDisposeable{
 	@Override
 	public void dispose() {
 		GLES20.glDeleteProgram(m_program);
+	}
+
+	public void printOnce(){
+
+	}
+
+	public static NvGLSLProgram createProgram(String computeFile, Macro[] macros){
+		ShaderSourceItem cs_item = new ShaderSourceItem();
+		if(computeFile != null){
+			try {
+				cs_item.src = ShaderLoader.loadShaderFile(computeFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			cs_item.macros = macros;
+			cs_item.type = GLES32.GL_COMPUTE_SHADER;
+		}
+
+		NvGLSLProgram program = new NvGLSLProgram();
+		program.setSourceFromStrings(cs_item);
+
+		GLES.checkGLError();
+		return program;
+	}
+
+	public static NvGLSLProgram createProgram(String vertFile, String fragFile, Macro[] macros){
+		return createProgram(vertFile, null, null, null, fragFile, macros);
+	}
+
+	public static NvGLSLProgram createProgram(String vertFile, String gsFile, String fragFile, Macro[] macros){
+		return createProgram(vertFile, null, null, gsFile, fragFile, macros);
+	}
+
+	public static NvGLSLProgram createProgram(String vertFile, String tcFile, String teFile, String fragFile, Macro[] macros){
+		return createProgram(vertFile, tcFile, teFile, null, fragFile, macros);
+	}
+
+	/** Conversion method for creating program object, but not safe. */
+	public static NvGLSLProgram createProgram(String vertFile, String tcFile, String teFile, String gsFile, String fragFile, Macro[] macros){
+		ShaderSourceItem vs_item = null;
+		if(vertFile != null){
+			vs_item = new ShaderSourceItem();
+			try {
+				vs_item.src = ShaderLoader.loadShaderFile(vertFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			vs_item.macros = macros;
+			vs_item.type = GLES20.GL_VERTEX_SHADER;
+		}
+
+		ShaderSourceItem tc_item = null;
+		if(tcFile != null){
+			tc_item = new ShaderSourceItem();
+			try {
+				tc_item.src = ShaderLoader.loadShaderFile(tcFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+//			tc_item.compileVersion = Integer.parseInt(GLSLUtil.getGLSLVersion());
+			tc_item.macros = macros;
+			tc_item.type = GLES32.GL_TESS_CONTROL_SHADER;
+		}
+
+		ShaderSourceItem te_item = null;
+		if(teFile != null){
+			te_item = new ShaderSourceItem();
+			try {
+				te_item.src = ShaderLoader.loadShaderFile(teFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+//			te_item.compileVersion = Integer.parseInt(GLSLUtil.getGLSLVersion());
+			te_item.macros = macros;
+			te_item.type = GLES32.GL_TESS_EVALUATION_SHADER;
+		}
+
+		ShaderSourceItem gs_item = null;
+		if(gsFile != null){
+			gs_item = new ShaderSourceItem();
+			try {
+				gs_item.src = ShaderLoader.loadShaderFile(gsFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+//			gs_item.compileVersion = Integer.parseInt(GLSLUtil.getGLSLVersion());
+			gs_item.macros = macros;
+			gs_item.type = GLES32.GL_GEOMETRY_SHADER;
+		}
+
+		ShaderSourceItem ps_item = null;
+		if(fragFile != null){
+			ps_item = new ShaderSourceItem();
+			try {
+				ps_item.src = ShaderLoader.loadShaderFile(fragFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+//			ps_item.compileVersion = Integer.parseInt(GLSLUtil.getGLSLVersion());
+			ps_item.macros = macros;
+			ps_item.type = GLES20.GL_FRAGMENT_SHADER;
+		}
+
+
+		NvGLSLProgram program = new NvGLSLProgram();
+		program.setSourceFromStrings(vs_item,tc_item, te_item, gs_item, ps_item);
+		return program;
 	}
 }

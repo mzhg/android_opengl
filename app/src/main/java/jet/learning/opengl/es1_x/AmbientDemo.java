@@ -16,6 +16,7 @@
 package jet.learning.opengl.es1_x;
 
 import android.opengl.GLES11;
+import android.opengl.GLES32;
 
 import com.nvidia.developer.opengl.app.GLES1SampleApp;
 import com.nvidia.developer.opengl.utils.GLES;

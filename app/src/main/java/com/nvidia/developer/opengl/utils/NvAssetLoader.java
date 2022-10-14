@@ -74,6 +74,10 @@ public final class NvAssetLoader {
 		s_assetManager = (AssetManager)platform;
 		return true;
 	}
+
+	public static AssetManager getAssetManager(){
+		return s_assetManager;
+	}
 	
 	/**
 	 * Shuts down the system
@@ -157,7 +161,6 @@ public final class NvAssetLoader {
 		ByteArrayOutputStream bout = new ByteArrayOutputStream();
 		BufferedOutputStream out = new BufferedOutputStream(bout);
 		try {
-			
 			BufferedInputStream in = new BufferedInputStream(s_assetManager.open(filePath));
 			byte[] bytes = new byte[1024];
 			int len;

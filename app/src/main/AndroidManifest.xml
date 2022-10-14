@@ -14,7 +14,7 @@
 
     <uses-feature android:glEsVersion="0x00020000" android:required="true" />
     <uses-feature android:glEsVersion="0x00030000" android:required="true" />
-    <uses-feature android:glEsVersion="0x00030001" android:required="false" />
+    <uses-feature android:glEsVersion="0x00030001" android:required="true" />
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true"/>
     <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="true"/>
     <!-- Indicates use of Android's VR-mode, available only on Android N+. -->
@@ -470,6 +470,17 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="jet.learning.opengl.category.es3" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="jet.learning.opengl.gtao.GTAODemo"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="GTAODemo" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es31" />
             </intent-filter>
         </activity>
     </application>

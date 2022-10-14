@@ -1,0 +1,274 @@
+#include "GTAOCommon.glsl"
+
+uniform float4 GTAOSpatialFilterParams;
+uniform float4 GTAOSpatialFilterWidth;
+uniform uint2 GTAOSpatialFilterExtents;
+uniform float AmbientOcclusionIntensity;
+uniform float AmbientOcclusionPower;
+
+#ifndef USE_ARRAY_TEXTURE
+#define USE_ARRAY_TEXTURE 0
+#endif
+
+#if USE_ARRAY_TEXTURE
+
+int3 ImageToInterleave(int2 FullResPos)
+{
+    int2 Offset = FullResPos & 3;
+    //	Offset.y = 0;
+    int SliceId = Offset.y * 4 + Offset.x;
+    int2 QuarterResPos = FullResPos >> 2;
+
+    return int3(QuarterResPos, SliceId);
+}
+
+layout(binding = 0) uniform usampler2DArray GTAOSpatialFilterTexture;
+
+float2 LoadAOAndDepth(int2 ReadXYAO, int2 ReadXYZ)
+{
+    int3 QuarterLocAO = ImageToInterleave(ReadXYAO);
+    int3 QuarterLocZ  = ImageToInterleave(ReadXYZ);
+
+//    float AO = GTAOSpatialFilterTexture.Load(int4(QuarterLocAO, 0)).r;
+//    float  D = GTAOSpatialFilterTexture.Load(int4(QuarterLocZ, 0)).g;
+    uint AO = texelFetch(GTAOSpatialFilterTexture, QuarterLocAO, 0).r;
+    uint D = texelFetch(GTAOSpatialFilterTexture, QuarterLocZ, 0).g;
+
+    /*const float Far = 100;
+    const float Near = 0.1;
+
+    float Z = Far * (D - Near) / (Far - Near);*/
+    return float2(DecodeAOZ(AO).x, DecodeAOZ(D).y);
+}
+
+#else
+    layout(binding = 0) uniform sampler2D GTAOSpatialFilterTexture;
+    layout(binding = 1) uniform sampler2D GTAOSpatialFilterDepthTexture;
+
+    float2 LoadAOAndDepth(int2 ReadXYAO, int2 ReadXYZ)
+    {
+//        float AO = GTAOSpatialFilterTexture.Load(int3(ReadXYAO, 0)).r;
+//        float  Z = GTAOSpatialFilterDepthTexture.Load(int3(ReadXYZ, 0)).r;
+
+        float AO = texelFetch(GTAOSpatialFilterTexture, ReadXYAO, 0).r;
+        float Z = texelFetch(GTAOSpatialFilterDepthTexture, ReadXYZ, 0).r;
+
+        return float2(AO, Z);
+    }
+#endif
+
+
+
+
+// The 5x5 filter works on a threadgroup of size 16x8 (128 pixels)
+// We need to read in the 16x8 and a 2 pixel border around. So this is 20x12 (240 pixels)
+// Each thread reads in 2 pixels each
+
+// We make the array 32 wide so it plays better with bank conflicts
+#define LDS_WIDTH 20
+
+#ifndef PI
+#define PI 3.1415926
+#endif
+
+shared float AOData[LDS_WIDTH * 12];
+shared float ZData[LDS_WIDTH * 12];
+
+int GetLDSLocation(int x, int y)
+{
+    x += 2; y += 2;
+    return ((y * LDS_WIDTH) + x);
+}
+
+float GetAOLin(int loc)
+{
+    return AOData[loc];
+}
+
+float GetZLin(int loc)
+{
+    return ZData[loc];
+}
+
+float GetAO(int x, int y)
+{
+    x += 2; y += 2;
+    return AOData[(y * LDS_WIDTH) + x];
+}
+
+float GetZ(int x, int y)
+{
+    x += 2; y += 2;
+    return ZData[(y * LDS_WIDTH) + x];
+}
+
+#ifndef OUT_FORMAT
+#define OUT_FORMAT r32f
+#endif
+
+writeonly layout(OUT_FORMAT, binding = 0) uniform image2D OutTexture;
+//[numthreads(16, 8, 1)]
+layout(local_size_x = 16, local_size_y = 8, local_size_z = 1) in;
+void /*GTAOSpatialFilterCS*/main(
+/*int   GroupIndex : SV_GroupIndex,
+uint2 GroupId : SV_GroupID,
+uint2 DispatchThreadId : SV_DispatchThreadID,
+uint2 GroupThreadId : SV_GroupThreadID*/)
+{
+    uint GroupIndex = gl_LocalInvocationIndex;
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+    int2 GTId = int2(GroupThreadId);
+
+    const int AOViewport_ViewportMin = 0;
+    // Position on the screen We care about
+    int2   PixelPos = int2(DispatchThreadId.xy) + AOViewport_ViewportMin;
+
+    // Firstly get the origin in the screen of the 16x8 inner box
+    int2   FullGroupOrigin = int2(GroupId.x * 16u, GroupId.y * 8u) + AOViewport_ViewportMin;
+    int2   FullGroupOriginM2 = FullGroupOrigin.xy - int2(2, 2);
+
+    int pixIdx = int(GroupIndex * 2u);
+
+    float DownsampleFactor = GTAOSpatialFilterParams.x;
+
+    // Downsampled version. Note that the Z is double the res of the Z
+    if (pixIdx < (20 * 12))
+    {
+        int XPos = pixIdx % 20;
+        int YPos = pixIdx / 20;
+
+        int LDSPos = (YPos * LDS_WIDTH) + XPos;
+
+        int2 ReadXYAO = FullGroupOriginM2 + int2(XPos, YPos);
+        int2 ReadXYZ = ReadXYAO * int(DownsampleFactor);
+
+        //		float AO = GTAOSpatialFilterTexture.Load(int3(ReadXYAO, 0)).r;
+        //		float  Z = GTAOSpatialFilterDepthTexture.Load(int3(ReadXYZ, 0)).r;
+        float2 AOZ = LoadAOAndDepth(ReadXYAO, ReadXYZ);
+
+        AOData[LDSPos] = AOZ.x;
+        ZData[LDSPos] = AOZ.y;
+
+        // Next pixel
+        LDSPos++;
+
+        ReadXYAO.x += 1;
+        ReadXYZ.x += int(DownsampleFactor);
+
+        //		AO = GTAOSpatialFilterTexture.Load(int3(ReadXYAO, 0)).r;
+        //		Z = GTAOSpatialFilterDepthTexture.Load(int3(ReadXYZ, 0)).r;
+        AOZ = LoadAOAndDepth(ReadXYAO, ReadXYZ);
+
+        AOData[LDSPos] = AOZ.x;
+        ZData[LDSPos] = AOZ.y;
+    }
+    GroupMemoryBarrierWithGroupSync();
+
+    // Get the differences in Z at this pixel. This is needed for the bilateral filter
+    float ThisZ = GetZ(GTId.x, GTId.y);
+    //	float ThisZLin = ConvertFromDeviceZ(ThisZ);
+
+    float2 ZDiff;
+
+    int FilterMin = int(GTAOSpatialFilterWidth.x);
+    int FilterMax = int(GTAOSpatialFilterWidth.y);
+    int LDSBase = GetLDSLocation(GTId.x + FilterMin, GTId.y + FilterMin);
+
+    //Get X Delta
+    int LDSCentre = GetLDSLocation(GTId.x, GTId.y);
+    {
+        float XM2Z = GetZLin(LDSCentre - 2);
+        float XM1Z = GetZLin(LDSCentre - 1);
+        float XP1Z = GetZLin(LDSCentre + 1);
+        float XP2Z = GetZLin(LDSCentre + 2);
+
+        // Get extrapolated point either side
+        float C1 = abs((XM1Z + (XM1Z - XM2Z)) - ThisZ);
+        float C2 = abs((XP1Z + (XP1Z - XP2Z)) - ThisZ);
+
+        if (C1 < C2)
+        {
+            ZDiff.x = XM1Z - XM2Z;
+        }
+        else
+        {
+            ZDiff.x = XP2Z - XP1Z;
+        }
+    }
+
+
+    //Get Y Delta
+    {
+        float YM2Z = GetZLin(LDSCentre - (2 * LDS_WIDTH));
+        float YM1Z = GetZLin(LDSCentre - (1 * LDS_WIDTH));
+        float YP1Z = GetZLin(LDSCentre + (1 * LDS_WIDTH));
+        float YP2Z = GetZLin(LDSCentre + (2 * LDS_WIDTH));
+
+        // Get extrapolated point either side
+        float C1 = abs((YM1Z + (YM1Z - YM2Z)) - ThisZ);
+        float C2 = abs((YP1Z + (YP1Z - YP2Z)) - ThisZ);
+
+        if (C1 < C2)
+        {
+            ZDiff.y = YM1Z - YM2Z;
+        }
+        else
+        {
+            ZDiff.y = YP2Z - YP1Z;
+        }
+    }
+
+    // Do the blur
+    float SumAO = 0.0;
+    float SumWeight = 0.0;
+
+    int x, y;
+
+    // Get the Z Value to compare against
+
+    float DepthBase = ThisZ + (ZDiff.x * float(FilterMin)) + (ZDiff.y * float(FilterMin));
+
+    float SimpleBlur = 0.0;
+
+    for (y = FilterMin; y <= FilterMax; y++)
+    {
+        float PlaneZ = DepthBase;
+
+        int LDSLineBase = LDSBase;
+        LDSBase += LDS_WIDTH;
+
+        for (x = FilterMin; x <= FilterMax; x++)
+        {
+            float Sample_AO = GetAOLin(LDSLineBase);
+            float SampleZ = GetZLin(LDSLineBase);
+            LDSLineBase++;
+
+            // Get the bilateral weight. This is a function of the difference in height between the plane equation and the base depth
+            // Compare the Z at this sample with the gradients
+            float SampleZDiff = abs(PlaneZ - SampleZ);
+
+            const float SpatialFilterWeight = 1.0;
+            float Weight = 1.0f - saturate(SampleZDiff * SpatialFilterWeight);
+
+            SumAO += Sample_AO * Weight;
+            //SimpleBlur += Sample_AO;
+            SumWeight += Weight;
+
+            PlaneZ += ZDiff.x;
+        }
+        DepthBase += ZDiff.y;
+    }
+    SumAO /= SumWeight;
+
+    SumAO *= (PI / 2.0);
+
+    // user adjust AO
+    //	float AmbientOcclusionIntensity = ScreenSpaceAOParams[0].w;
+    //	float AmbientOcclusionPower = ScreenSpaceAOParams[0].x * 0.5;
+    SumAO = 1.0 - (1.0 - pow(abs(SumAO), AmbientOcclusionPower)) * AmbientOcclusionIntensity;
+
+//    OutTexture[PixelPos] = SumAO;
+    imageStore(OutTexture, PixelPos, float4(SumAO, 0,0,0));
+}

@@ -93,6 +93,9 @@ public class NvInputTransformer {
 		m_height = height;
 	}
 
+	public int getScreenWidth() { return m_width; }
+	public int getScreenHeight() { return m_height; }
+
 	/**
 	 * Set motion mode.
 	 * <p>

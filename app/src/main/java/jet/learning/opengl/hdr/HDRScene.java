@@ -43,9 +43,6 @@ import jet.learning.opengl.common.FrameBufferObject;
 import jet.learning.opengl.common.HDRImage;
 import jet.learning.opengl.common.TextureInfo;
 
-import static android.opengl.GLES20.glDisableVertexAttribArray;
-import static android.opengl.GLES20.glEnableVertexAttribArray;
-
 /**
  * Created by mazhen'gui on 2017/11/28.
  */
@@ -334,8 +331,8 @@ public class HDRScene {
 //        GLES.checkGLError("draw2c");
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, object_ids[m_objectIndex]);
 //        GLES.checkGLError("draw2d");
-        glEnableVertexAttribArray(program.getAttribPosition());
-        glEnableVertexAttribArray(program.getAttribNormal());
+        GLES30.glEnableVertexAttribArray(program.getAttribPosition());
+        GLES30.glEnableVertexAttribArray(program.getAttribNormal());
 //        GLES.checkGLError("draw2e");
         GLES30.glVertexAttribPointer(program.getAttribPosition(), 3, GL11.GL_FLOAT, false, 32, 0);
         GLES30.glVertexAttribPointer(program.getAttribNormal(), 3, GL11.GL_FLOAT, false, 32, 12);
@@ -343,8 +340,8 @@ public class HDRScene {
 //	    	GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, 32, 24);
         GLES30.glDrawArrays( GL11.GL_TRIANGLES, 0, triangles_count[m_objectIndex]);
 //        GLES.checkGLError("draw2g");
-        glDisableVertexAttribArray(program.getAttribPosition());
-        glDisableVertexAttribArray(program.getAttribNormal());
+        GLES30.glDisableVertexAttribArray(program.getAttribPosition());
+        GLES30.glDisableVertexAttribArray(program.getAttribNormal());
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
         GLES30.glActiveTexture(GLES30.GL_TEXTURE1);
         GLES30.glBindTexture(GLES30.GL_TEXTURE_CUBE_MAP, 0);

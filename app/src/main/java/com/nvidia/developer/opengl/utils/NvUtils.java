@@ -611,4 +611,60 @@ public final class NvUtils {
 	public static int divideAndRoundUp(int dividend, int divisor) {
 		return (dividend + divisor - 1) / divisor;
 	}
+
+	/** Extracting the red value as a 0..1 float from an packed color which is in rgb(a) form. */
+	public static final float getRedFromRGBf(int rgb){
+		return (rgb & 0xFF)/255f;
+	}
+
+	/** Extracting the red value as a 0..1 float from an packed color which is in bgr(a) form. */
+	public static final float getRedFromBGRf(int bgr){
+		return ((bgr >> 16) & 0xFF)/255f;
+	}
+
+	/** Extracting the green value as a 0..1 float from an packed color no matter in rgb(a) or bgr(a) form. */
+	public static final float getGreenf(int rgb){
+		return ((rgb >> 8) & 0xFF)/255f;
+	}
+
+	/** Extracting the blue value as a 0..1 float from an packed color which is in rgb(a) form. */
+	public static final float getBlueFromRGBf(int rgb){
+		return ((rgb >> 16) & 0xFF)/255f;
+	}
+
+	/** Extracting the blue value as a 0..1 float from an packed color which is in bgr(a) form. */
+	public static final float getBlueFromBGRf(int bgr){
+		return (bgr & 0xFF)/255f;
+	}
+
+	/** Extracting the alpha value as a 0..1 float from an packed colorno matter in rgb(a) or bgr(a) form. */
+	public static final float getAlphaf(int rgba){
+		return ((rgba >> 24) & 0xFF)/255f;
+	}
+
+	public static int encode(short first, short second){
+		return (second << 16) | (first & 0xFFFF);
+	}
+
+	public static int decodeFirst(int value){
+		return value & 0xFFFF;
+	}
+
+	public static int decodeSecond(int value){
+		return (value >> 16) & 0xFFFF;
+	}
+
+	public static long encode(int first, int second){
+		long s = second;
+		long f = first;
+		return (s << 32) | (f & 0xFFFFFFFFl);
+	}
+
+	public static int decodeFirst(long value){
+		return (int) (value & 0xFFFFFFFFl);
+	}
+
+	public static int decodeSecond(long value){
+		return (int) ((value >> 32) & 0xFFFFFFFFl);
+	}
 }

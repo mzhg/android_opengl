@@ -1,0 +1,426 @@
+#include "GTAOCommon.glsl"
+
+layout(binding = 0) uniform sampler2D SceneDepthTexture /*: register(t0)*/;
+
+float ScreenSpaceToViewSpaceDepth(const float screenDepth/*, const float2 DepthUnpackConsts*/)
+{
+    float depthLinearizeMul = DepthUnpackConsts.x;
+    float depthLinearizeAdd = DepthUnpackConsts.y;
+    // Optimised version of "-cameraClipNear / (cameraClipFar - projDepth * (cameraClipFar - cameraClipNear)) * cameraClipFar"
+    return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
+}
+
+float2 GetLinearDepthProj(float2 ScreenUV)
+{
+    float DeviceZ = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, ScreenUV, 0.0).r;
+    //	return  1.0f / (DeviceZ * View.InvDeviceZToWorldZTransform[2] - View.InvDeviceZToWorldZTransform[3]);
+    float SceneDepth = ScreenSpaceToViewSpaceDepth(DeviceZ);
+
+    return float2(DeviceZ, SceneDepth);
+}
+
+float MinValue(float4 V)
+{
+    return min(min(V.x, V.y), min(V.z, V.w));
+}
+
+#if GenViewDepthCS
+    #define DOWNSAMPLE_FACTOR 1
+    #ifndef OUT_FORMAT
+    #define OUT_FORMAT r32f
+    #endif
+
+writeonly layout(OUT_FORMAT, binding = 0) uniform image2D OutTexture;
+//[numthreads(8, 8, 1)]
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+void /*GenViewDepthCS*/main(
+/*uint2 GroupId : SV_GroupID,
+uint2 DispatchThreadId : SV_DispatchThreadID,
+uint2 GroupThreadId : SV_GroupThreadID*/)
+{
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+
+    const int AOViewport_ViewportMin = 0;
+    int2   PixelPos = int2(DispatchThreadId.xy) + AOViewport_ViewportMin;
+    float2 PixelCenter = float2(PixelPos) + float2(0.5, 0.5);
+    float2 BufferUV = PixelCenter.xy * BufferSizeAndInvSize.zw;
+
+#if DOWNSAMPLE_FACTOR == 1
+    float2 DeviceZAndSceneDepth = GetLinearDepthProj(BufferUV);
+    OutTexture[PixelPos] = DeviceZAndSceneDepth.y;
+
+    imageStore(OutTexture, PixelPos, float4(DeviceZAndSceneDepth.y, 0,0,0));
+#elif DOWNSAMPLE_FACTOR == 2
+    float4 DeviceZA = textureGather(SceneDepthTexture, BufferUV + int2(-1, -1) * BufferSizeAndInvSize.zw);
+    float4 DeviceZB = textureGather(SceneDepthTexture, BufferUV);
+
+    float NearestZ = min(MinValue(DeviceZA), MinValue(DeviceZB));
+    OutTexture[PixelPos] = NearestZ;
+#endif
+}
+
+#endif // GenViewDepthCS
+
+#if DeinterleaveCS
+layout(binding = 0) uniform sampler2D        DepthLinearTexture;
+writeonly layout(OUT_FORMAT, binding = 0) uniform image2DArray OutDepthArray;
+
+#if 1
+void StoreResult(int3 PixelPos, float4 S0, float4 S1)
+{
+    // first Row: 0,1,4,5
+//    OutDepthArray[PixelPos + uint3(0, 0, 0)] = S0.x;
+//    OutDepthArray[PixelPos + uint3(0, 0, 1)] = S0.y;
+//    OutDepthArray[PixelPos + uint3(0, 0, 2)] = S1.x;
+//    OutDepthArray[PixelPos + uint3(0, 0, 3)] = S1.y;
+
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 0), float4(S0.x, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 1), float4(S0.y, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 2), float4(S1.x, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 3), float4(S1.y, 0,0,0));
+
+    // Second Row: 3,2,7,6
+//    OutDepthArray[PixelPos + uint3(0, 0, 4)] = S0.w;
+//    OutDepthArray[PixelPos + uint3(0, 0, 5)] = S0.z;
+//    OutDepthArray[PixelPos + uint3(0, 0, 6)] = S1.w;
+//    OutDepthArray[PixelPos + uint3(0, 0, 7)] = S1.z;
+
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 4), float4(S0.w, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 5), float4(S0.z, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 6), float4(S1.w, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 7), float4(S1.z, 0,0,0));
+}
+#else
+void StoreResult(int3 PixelPos, float4 S0, float4 S1)
+{
+    // first Row: 0,1,4,5
+//    OutDepthArray[PixelPos + uint3(0, 0, 0)] = S0.w;
+//    OutDepthArray[PixelPos + uint3(0, 0, 1)] = S0.z;
+//    OutDepthArray[PixelPos + uint3(0, 0, 2)] = S1.w;
+//    OutDepthArray[PixelPos + uint3(0, 0, 3)] = S1.z;
+
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 0), float4(S0.w, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 1), float4(S0.z, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 2), float4(S1.w, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 3), float4(S1.z, 0,0,0));
+
+    // Second Row: 3,2,7,6
+//    OutDepthArray[PixelPos + uint3(0, 0, 4)] = S0.x;
+//    OutDepthArray[PixelPos + uint3(0, 0, 5)] = S0.y;
+//    OutDepthArray[PixelPos + uint3(0, 0, 6)] = S1.x;
+//    OutDepthArray[PixelPos + uint3(0, 0, 7)] = S1.y;
+
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 4), float4(S0.x, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 5), float4(S0.y, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 6), float4(S1.x, 0,0,0));
+    imageStore(OutDepthArray, PixelPos + int3(0, 0, 7), float4(S1.y, 0,0,0));
+}
+#endif
+
+//[numthreads(8, 4, 1)]
+layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
+void /*DeinterleaveCS*/main(
+/*uint3 GroupId : SV_GroupID,
+uint3 DispatchThreadId : SV_DispatchThreadID,
+uint3 GroupThreadId : SV_GroupThreadID*/)
+{
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+
+    const int AOViewport_ViewportMin = 0;
+    int2   PixelPos = int2(DispatchThreadId.xy) + AOViewport_ViewportMin;
+    {
+        const uint Index = 0; // DispatchThreadId.z * 8u;
+        float2	UvOffset = float2(float(Index % 4) + 0.5f, float(Index / 4) + 0.5f);
+
+        float2 TexUV = PixelPos * 4.0 + UvOffset;
+        TexUV *= BufferSizeAndInvSize.zw;
+
+        float4 S0 = DepthLinearTexture.GatherRed(SamplerPoint, TexUV);
+        float4 S1 = DepthLinearTexture.GatherRed(SamplerPoint, TexUV, int2(2, 0));
+
+        StoreResult(uint3(PixelPos, Index), S0, S1);
+    }
+
+    {
+        const uint Index = 8u;
+        float2	UvOffset = float2(float(Index % 4) + 0.5f, float(Index / 4) + 0.5f);
+
+        float2 TexUV = PixelPos * 4.0 + UvOffset;
+        TexUV *= BufferSizeAndInvSize.zw;
+
+        float4 S0 = DepthLinearTexture.GatherRed(SamplerPoint, TexUV);
+        float4 S1 = DepthLinearTexture.GatherRed(SamplerPoint, TexUV, int2(2, 0));
+
+        StoreResult(uint3(PixelPos, Index), S0, S1);
+    }
+}
+
+#endif // DeinterleaveCS
+
+layout(binding = 0) uniform sampler2DArray        InAO_DepthArray; // shared variable
+#if ReinterleaveCS
+//Texture2DArray<float2>    InAO_DepthArray         : register(t0);
+//RWTexture2D<float2>       AO_DepthTexture    : register(u0);
+writeonly layout(OUT_FORMAT, binding = 0) uniform image2D AO_DepthTexture;
+
+//[numthreads(8, 8, 1)]
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+void /*ReinterleaveCS*/ main(
+/*uint3 GroupId : SV_GroupID,
+uint3 DispatchThreadId : SV_DispatchThreadID,
+uint3 GroupThreadId : SV_GroupThreadID*/)
+{
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+
+    uint2 FullResPos = DispatchThreadId.xy;
+    uint2 Offset = FullResPos & 3u;
+    //	Offset.y = 0;
+    uint SliceId = Offset.y * 4u + Offset.x;
+    uint2 QuarterResPos = FullResPos >> 2u;
+
+//    AO_DepthTexture[FullResPos] = InAO_DepthArray.Load(uint4(QuarterResPos, SliceId, 0));
+    imageStore(AO_DepthTexture, int2(FullResPos), texelFetch(InAO_DepthArray, int3(QuarterResPos, SliceId), 0));
+}
+
+#endif // ReinterleaveCS
+
+const float KERNEL_RADIUS = 3.0;
+//#if 0
+#define NO_BLUR 0
+
+layout(binding = 0) uniform sampler2D g_TexSource;
+
+float BlurFunction(float2 uv, float r, float center_c, float center_d, inout float w_total)
+{
+    float2  aoz = textureLod(g_TexSource, uv, 0.0).xy;  // SamplerLinear
+    float c = aoz.x;
+    float d = aoz.y;
+
+    const float BlurSigma = float(KERNEL_RADIUS) * 0.5;
+    const float BlurFalloff = 1.0 / (2.0 * BlurSigma * BlurSigma);
+    const float g_Sharpness = 10.0;
+
+    float ddiff = (d - center_d) * g_Sharpness;
+    float w = exp2(-r * r * BlurFalloff - ddiff * ddiff);
+    w_total += w;
+
+    return c * w;
+}
+
+float CalcuBilateralblur(float2 TexUV, float2 DirectionMask, out float depth)
+{
+    float2  aoz = textureLod(g_TexSource, TexUV, 0.0).xy; // SamplerLinear
+    float center_c = aoz.x;
+    float center_d = aoz.y;
+
+    float c_total = center_c;
+    float w_total = 1.0;
+
+    #if NO_BLUR
+    depth = center_d;
+    return c_total;
+    #endif
+
+    float2 BlurDirection = BufferSizeAndInvSize.zw * DirectionMask;
+    for (float r = 1; r <= KERNEL_RADIUS; ++r)
+    {
+        float2 uv = TexUV + BlurDirection * r;
+        c_total += BlurFunction(uv, r, center_c, center_d, w_total);
+    }
+
+    for (float r = 1; r <= KERNEL_RADIUS; ++r)
+    {
+        float2 uv = TexUV - BlurDirection * r;
+        c_total += BlurFunction(uv, r, center_c, center_d, w_total);
+    }
+
+    depth = center_d;
+    return c_total / w_total;
+}
+
+#if GTAOBlurXCS
+writeonly layout(OUT_FORMAT, binding = 0) uniform image2D       AOBlurX_DepthTexture;  // float2
+
+//[numthreads(8, 8, 1)]
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void /*GTAOBlurXCS*/ main(
+/*uint3 GroupId : SV_GroupID,
+uint3 DispatchThreadId : SV_DispatchThreadID,
+uint3 GroupThreadId : SV_GroupThreadID*/)
+{
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+
+    const int AOViewport_ViewportMin = 0;
+    int2   PixelPos = int2(DispatchThreadId.xy) + AOViewport_ViewportMin;
+    float2 PixelCenter = float2(PixelPos) + float2(0.5, 0.5);
+    float2 BufferUV = PixelCenter.xy * BufferSizeAndInvSize.zw;
+
+    float depth;
+    float blurAmout = CalcuBilateralblur(BufferUV, float2(1, 0), depth);
+
+//    AOBlurX_DepthTexture[PixelPos] = float2(blurAmout, depth);
+    imageStore(AOBlurX_DepthTexture, PixelPos, float4(blurAmout, depth, 0,0));
+}
+
+#endif // GTAOBlurXCS
+
+#if GTAOBlurYCS
+writeonly layout(OUT_FORMAT, binding = 0) uniform image2D       AOResult;  // float
+
+//[numthreads(8, 8, 1)]
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void /*GTAOBlurYCS*/main(
+/*uint3 GroupId : SV_GroupID,
+uint3 DispatchThreadId : SV_DispatchThreadID,
+uint3 GroupThreadId : SV_GroupThreadID*/)
+{
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+
+    const int AOViewport_ViewportMin = 0;
+    int2   PixelPos = int2(DispatchThreadId.xy) + AOViewport_ViewportMin;
+    float2 PixelCenter = float2(PixelPos) + float2(0.5, 0.5);
+    float2 BufferUV = PixelCenter.xy * BufferSizeAndInvSize.zw;
+
+    float depth;
+    float blurAmout = CalcuBilateralblur(BufferUV, float2(0, 1), depth);
+
+//    AOResult[PixelPos] = blurAmout;
+    imageStore(AOResult, PixelPos, float4(blurAmout, 0, 0,0));
+}
+
+#endif
+
+//#else
+uint3 ImageToInterleave(uint2 FullResPos)
+{
+    uint2 Offset = FullResPos & 3u;
+    //	Offset.y = 0;
+    uint SliceId = Offset.y * 4 + Offset.x;
+    uint2 QuarterResPos = FullResPos >> 2u;
+
+    return uint3(QuarterResPos, SliceId);
+}
+
+uint2 InterleaveToImage(uint2 QuarterResPos, uint Slice)
+{
+    uint2  Offset = uint2(Slice % 4u, Slice / 4u);
+    return QuarterResPos * 4u + Offset;
+}
+
+float BlurFunctionOpt(uint2 uv, float r, float center_c, float center_d, inout float w_total)
+{
+    uint3 QuarterResPos = ImageToInterleave(uv);
+    float2  aoz = InAO_DepthArray.Load(uint4(QuarterResPos, 0));
+    float c = aoz.x;
+    float d = aoz.y;
+
+    const float BlurSigma = float(KERNEL_RADIUS) * 0.5;
+    const float BlurFalloff = 1.0 / (2.0 * BlurSigma * BlurSigma);
+    const float g_Sharpness = 10;
+
+    float ddiff = (d - center_d) * g_Sharpness;
+    float w = exp2(-r * r * BlurFalloff - ddiff * ddiff);
+    w_total += w;
+
+    return c * w;
+}
+
+float CalcuBilateralblurOpt(int2 UV, int2 DirectionMask, out float depth)
+{
+    uint3 QuarterResPos = ImageToInterleave(UV);
+    float2  aoz = InAO_DepthArray.Load(uint4(QuarterResPos, 0));
+    float center_c = aoz.x;
+    float center_d = aoz.y;
+
+    float c_total = center_c;
+    float w_total = 1.0;
+
+    #if NO_BLUR
+    depth = center_d;
+    return c_total;
+    #endif
+
+    int2 BlurDirection = DirectionMask;
+    for (int r = 1; r <= KERNEL_RADIUS; ++r)
+    {
+        int2 uv = UV + BlurDirection * r;
+        c_total += BlurFunctionOpt(uv, r, center_c, center_d, w_total);
+    }
+
+    for (int r = 1; r <= KERNEL_RADIUS; ++r)
+    {
+        int2 uv = max(UV - BlurDirection * r, 0);
+        c_total += BlurFunctionOpt(uv, r, center_c, center_d, w_total);
+    }
+
+    depth = center_d;
+    return c_total / w_total;
+}
+
+#if GTAOBlurXCS_Opt
+layout(OUT_FORMAT, binding = 0) uniform image2D       AOBlurX_DepthTexture;  // float2
+
+//[numthreads(8, 8, 1)]
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void /*GTAOBlurXCS_Opt*/main(
+/*uint3 GroupId : SV_GroupID,
+uint3 DispatchThreadId : SV_DispatchThreadID,
+uint3 GroupThreadId : SV_GroupThreadID*/)
+{
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+
+    const int AOViewport_ViewportMin = 0;
+    int2   PixelPos = int2(DispatchThreadId.xy) + AOViewport_ViewportMin;
+    float2 PixelCenter = float2(PixelPos) + float2(0.5, 0.5);
+    float2 BufferUV = PixelCenter.xy * BufferSizeAndInvSize.zw;
+
+    float depth;
+    float blurAmout = CalcuBilateralblurOpt(PixelPos, int2(1, 0), depth);
+
+//    AOBlurX_DepthTexture[PixelPos] = float2(blurAmout, depth);
+    imageStore(AOBlurX_DepthTexture, PixelPos, float4(blurAmout, depth, 0,0));
+}
+#endif
+
+#if GTAOBlurXCS_Opt
+layout(OUT_FORMAT, binding = 0) uniform image2D       AOResult;  // float
+//[numthreads(8, 8, 1)]
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+void /*GTAOBlurYCS_Opt*/main(
+/*uint3 GroupId : SV_GroupID,
+uint3 DispatchThreadId : SV_DispatchThreadID,
+uint3 GroupThreadId : SV_GroupThreadID*/)
+{
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+    const int AOViewport_ViewportMin = 0;
+    int2   PixelPos = int2(DispatchThreadId.xy) + AOViewport_ViewportMin;
+    float2 PixelCenter = float2(PixelPos) + float2(0.5, 0.5);
+    float2 BufferUV = PixelCenter.xy * BufferSizeAndInvSize.zw;
+
+    float depth;
+    float blurAmout = CalcuBilateralblurOpt(PixelPos, int2(0, 1), depth);
+
+//    AOResult[PixelPos] = blurAmout;
+    imageStore(AOResult, PixelPos, float4(blurAmout, depth, 0,0));
+}
+
+#endif
+
+//#endif

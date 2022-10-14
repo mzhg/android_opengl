@@ -20,6 +20,7 @@ import android.opengl.GLES11;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
+import android.opengl.GLES32;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -27,6 +28,8 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 import javax.microedition.khronos.opengles.GL11;
+
+import jet.learning.opengl.common.Texture2D;
 
 public class GLES {
 	
@@ -39,7 +42,12 @@ public class GLES {
 			GLES20.glGenTextures(1, integer, 0);
 		else
 			GLES10.glGenTextures(1, integer, 0);
-		
+
+		return integer[0];
+	}
+
+	public static int glGenSamplers(){
+		GLES30.glGenSamplers(1, integer, 0);
 		return integer[0];
 	}
 
@@ -435,6 +443,14 @@ public class GLES {
 	public static void glDeleteVertexArrays(int vao) {
 		integer[0] = vao;
 		GLES30.glDeleteVertexArrays(1, integer, 0);
+	}
+
+	public static void glBindTextureUnit(int unit, Texture2D texture){
+		GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + unit);
+
+		int target = texture!=null ? texture.getTarget(): GLES20.GL_TEXTURE_2D;
+		int textureID = texture != null ? texture.getTexture() : 0;
+		GLES20.glBindTexture(target, textureID);
 	}
 
 }

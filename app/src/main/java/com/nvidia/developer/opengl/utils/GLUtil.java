@@ -19,6 +19,8 @@ package com.nvidia.developer.opengl.utils;
 import android.util.Log;
 
 import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.ReadableVector3f;
+import org.lwjgl.util.vector.ReadableVector4f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 
@@ -177,11 +179,11 @@ public final class GLUtil {
 		return buffer;
 	}
 
-	public static FloatBuffer wrap(Vector4f[] data){
+	public static FloatBuffer wrap(ReadableVector4f[] data){
 		return wrap(data, 0, data.length);
 	}
 	
-	public static FloatBuffer wrap(Vector4f[] data, int offset, int length){
+	public static FloatBuffer wrap(ReadableVector4f[] data, int offset, int length){
 	   FloatBuffer buf = GLUtil.getCachedFloatBuffer(length * 4);
 	   for(int i = 0; i < length; i++){
 		   data[i + offset].store(buf);
@@ -190,11 +192,11 @@ public final class GLUtil {
 	   return buf;
 	}
 
-	public static FloatBuffer wrap(Vector3f[] data){
+	public static FloatBuffer wrap(ReadableVector3f[] data){
 		return wrap(data, 0, data.length);
 	}
 
-	public static FloatBuffer wrap(Vector3f[] data, int offset, int length){
+	public static FloatBuffer wrap(ReadableVector3f[] data, int offset, int length){
 		FloatBuffer buf = GLUtil.getCachedFloatBuffer(length * 3);
 		for(int i = 0; i < length; i++){
 			data[i + offset].store(buf);

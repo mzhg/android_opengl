@@ -1,0 +1,59 @@
+#version 310 es
+precision highp float;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp image2D;
+precision highp image2DArray;
+
+layout(binding = 0) uniform sampler2D GTAOUpsampleTexture;
+//float2 GTAOUpsamplePixelSize;
+
+writeonly layout(rgba8, binding = 0) uniform image2D OutputColor;
+
+float saturate(float v)
+{
+    return clamp(v, 0.0, 1.0);
+}
+
+float GTAOUpsamplePSAndCS(vec2 UV, vec2 GTAOUpsamplePixelSize)
+{
+    //	uint TexWidth, TexHeight;
+    //	GTAOUpsampleTexture.GetDimensions(TexWidth, TexHeight);
+
+    //	float2 GTAOUpsamplePixelSize = 1.0 / float2(TexWidth, TexHeight);
+    vec2 Offset = GTAOUpsamplePixelSize * 0.25;
+
+    float AOC = saturate(textureLod(GTAOUpsampleTexture, UV, 0.0).r);
+    float AO0 = saturate(textureLod(GTAOUpsampleTexture, UV + vec2(-Offset.x, -Offset.y), 0.0).r);
+    float AO1 = saturate(textureLod(GTAOUpsampleTexture, UV + vec2(Offset.x, -Offset.y), 0.0).r);
+    float AO2 = saturate(textureLod(GTAOUpsampleTexture, UV + vec2(-Offset.x, Offset.y), 0.0).r);
+    float AO3 = saturate(textureLod(GTAOUpsampleTexture, UV + vec2(Offset.x, Offset.y), 0.0).r);
+
+    float AO = min(min(AO0, AO1), min(AO2, AO3));
+    return AO;
+}
+
+//[numthreads(8, 8, 1)]
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+void /*GTAOUpsampleCS*/main(
+/*int   GroupIndex : SV_GroupIndex,
+uint2 GroupId : SV_GroupID,
+uint2 DispatchThreadId : SV_DispatchThreadID,
+uint2 GroupThreadId : SV_GroupThreadID*/)
+{
+    uint GroupIndex = gl_LocalInvocationIndex;
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+
+    ivec2 texSize = textureSize(GTAOUpsampleTexture, 0);
+    if (DispatchThreadId.x >= uint(texSize.x) || DispatchThreadId.y >= uint(texSize.y))
+    {
+        return;
+    }
+
+    vec2 GTAOUpsamplePixelSize = 1.0 / vec2(texSize);
+    vec2 UV = GTAOUpsamplePixelSize * (vec2(DispatchThreadId)+0.5);
+    float AO = GTAOUpsamplePSAndCS(UV, GTAOUpsamplePixelSize);
+    imageStore(OutputColor, ivec2(DispatchThreadId.xy), vec4(AO));
+}

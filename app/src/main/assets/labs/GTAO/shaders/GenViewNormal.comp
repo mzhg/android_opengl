@@ -1,0 +1,121 @@
+
+#include "GTAOCommon.glsl"
+
+float3 ComputeViewNormalAnalyticColumn(float4 uvd, float2 dhdudv)
+{
+    float SceneDepth = uvd.w;
+    float SceneDepthInv = 1.0 / max(SceneDepth, 0.00001);
+    float SceneDepth2Inv = SceneDepthInv * 0.5;
+
+    float U = 2.0 * uvd.x - 1.0;
+    float V = 2.0 * uvd.y - 1.0;
+    float D = 2.0 * uvd.z - 1.0;
+
+    float dudx = Proj[0][0] * SceneDepth2Inv;
+    const float dudy = 0.0;
+    float dudz = (U + Proj[2][0]) * SceneDepth2Inv;
+
+    const float dvdx = 0.0;
+    float dvdy = Proj[1][1] * SceneDepth2Inv;
+    float dvdz = (V + Proj[2][1]) * SceneDepth2Inv;
+
+    const float dddx = 0.0;
+    const float dddy = 0.0;
+    float dddz = (D + Proj[2][2]) * SceneDepth2Inv;
+
+    float dGdx = dddx - dot(dhdudv, float2(dudx, dvdx));
+    float dGdy = dddy - dot(dhdudv, float2(dudy, dvdy));
+    float dGdz = dddz - dot(dhdudv, float2(dudz, dvdz));
+
+    return -normalize(float3(dGdx, dGdy, dGdz));
+}
+
+float TakeSmallerAbsDelta(float left, float mid, float right)
+{
+    float a = mid - left;
+    float b = right - mid;
+
+    return (abs(a) < abs(b)) ? a : b;
+}
+
+layout(binding = 0) uniform sampler2D SceneDepthTexture;
+
+//SamplerState SamplerLinear : register(s0);
+//SamplerState SamplerPoint : register(s1);
+
+
+float2 GetLinearDepthProj(float2 ScreenUV)
+{
+    float DeviceZ = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, ScreenUV, 0.0).r;
+    //	return  1.0f / (DeviceZ * View.InvDeviceZToWorldZTransform[2] - View.InvDeviceZToWorldZTransform[3]);
+    float SceneDepth = ScreenSpaceToViewSpaceDepth(DeviceZ);
+
+    return float2(DeviceZ, SceneDepth);
+}
+
+#ifndef DOWNSAMPLE_FACTOR
+#define DOWNSAMPLE_FACTOR 1
+#endif
+
+float3 ComputeViewNormalMain(float2 UV, float2 DeviceZAndSceneDepth, float2 dhdudv)
+{
+    float4 uvd = float4(UV, DeviceZAndSceneDepth);
+    float3 ViewSpaceNormal = ComputeViewNormalAnalyticColumn(uvd, dhdudv * BufferSizeAndInvSize.xy);
+
+    return ViewSpaceNormal;
+}
+
+int3 ImageToInterleave(int2 FullResPos)
+{
+    int2 Offset = FullResPos & 3;
+    //	Offset.y = 0;
+    int SliceId = Offset.y * 4 + Offset.x;
+    int2 QuarterResPos = FullResPos >> 2;
+
+    return int3(QuarterResPos, SliceId);
+}
+
+/*uint2 InterleaveToImage(uint2 QuarterResPos, uint Slice)
+{
+    uint2  Offset = uint2(Slice % 4, Slice / 4);
+    return QuarterResPos * 4 + Offset;
+}*/
+
+writeonly layout(r32ui, binding = 0) uniform uimage2D OutTexture;
+writeonly layout(OUT_FORMAT, binding = 1) uniform image2DArray OutDepthTexture;
+
+//[numthreads(8, 8, 1)]
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+void /*GenViewNormalCS*/main(
+/*uint2 GroupId : SV_GroupID,
+uint2 DispatchThreadId : SV_DispatchThreadID,
+uint2 GroupThreadId : SV_GroupThreadID*/)
+{
+    uint GroupIndex = gl_LocalInvocationIndex;
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+    const int AOViewport_ViewportMin = 0;
+    int2   PixelPos = int2(DispatchThreadId.xy) + AOViewport_ViewportMin;
+    float2 PixelCenter = float2(PixelPos) + float2(0.5, 0.5);
+    float2 BufferUV = PixelCenter.xy * BufferSizeAndInvSize.zw;
+
+    float2 DeviceZAndSceneDepth = GetLinearDepthProj(BufferUV);
+    float DeviceZRight = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(BufferSizeAndInvSize.z, 0), 0.0).r;
+    float DeviceZBottom = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(0, BufferSizeAndInvSize.w), 0.0).r;
+    float DeviceZLeft = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(-BufferSizeAndInvSize.z, 0), 0.0).r;
+    float DeviceZTop = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(0, -BufferSizeAndInvSize.w), 0.0).r;
+
+    float DeviceZDdx = TakeSmallerAbsDelta(DeviceZLeft, DeviceZAndSceneDepth.x, DeviceZRight);
+    float DeviceZDdy = TakeSmallerAbsDelta(DeviceZTop, DeviceZAndSceneDepth.x, DeviceZBottom);
+
+    //	float2 D = float2(DeviceZRight - DeviceZAndSceneDepth.x, DeviceZBottom - DeviceZAndSceneDepth.x);
+    float2 D = float2(DeviceZDdx, DeviceZDdy);
+    float3 Normal = ComputeViewNormalMain(BufferUV, DeviceZAndSceneDepth, D);
+
+//    OutTexture[PixelPos] = Normal * 0.5 + 0.5;
+//    OutDepthTexture[ImageToInterleave(PixelPos)] = DeviceZAndSceneDepth.y;
+
+    imageStore(OutTexture, PixelPos, uint4(EncodeNormal(Normal),0,0,0));
+    imageStore(OutDepthTexture, ImageToInterleave(PixelPos), float4(DeviceZAndSceneDepth.y, 0,0,0));
+}
