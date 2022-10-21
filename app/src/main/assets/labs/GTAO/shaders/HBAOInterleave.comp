@@ -1,0 +1,204 @@
+
+#include "GTAOCommon.glsl"
+
+#if SHADER_QUALITY == 0
+// very low
+#define GTAO_NUMTAPS 4
+#define GTAO_BIASMIPLEVEL 2
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 64.0f
+#elif SHADER_QUALITY == 1
+// low
+#define GTAO_NUMTAPS 6
+#define GTAO_BIASMIPLEVEL 1
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 64.0f
+#elif SHADER_QUALITY == 2
+// medium
+#define GTAO_NUMTAPS 8
+#define GTAO_BIASMIPLEVEL 0
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 64.0f
+#elif SHADER_QUALITY == 3
+// high
+#define GTAO_NUMTAPS 12
+#define GTAO_BIASMIPLEVEL 0
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 64.0f
+#else // SHADER_QUALITY == 4
+// very high
+#define GTAO_NUMTAPS 20
+#define GTAO_BIASMIPLEVEL 0
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 64.0f
+#endif
+
+layout(binding = 0) uniform sampler2DArray DepthInterleaveTexture;
+//Texture2D<float>      DepthLinearTexture : register(t1);
+layout(binding = 1) uniform sampler2D     ViewNormalTexture;
+
+/*SamplerState SamplerLinear : register(s0);
+SamplerState SamplerPoint : register(s1);*/
+
+float3 GetQuarterCoord(float2 UV, uint PrimitiveID)
+{
+    return float3(UV, float(PrimitiveID));
+}
+
+float GetLinearDepthProj(float2 ScreenUV, uint slice)
+{
+    return textureLod(DepthInterleaveTexture, GetQuarterCoord(ScreenUV, slice), 0.0).x;  // SamplerPoint
+}
+
+float3 GetViewSpacePosFromAOInput(float2 ScreenUV, uint slice)
+{
+    float ViewDepth = GetLinearDepthProj(ScreenUV, slice);
+    float3 ViewPosition = ScreenToViewPos(ScreenUV, ViewDepth);
+    return ViewPosition;
+}
+
+/// ----------------------- HBAO Code ----------------------------
+float Falloff(float DistanceSquare)
+{
+    // fade radius inverse.
+    // 1 scalar mad instruction
+    float RadiusSq = 1.0;//AmbientOcclusionFadeRadius * AmbientOcclusionFadeRadius;
+    return DistanceSquare / (-RadiusSq) + 1.0;
+}
+//----------------------------------------------------------------------------------
+// P = view-space position at the kernel center
+// N = view-space normal at the kernel center
+// S = view-space position of the current sample
+//----------------------------------------------------------------------------------
+float ComputeAO(float3 P, float3 N, float3 S)
+{
+    float3 V = S - P;
+    float VdotV = dot(V, V);
+    float NdotV = dot(N, V) * rsqrt(VdotV);
+    // Todo : NDotVBias should be parameter
+    const float NDotVBias = 0.1;
+    return clamp(NdotV - NDotVBias, 0.0, 1.0) * clamp(Falloff(VdotV), 0.0, 1.0);
+    //        return clamp((NdotV - NDotVBias) * Falloff(VdotV), 0, 1);
+
+    float AO = max(NdotV - NDotVBias, 0.0) * max(Falloff(VdotV), 0.0);
+    return min(AO, 1.0);
+}
+//----------------------------------------------------------------------------------
+float2 RotateDirection(float2 Dir, float2 CosSin)
+{
+    return float2(Dir.x*CosSin.x - Dir.y*CosSin.y, Dir.x*CosSin.y + Dir.y*CosSin.x);
+}
+float2 _round(float2 v)
+{
+    int2 t = int2(v + 0.5);
+    return float2(t);
+}
+// ---------------------------------------------   No interleave version
+float ComputeCoarseAO(float2 FullResUV, float RadiusPixels, float3 Rand, float3 ViewPosition, float3 ViewNormal, uint Slice)
+{
+    // Divide by NUM_STEPS+1 so that the farthest samples are not fully attenuated
+    const int HBAO_NUMTAPS = GTAO_NUMTAPS;
+    float StepSizePixels = RadiusPixels / float(HBAO_NUMTAPS + 1);
+    const int NUM_DIRECTIONS = 2;
+    const float Alpha = 2.0 * 3.1415926 / float(NUM_DIRECTIONS);
+    float AO = 0.0;
+    float SinDeltaAngle = sin(Alpha);
+    float CosDeltaAngle = cos(Alpha);
+    float2 Direction = Rand.xy;
+    for (int DirectionIndex = 0; DirectionIndex < NUM_DIRECTIONS; ++DirectionIndex)
+    {
+        // Jitter starting sample within the first step
+        float RayPixels = (Rand.z * StepSizePixels + 1.0);
+        for (int StepIndex = 0; StepIndex < HBAO_NUMTAPS; ++StepIndex)
+        {
+            float2 UVOffset = round(RayPixels * Direction) * BufferSizeAndInvSize.zw;
+            {
+                float2 SnappedUV = FullResUV + UVOffset;
+                float3 S = GetViewSpacePosFromAOInput(SnappedUV, Slice);
+                AO += ComputeAO(ViewPosition, ViewNormal, S);
+            }
+            {
+                float2 SnappedUV = FullResUV - UVOffset;
+                float3 S = GetViewSpacePosFromAOInput(SnappedUV, Slice);
+                AO += ComputeAO(ViewPosition, ViewNormal, S);
+            }
+            RayPixels += StepSizePixels;
+        }
+        // Rotate for the next angle
+        float2 TempScreenDir = Direction.xy;
+        Direction.x = (TempScreenDir.x *  CosDeltaAngle) + (TempScreenDir.y * -SinDeltaAngle);
+        Direction.y = (TempScreenDir.x *  SinDeltaAngle) + (TempScreenDir.y * CosDeltaAngle);
+    }
+    // TODO: AOMultiplier should be a paramter
+    float AOMultiplier = 1.11/*FadeRadiusMulAdd_FadeDistance_AttenFactor.x*/;
+    AO *= AOMultiplier / float(NUM_DIRECTIONS * HBAO_NUMTAPS);
+    return clamp(1.0 - AO * 2.0, 0.0, 1.0);
+}
+
+float HBAOCombinedPSandCS(in float2 UV, in uint3 iPos, float ViewDepth)
+{
+    float2 AOSceneViewport_Extent = BufferSizeAndInvSize.xy / 4.0;
+    float2 AOSceneViewport_ExtentInverse = BufferSizeAndInvSize.zw * 4.0;
+    // Offset by a fraction of a pixel to unsure we don't hit between pixels when running at half res
+    float2 QuarterOffset = AOSceneViewport_ExtentInverse * 0.125;
+    float2 TexUV = UV + QuarterOffset;
+    UV += QuarterOffset;
+
+
+    //	float DeviceZ = LookupDeviceZ(TexUV);
+    //	float SceneDepth = ConvertFromDeviceZ(DeviceZ);
+    float SceneDepth = GetLinearDepthProj(TexUV, iPos.z);
+    if (SceneDepth > AmbientOcclusionFadeDistance)
+    {
+        return 1.0;
+    }
+    ViewDepth = SceneDepth;
+    float3 ViewPosition = ScreenToViewPos(UV, SceneDepth);
+    //        float3 ViewPosition = GetViewSpacePosFromAOInput(UV);
+    // Reconstruct view-space normal from nearest neighbors
+//    float3 ViewNormal = GetNormal(UV, ThreadPos, ViewPosition);
+    float3 ViewNormal = texelFetch(ViewNormalTexture, int2(iPos.xy), 0).xyz * 2.0 - 1.0;  // SamplerLinear
+    // Compute projection of disk of radius R into screen space
+    const float WorldRadius = 1.0;
+    //        float InvTanHalfFov = ScreenSpaceAOParams[3].w;
+//    float FOVScale = BufferSizeAndInvSize.y * View.ClipToView[1][1];
+    float FOVScale = AOSceneViewport_Extent.y * InvTanHalfFov;
+#if 1
+    // Get Radius in ScreenSpace (in pixels)
+    float WorldRadiusAdj = WorldRadius * FOVScale;
+#else
+    float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x /* SearchRadius*/;
+#endif
+    float RadiusPixels = max(min(WorldRadiusAdj / abs(ViewPosition.z), GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
+    // Get jitter vector for the current full-res pixel
+    float3 Rand = GetRandomVector(iPos.xy);
+    float AO = ComputeCoarseAO(UV, RadiusPixels, Rand, ViewPosition, ViewNormal, iPos.z);
+    return AO;
+    //        return float4(ViewNormal * 0.5 + 0.5,AO);
+}
+
+#ifndef THREADGROUP_SIZEX
+#define THREADGROUP_SIZEX 8
+#define THREADGROUP_SIZEY 4
+#endif
+
+writeonly layout(OUT_FORMAT, binding = 0) uniform image2DArray OutTexture;
+layout(local_size_x = THREADGROUP_SIZEX, local_size_y = THREADGROUP_SIZEY, local_size_z = 1) in;
+void /*GTAOCombinedCS*/main()
+{
+    uint GroupIndex = gl_LocalInvocationIndex;
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+
+    float OutColor = 0.0;
+    float ViewDepth = 0.0;
+
+    const uint AOViewport_ViewportMin = 0u;
+    int3   PixelPos = int3(DispatchThreadId.xy + AOViewport_ViewportMin, DispatchThreadId.z);
+    float2 Offset = float2(float(PixelPos.z % 4), float(PixelPos.z / 4));
+    float2 Base = float2(PixelPos.xy) * 4.0 + Offset + 0.5;
+    //	float2 uv = base * (InvQuarterResolution / 4.0);
+    float2 BufferUV = Base * GTAOParams[2].zw;
+
+    OutColor = HBAOCombinedPSandCS(BufferUV, uint3(Base, PixelPos.z), ViewDepth);
+
+//    OutTexture[PixelPos] = float2(pow(OutColor, 1), ViewDepth);
+//    imageStore(OutTexture, PixelPos, uint4(EncodeAOZ(pow(OutColor, 1.0), ViewDepth),0,0,0));
+    imageStore(OutTexture, PixelPos, float4(OutColor, ViewDepth,0,0));
+}

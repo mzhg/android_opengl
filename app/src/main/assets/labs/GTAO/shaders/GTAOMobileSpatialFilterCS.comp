@@ -1,0 +1,257 @@
+#include "ShardMemoryCommon.glsl"
+
+layout(binding = 0) uniform sampler2D AOInputTexture;
+
+float2 GetDeviceZAndAO(float2 TextureUV)
+{
+    float2 DeviceZAndAO;
+    float4 EncodeDeviceZAndAO = textureLod(AOInputTexture, TextureUV, 0.0);
+    DeviceZAndAO.y = EncodeDeviceZAndAO.a;
+    EncodeDeviceZAndAO.a = 0.0f;
+    DeviceZAndAO.x = DecodeFloatRGBA(EncodeDeviceZAndAO);
+
+    return DeviceZAndAO;
+}
+
+void CacheAOVal(int2 FullGroupOriginAO, int pixIdx)
+{
+    int2 ThreadPos;
+
+    ThreadPos.x = pixIdx % AO_THREADPOS_OFFSET;
+    ThreadPos.y = pixIdx / AO_THREADPOS_OFFSET;
+
+    int2 TexturePos = FullGroupOriginAO + ThreadPos;
+
+    float2 TextureUV = TexturePosToBufferUV(TexturePos);
+
+    float2 DeviceZAndAO = GetDeviceZAndAO(TextureUV);
+    SetAOVal(DeviceZAndAO.y, pixIdx);
+    SetZVal(DeviceZAndAO.x, pixIdx);
+}
+
+ /*   #if SPATIALFILTER_PIXEL_SHADER || HORIZONSEARCH_INTEGRAL_PIXEL_SHADER
+float4 GTAOSpatialFilter(float2 TextureUV, int2 ThreadPos, int2 PixelPos)
+#else*/
+void GTAOSpatialFilter(int2 ThreadPos, int2 PixelPos)
+//#endif
+{
+//    if (any(PixelPos >= (int2)ViewSizeAndInvSize.xy))
+    if(PixelPos.x >= int(ViewSizeAndInvSize.x) || PixelPos.y >= int(ViewSizeAndInvSize.y))
+    {
+//    #if SPATIALFILTER_PIXEL_SHADER || HORIZONSEARCH_INTEGRAL_PIXEL_SHADER
+//    return 1.0f;
+//    #else
+        return;
+//    #endif
+    }
+
+    float2 ZDiff;
+
+    // Get the ZDiffs array
+    #if 0 //SPATIALFILTER_PIXEL_SHADER || HORIZONSEARCH_INTEGRAL_PIXEL_SHADER
+    float ThisZ = GetDeviceZAndAO(TextureUV).x;
+
+    {
+        float2 X2Offset = float2(2 * BufferSizeAndInvSize.z, 0);
+        float2 X1Offset = float2(BufferSizeAndInvSize.z, 0);
+
+        float XM2Z = GetDeviceZAndAO(TextureUV - X2Offset).x;
+        float XM1Z = GetDeviceZAndAO(TextureUV - X1Offset).x;
+        float XP1Z = GetDeviceZAndAO(TextureUV + X1Offset).x;
+        float XP2Z = GetDeviceZAndAO(TextureUV + X2Offset).x;
+
+        // Get extrapolated point either side
+        float C1 = abs((XM1Z + (XM1Z - XM2Z)) - ThisZ);
+        float C2 = abs((XP1Z + (XP1Z - XP2Z)) - ThisZ);
+
+        if (C1 < C2)
+        {
+            ZDiff.x = XM1Z - XM2Z;
+        }
+        else
+        {
+            ZDiff.x = XP2Z - XP1Z;
+        }
+    }
+
+    {
+        float2 Y2Offset = float2(0, 2 * BufferSizeAndInvSize.w);
+        float2 Y1Offset = float2(0, BufferSizeAndInvSize.w);
+
+        float YM2Z = GetDeviceZAndAO(TextureUV - Y2Offset).x;
+        float YM1Z = GetDeviceZAndAO(TextureUV - Y1Offset).x;
+        float YP1Z = GetDeviceZAndAO(TextureUV + Y1Offset).x;
+        float YP2Z = GetDeviceZAndAO(TextureUV + Y2Offset).x;
+
+        // Get extrapolated point either side
+        float C1 = abs((YM1Z + (YM1Z - YM2Z)) - ThisZ);
+        float C2 = abs((YP1Z + (YP1Z - YP2Z)) - ThisZ);
+
+        if (C1 < C2)
+        {
+            ZDiff.y = YM1Z - YM2Z;
+        }
+        else
+        {
+            ZDiff.y = YP2Z - YP1Z;
+        }
+    }
+    #else
+    int2 ThreadOffsetPos = ThreadPos + DEPTH_GROUP_THREAD_OFFSET;
+    float ThisZ = GetDeviceZFromSharedMemory(ThreadOffsetPos);
+
+    {
+        int2 X2Offset = int2(2, 0);
+        int2 X1Offset = int2(1, 0);
+
+        float XM2Z = GetDeviceZFromSharedMemory(ThreadOffsetPos - X2Offset);
+        float XM1Z = GetDeviceZFromSharedMemory(ThreadOffsetPos - X1Offset);
+        float XP1Z = GetDeviceZFromSharedMemory(ThreadOffsetPos + X1Offset);
+        float XP2Z = GetDeviceZFromSharedMemory(ThreadOffsetPos + X2Offset);
+
+        // Get extrapolated point either side
+        float C1 = abs((XM1Z + (XM1Z - XM2Z)) - ThisZ);
+        float C2 = abs((XP1Z + (XP1Z - XP2Z)) - ThisZ);
+
+        if (C1 < C2)
+        {
+            ZDiff.x = XM1Z - XM2Z;
+        }
+        else
+        {
+            ZDiff.x = XP2Z - XP1Z;
+        }
+    }
+
+    {
+        int2 Y2Offset = int2(0, 2);
+        int2 Y1Offset = int2(0, 1);
+
+        float YM2Z = GetDeviceZFromSharedMemory(ThreadOffsetPos - Y2Offset);
+        float YM1Z = GetDeviceZFromSharedMemory(ThreadOffsetPos - Y1Offset);
+        float YP1Z = GetDeviceZFromSharedMemory(ThreadOffsetPos + Y1Offset);
+        float YP2Z = GetDeviceZFromSharedMemory(ThreadOffsetPos + Y2Offset);
+
+        // Get extrapolated point either side
+        float C1 = abs((YM1Z + (YM1Z - YM2Z)) - ThisZ);
+        float C2 = abs((YP1Z + (YP1Z - YP2Z)) - ThisZ);
+
+        if (C1 < C2)
+        {
+            ZDiff.y = YM1Z - YM2Z;
+        }
+        else
+        {
+            ZDiff.y = YP2Z - YP1Z;
+        }
+    }
+    #endif
+
+    float SumAO = 0.0;
+    float SumWeight = 0.0;
+
+    int x, y;
+
+    // Get the Z Value to compare against
+
+    float DepthBase = ThisZ - (ZDiff.x * 2.0) - (ZDiff.y * 2.0);
+
+    for (y = -2; y <= 2; y++)
+    {
+        float PlaneZ = DepthBase;
+
+        for (x = -2; x <= 2; x++)
+        {
+            // Get value and see how much it compares to the centre with the gradients
+            float XDiff = float(abs(x));
+
+        #if 0 //SPATIALFILTER_PIXEL_SHADER || HORIZONSEARCH_INTEGRAL_PIXEL_SHADER
+            float2 CurrentTextureUV = TextureUV + float2(x, y) * BufferSizeAndInvSize.zw;
+            float2 SampleZAndAO = GetDeviceZAndAO(CurrentTextureUV);
+        #else
+            int2 SamplePos = ThreadPos + int2(x, y);
+            float2 SampleZAndAO;
+            SampleZAndAO.y = GetAOValueFromSharedMemory(SamplePos);
+            SampleZAndAO.x = GetDeviceZFromSharedMemory(SamplePos + DEPTH_GROUP_THREAD_OFFSET);
+        #endif
+            float Weight = 1.0f;
+            // 			if ((x == 0) && (y == 0)) //Need do profile to see whether disble branch is more efficent
+            // 			{
+            // 				Weight = 1.0f;
+            // 			}
+            // 			else
+            {
+                // Get the bilateral weight. This is a function of the difference in height between the plane equation and the base depth
+                // Compare the Z at this sample with the gradients
+
+                // MW: AO Edge Improve 20220728
+                #if 1 // Original UE4.26
+                float SampleZDiff = abs(PlaneZ - SampleZAndAO.x);
+                Weight = 1.0f - saturate(SampleZDiff * 10.0f);
+                #else
+                float SampleZDiff = (SampleZAndAO.x - PlaneZ) * 20.0f;
+                Weight = 1.0f - saturate(abs(SampleZDiff));
+                SampleZAndAO.y *= SampleZDiff > 0.12 ? smoothstep(0.12, 0.4, SampleZDiff) : smoothstep(0.12, 0.0, SampleZDiff);
+                #endif
+                // MW: AO Edge Improve 20220728 ~end
+
+            }
+
+            SumAO += SampleZAndAO.y * Weight;
+            SumWeight += Weight;
+
+            PlaneZ += ZDiff.x;
+        }
+        DepthBase += ZDiff.y;
+    }
+    SumAO /= SumWeight;
+
+    SumAO *= (PI * 0.5f);
+
+    // user adjust AO
+    float AmbientOcclusionIntensity = Power_Intensity_ScreenPixelsToSearch.y;
+    float AmbientOcclusionPower = Power_Intensity_ScreenPixelsToSearch.x;
+    SumAO = 1.0 - (1.0 - pow(abs(SumAO), AmbientOcclusionPower)) * AmbientOcclusionIntensity;
+
+#if 0  //SPATIALFILTER_PIXEL_SHADER || HORIZONSEARCH_INTEGRAL_PIXEL_SHADER
+    return SumAO;
+#else
+//    OutTexture[PixelPos] = SumAO;
+    imageStore(OutTexture, PixelPos, float4(SumAO));
+#endif
+}
+
+//[numthreads(THREADGROUP_SIZEX, THREADGROUP_SIZEY, 1)]
+layout(local_size_x = THREADGROUP_SIZEX, local_size_y = THREADGROUP_SIZEY, local_size_z = 1) in;
+void /*GTAOSpatialFilterCS*/main(
+/*int   GroupIndex : SV_GroupIndex,
+uint2 GroupId : SV_GroupID,
+uint2 DispatchThreadId : SV_DispatchThreadID,
+uint2 GroupThreadId : SV_GroupThreadID*/)
+{
+    int   GroupIndex = int( SV_GroupIndex);
+    uint2 GroupId = SV_GroupID.xy;
+    int2 GroupThreadId = int2(SV_GroupThreadID.xy);
+    int2 DispatchThreadId = int2(SV_DispatchThreadID.xy);
+//    int2 FullGroupOrigin = int2(GroupId.x * THREADGROUP_SIZEX, GroupId.y * THREADGROUP_SIZEY);
+    int2 FullGroupOrigin = int2(GroupId.xy) * int2(THREADGROUP_SIZEX, THREADGROUP_SIZEY);
+    int pixIdx = GroupIndex;
+
+    // Cache AO and DeviceZ in shared group memory for spatial filter
+    {
+        int2 FullGroupOriginAO = FullGroupOrigin.xy - AO_GROUP_THREAD_OFFSET;
+
+        pixIdx = GroupIndex * 2;
+
+        if (pixIdx < MAX_AO_THREADS)
+        {
+            CacheAOVal(FullGroupOriginAO, pixIdx);
+
+            CacheAOVal(FullGroupOriginAO, pixIdx + 1);
+        }
+
+        GroupMemoryBarrierWithGroupSync();
+    }
+
+    GTAOSpatialFilter(GroupThreadId, DispatchThreadId);
+}

@@ -4,6 +4,7 @@ import android.opengl.GLES30;
 import android.opengl.GLES31;
 import android.opengl.GLES32;
 
+import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.Macro;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
@@ -11,6 +12,8 @@ import com.nvidia.developer.opengl.utils.NvUtils;
 
 import org.lwjgl.util.vector.Vector2i;
 import org.lwjgl.util.vector.Vector4f;
+
+import java.nio.ByteBuffer;
 
 import jet.learning.opengl.common.GLSLUtil;
 import jet.learning.opengl.common.SamplerDesc;
@@ -28,16 +31,22 @@ public class GTAO {
     private final FReinterleavePass ReinterleavePass = new FReinterleavePass();
     private final FAOBlurPass AOBlurPass = new FAOBlurPass();
     private final FSpatialFilterPass SpatialFilterPass = new FSpatialFilterPass();
+    private final FSpatialFilterPass MobileSpatialFilterPass = new FSpatialFilterPass();
     private final FUpsamplePass UpsamplePass = new FUpsamplePass();
     protected final FHorizonSearchIntegratePass HorizonSearchIntegratePass = new FHorizonSearchIntegratePass();
+    protected final FHorizonSearchIntegratePass MobileHorizonIntegratePass = new FHorizonSearchIntegratePass();
+    protected final FHorizonSearchIntegratePass MobileHBAOPass = new FHorizonSearchIntegratePass();
 
     protected final FGTAOShaderParameters shaderParameters = new FGTAOShaderParameters();
 
     private int mSamplerPoint;
     private int mSamplerLinear;
+    private int mUBO;
 
-    GTAOMethod mMethod = GTAOMethod.InterleaveOpt;
+    GTAOMethod mMethod = GTAOMethod.GTAO_Mobile;
     private int mFrameIndex;
+
+    private ByteBuffer mBufCache;
 
     final boolean use32Floating = true;
     final String shaderPath = "labs/GTAO/shaders/";
@@ -48,9 +57,15 @@ public class GTAO {
 
     public void Create(){
         // defulat is linear
+        mBufCache = BufferUtils.createByteBuffer(FGTAOShaderParameters.SIZE);
         SamplerDesc pointDesc = new SamplerDesc();
         mSamplerLinear = SamplerUtils.createSampler(pointDesc);
         pointDesc.magFilter = pointDesc.minFilter = GLES32.GL_NEAREST;
+
+        mUBO = GLES.glGenBuffers();
+        GLES30.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, mUBO);
+        GLES30.glBufferData(GLES30.GL_UNIFORM_BUFFER, FGTAOShaderParameters.SIZE, null, GLES30.GL_DYNAMIC_DRAW);
+        GLES30.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, 0);
     }
 
     public void RenderAO(SSAOParameters parameters) {
@@ -87,20 +102,49 @@ public class GTAO {
                 AddGTAOUpsamplePass(parameters);
             }
                 break;
+            case InterleaveHBAO:
+            {
+                AddGenerateNormalDepthPass(parameters);
+                // do GTAO
+                AddInterleavePass(parameters, true);
+//			    AddBlurOptPass( parameters);
+                AddGTAOSpatialFilterOpt(parameters);
+                AddGTAOUpsamplePass(parameters);
+            }
+                break;
+            case GTAO_Mobile:
+            {
+                AddMobileHorizonIntegratePass(parameters);
+                AddGTAOMobileSpatialFilter(parameters, MobileHorizonIntegratePass.Output);
+            }
+            break;
+            case HBAO_Mobile:
+            {
+                AddMobileHBAOPass(parameters);
+                AddGTAOMobileSpatialFilter(parameters, MobileHBAOPass.Output);
+            }
+            break;
             default:
                 break;
         }
 
         mFrameIndex++;
+        GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 0, 0);
     }
 
     protected void BuildAOConstantBuffer(SSAOParameters parameters){
         FGTAOShaderParameters shaderUniformData = GetGTAOShaderParameters(parameters, mFrameIndex);
-//        UpdateConstantBuffer(pDeviceContext, mConstantBuffer, shaderUniformData);
+
+        GLES30.glBindBufferBase(GLES30.GL_UNIFORM_BUFFER, 0, mUBO);
+        mBufCache.clear();
+        ByteBuffer buf = mBufCache;
+        shaderUniformData.store(buf);
+        buf.flip();
+        GLES30.glBufferSubData(GLES30.GL_UNIFORM_BUFFER,0, buf.remaining(), buf);
     }
 
     private void SetupUniforms(NvGLSLProgram program){
-        GLSLUtil.setMat4(program, "Proj", shaderParameters.ProjInverse);
+        /*GLSLUtil.setMat4(program, "Proj", shaderParameters.ProjInverse);
         GLSLUtil.setFloat4(program, "ProjInfo", shaderParameters.ProjInfo);
         GLSLUtil.setFloat4(program, "BufferSizeAndInvSize", shaderParameters.BufferSizeAndInvSize);
         GLSLUtil.setFloat4(program, "GTAOParams", shaderParameters.GTAOParams);
@@ -109,7 +153,7 @@ public class GTAO {
 
         GLSLUtil.setFloat(program, "InvTanHalfFov", shaderParameters.InvTanHalfFov);
         GLSLUtil.setFloat(program, "AmbientOcclusionFadeRadius", shaderParameters.AmbientOcclusionFadeRadius);
-        GLSLUtil.setFloat(program, "AmbientOcclusionFadeDistance", shaderParameters.AmbientOcclusionFadeDistance);
+        GLSLUtil.setFloat(program, "AmbientOcclusionFadeDistance", shaderParameters.AmbientOcclusionFadeDistance);*/
     }
 
     private Texture2D ReCreateTex2D(Texture2D source, int width, int height, int format){
@@ -148,6 +192,28 @@ public class GTAO {
         }
 
         return source;
+    }
+
+    public Texture2D getNormalTex() {
+        return  ViewNormalPass.Output;
+    }
+
+    public Texture2D getInterleaveDepth() {
+        return  DeinterleavePass.Output;
+    }
+
+    public Texture2D getInterleaveAO(){
+        return InterleavePass.Output;
+    }
+
+    public Texture2D getMobileGTAO() {
+        if(mMethod == GTAOMethod.GTAO_Mobile)
+            return MobileHorizonIntegratePass.Output;
+        else if(mMethod == GTAOMethod.HBAO_Mobile)
+            return MobileHBAOPass.Output;
+        else
+            return null;
+
     }
 
     // Interleave Methiod
@@ -229,14 +295,24 @@ public class GTAO {
     }
 
     protected void AddInterleavePass(SSAOParameters parameters){
-        final int OutFormat = GLES32.GL_R32UI;
-        if (InterleavePass.Shader == null) {
+        AddInterleavePass(parameters, false);
+    }
+    protected void AddInterleavePass(SSAOParameters parameters, boolean hbao){
+        final int OutFormat = GLES32.GL_RGBA16F;
+        if (InterleavePass.Shader == null || InterleavePass.IsHBAO == hbao) {
+            if(InterleavePass.Shader != null)
+                InterleavePass.Shader.dispose();
             final Macro[] macros = new Macro[]{
 //                    new Macro("OUT_FORMAT", use32Floating ? "rg32f" : "rg16f"),
                     new Macro("OUT_FORMAT", TextureUtils.getImageFormat(OutFormat) ),
                     new Macro("SHADER_QUALITY", parameters.GTAOQuality)
             };
-            InterleavePass.Shader = NvGLSLProgram.createProgram(shaderPath + "GTAOInterleave.comp", macros);
+            if(!hbao){
+                InterleavePass.Shader = NvGLSLProgram.createProgram(shaderPath + "GTAOInterleave.comp", macros);
+            }else{
+                InterleavePass.Shader = NvGLSLProgram.createProgram(shaderPath + "HBAOInterleave.comp", macros);
+            }
+            InterleavePass.IsHBAO = hbao;
         }
 
 		final int outputWidth = parameters.SceneWidth / 4;
@@ -343,7 +419,7 @@ public class GTAO {
 
     // InterleaveOpt method
     protected void AddGenerateNormalDepthPass(SSAOParameters parameters){
-        final int NormalFormat = GLES32.GL_R32UI;
+        final int NormalFormat = GLES32.GL_RGBA8;
         final int DepthFormat = GLES32.GL_R32F;
 
         if (ViewNormalPass.Shader == null)
@@ -463,7 +539,6 @@ public class GTAO {
                     new Macro("SHADER_QUALITY", shaderQuality),
                     new Macro("OUT_FORMAT", use32Floating ? "r32f" : "r16f")
             };
-            final String shaderPath = "labs/GTAO/shaders/";
             HorizonSearchIntegratePass.CSShader[shaderQuality] = NvGLSLProgram.createProgram(shaderPath + "GTAOHorizonSearchAndIntegrateCS.comp", macros);
         }
 
@@ -485,6 +560,111 @@ public class GTAO {
 
         HorizonSearchIntegratePass.CSShader[shaderQuality].printOnce();
         GLES.checkGLError();
+    }
+
+    // Defualt method
+    protected void AddMobileHorizonIntegratePass(SSAOParameters parameters){
+        final int THREADGROUP_SIZEX = 16;
+        final int THREADGROUP_SIZEY = 8;
+
+        int shaderQuality = NvUtils.clamp(parameters.GTAOQuality, 0, 4);
+        if (MobileHorizonIntegratePass.CSShader[shaderQuality] == null) {
+            final Macro[] macros = {
+                    new Macro("THREADGROUP_SIZEX", THREADGROUP_SIZEX),
+                    new Macro("THREADGROUP_SIZEY", THREADGROUP_SIZEY),
+                    new Macro("SHADER_QUALITY", shaderQuality),
+                    new Macro("OUT_FORMAT", "rgba8")
+            };
+            final String shaderPath = "labs/GTAO/shaders/";
+            MobileHorizonIntegratePass.CSShader[shaderQuality] = NvGLSLProgram.createProgram(shaderPath + "GTAOMobileHorizonIntergralCS.comp", macros);
+        }
+
+        final int outputWidth = parameters.SceneWidth / parameters.DownscaleFactor;
+        final int outputHeight = parameters.SceneHeight / parameters.DownscaleFactor;
+
+        MobileHorizonIntegratePass.Output = ReCreateTex2D(MobileHorizonIntegratePass.Output, outputWidth, outputHeight, GLES30.GL_RGBA8);
+
+        MobileHorizonIntegratePass.CSShader[shaderQuality].enable();
+        SetupUniforms(MobileHorizonIntegratePass.CSShader[shaderQuality]);
+        GLES.glBindTextureUnit(0, parameters.SceneDepth);
+        GLES31.glBindSampler(0, mSamplerPoint);
+        GLES31.glBindImageTexture(0, MobileHorizonIntegratePass.Output.getTexture(),0, false, 0, GLES32.GL_WRITE_ONLY, MobileHorizonIntegratePass.Output.getFormat());
+        GLES31.glDispatchCompute(NvUtils.divideAndRoundUp(outputWidth, THREADGROUP_SIZEX), NvUtils.divideAndRoundUp(outputHeight, THREADGROUP_SIZEY), 1);
+
+        GLES.glBindTextureUnit(0, null);
+        GLES31.glBindImageTexture(0, 0,0, false, 0, GLES32.GL_WRITE_ONLY, GLES32.GL_RGBA8);
+        GLES31.glMemoryBarrier(GLES32.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        MobileHorizonIntegratePass.CSShader[shaderQuality].printOnce();
+        GLES.checkGLError();
+    }
+
+    protected void AddMobileHBAOPass(SSAOParameters parameters){
+        final int THREADGROUP_SIZEX = 16;
+        final int THREADGROUP_SIZEY = 8;
+
+        int shaderQuality = NvUtils.clamp(parameters.GTAOQuality, 0, 4);
+        if (MobileHBAOPass.CSShader[shaderQuality] == null) {
+            final Macro[] macros = {
+                    new Macro("THREADGROUP_SIZEX", THREADGROUP_SIZEX),
+                    new Macro("THREADGROUP_SIZEY", THREADGROUP_SIZEY),
+                    new Macro("SHADER_QUALITY", shaderQuality),
+                    new Macro("OUT_FORMAT", "rgba8")
+            };
+            MobileHBAOPass.CSShader[shaderQuality] = NvGLSLProgram.createProgram(shaderPath + "MobileHBAOCS.comp", macros);
+        }
+
+        final int outputWidth = parameters.SceneWidth / parameters.DownscaleFactor;
+        final int outputHeight = parameters.SceneHeight / parameters.DownscaleFactor;
+
+        MobileHBAOPass.Output = ReCreateTex2D(MobileHBAOPass.Output, outputWidth, outputHeight, GLES30.GL_RGBA8);
+
+        MobileHBAOPass.CSShader[shaderQuality].enable();
+        SetupUniforms(MobileHBAOPass.CSShader[shaderQuality]);
+        GLES.glBindTextureUnit(0, parameters.SceneDepth);
+        GLES31.glBindSampler(0, mSamplerLinear);
+        GLES31.glBindImageTexture(0, MobileHBAOPass.Output.getTexture(),0, false, 0, GLES32.GL_WRITE_ONLY, MobileHBAOPass.Output.getFormat());
+        GLES31.glDispatchCompute(NvUtils.divideAndRoundUp(outputWidth, THREADGROUP_SIZEX), NvUtils.divideAndRoundUp(outputHeight, THREADGROUP_SIZEY), 1);
+
+        GLES.glBindTextureUnit(0, null);
+        GLES31.glBindImageTexture(0, 0,0, false, 0, GLES32.GL_WRITE_ONLY, GLES32.GL_RGBA8);
+        GLES31.glMemoryBarrier(GLES32.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        MobileHBAOPass.CSShader[shaderQuality].printOnce();
+        GLES.checkGLError();
+    }
+
+    protected void AddGTAOMobileSpatialFilter(SSAOParameters parameters, Texture2D inputAO){
+        final int THREADGROUP_SIZEX = 8;
+        final int THREADGROUP_SIZEY = 8;
+        int shaderQuality = NvUtils.clamp(parameters.GTAOQuality, 0, 4);
+
+        if (MobileSpatialFilterPass.CSShader == null) {
+            final Macro[] macros = {
+                    new Macro("THREADGROUP_SIZEX", THREADGROUP_SIZEX),
+                    new Macro("THREADGROUP_SIZEY", THREADGROUP_SIZEY),
+                    new Macro("SHADER_QUALITY", shaderQuality),
+            };
+            MobileSpatialFilterPass.CSShader = NvGLSLProgram.createProgram(shaderPath + "GTAOMobileSpatialFilterCS.comp", macros);
+        }
+
+        final int outputWidth = parameters.SceneWidth / parameters.DownscaleFactor;
+        final int outputHeight = parameters.SceneHeight / parameters.DownscaleFactor;
+
+        MobileSpatialFilterPass.Output = ReCreateTex2D(MobileSpatialFilterPass.Output, outputWidth,outputHeight, GLES30.GL_RGBA8);
+
+        MobileSpatialFilterPass.CSShader.enable();
+
+        GLES.glBindTextureUnit(0, inputAO);
+        GLES31.glBindSampler(0, mSamplerPoint);
+
+        GLES31.glBindImageTexture(0, parameters.ResultAO.getTexture(),0, false, 0, GLES32.GL_WRITE_ONLY, parameters.ResultAO.getFormat());
+        GLES31.glDispatchCompute(NvUtils.divideAndRoundUp(outputWidth, THREADGROUP_SIZEX), NvUtils.divideAndRoundUp(outputHeight, THREADGROUP_SIZEY), 1);
+
+        GLES.glBindTextureUnit(0, null);
+        GLES31.glBindImageTexture(0, 0,0, false, 0, GLES32.GL_WRITE_ONLY, GLES32.GL_RGBA8);
+
+        MobileSpatialFilterPass.CSShader.printOnce();
     }
 
     protected void AddGTAOSpatialFilter(SSAOParameters parameters){
@@ -573,13 +753,9 @@ public class GTAO {
         UpsamplePass.CSShader.enable();
         GLES.glBindTextureUnit(0, SpatialFilterPass.Output);
         GLES32.glBindSampler(0, mSamplerPoint);
-        GLES.checkGLError();
         GLES32.glBindImageTexture(0, parameters.ResultAO.getTexture(),0, false, 0, GLES32.GL_WRITE_ONLY, parameters.ResultAO.getFormat());
-        GLES.checkGLError();
         GLES32.glDispatchCompute(NvUtils.divideAndRoundUp(parameters.ResultAO.getWidth(), 8), NvUtils.divideAndRoundUp(parameters.ResultAO.getHeight(), 8), 1);
-        GLES.checkGLError();
         GLES.glBindTextureUnit(0, null);
-        GLES.glBindTextureUnit(1, null);
         GLES32.glBindImageTexture(0, 0,0, false, 0, GLES32.GL_WRITE_ONLY, GLES32.GL_RGBA8);
 
         UpsamplePass.CSShader.printOnce();
@@ -666,11 +842,35 @@ public class GTAO {
         // radius
         float meters2viewspace = 1.0f;
         float R = radius * meters2viewspace;
-        Result.RadiusToScreen = R * 0.5f * projScale;
+//        Result.RadiusToScreen = R * 0.5f * projScale;
 
         Result.ProjDia.x = parameters.Projection.m00;
         Result.ProjDia.y = parameters.Projection.m11;
         Result.ProjDia.z = parameters.Projection.m22;
+
+        float FadeRadius = Math.max(1.0f, parameters.AmbientOcclusionFadeRadius);
+        float InvFadeRadius = 1.0f / FadeRadius;
+        Result.ViewRectMinX = 0;
+        Result.ViewRectMinY = 0;
+
+        Result.ViewSizeAndInvSize.x = parameters.SceneWidth / parameters.DownscaleFactor;
+        Result.ViewSizeAndInvSize.y = parameters.SceneHeight / parameters.DownscaleFactor;
+        Result.ViewSizeAndInvSize.z = 1.0f / Result.ViewSizeAndInvSize.x;
+        Result.ViewSizeAndInvSize.w = 1.0f / Result.ViewSizeAndInvSize.y;
+
+        Vector4f FallOffStartEndScaleBias = Result.GTAOParams[3];
+
+        Result.WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.set(FallOffStartEndScaleBias.y *parameters.SceneHeight * Result.ProjInverse.m00, SinDeltaAngle, CosDeltaAngle, ThicknessBlend);
+        Result.FadeRadiusMulAdd_FadeDistance_AttenFactor.set(InvFadeRadius, -(parameters.AmbientOcclusionFadeDistance - FadeRadius) * InvFadeRadius,
+                parameters.AmbientOcclusionFadeDistance, 2.0f / (FallOffStartEndScaleBias.y * FallOffStartEndScaleBias.y));
+        Result.Power_Intensity_ScreenPixelsToSearch.x = parameters.AmbientOcclusionPower;
+        Result.Power_Intensity_ScreenPixelsToSearch.y = parameters.AmbientOcclusionIntensity;
+
+        if(mMethod == GTAOMethod.HBAO_Mobile){
+            Result.WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.w = FallOffEndSq * FallOffEndSq;
+            Result.FadeRadiusMulAdd_FadeDistance_AttenFactor.x = 1.1f;
+            Result.FadeRadiusMulAdd_FadeDistance_AttenFactor.w = 0.1f;
+        }
 
         return Result;
     }
@@ -693,6 +893,8 @@ public class GTAO {
     private final class FInterleavePass {
         NvGLSLProgram Shader = null;
         Texture2D Output;
+
+        boolean IsHBAO;
     }
 
     private final class FReinterleavePass {

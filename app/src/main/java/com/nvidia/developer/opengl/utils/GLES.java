@@ -30,6 +30,7 @@ import java.nio.ShortBuffer;
 import javax.microedition.khronos.opengles.GL11;
 
 import jet.learning.opengl.common.Texture2D;
+import jet.learning.opengl.common.Texture3D;
 
 public class GLES {
 	
@@ -452,5 +453,13 @@ public class GLES {
 		int textureID = texture != null ? texture.getTexture() : 0;
 		GLES20.glBindTexture(target, textureID);
 	}
+
+	/*public static void glBindTextureUnit(int unit, Texture3D texture){
+	GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + unit);
+
+		int target = texture!=null ? texture.getTarget(): GLES30.GL_TEXTURE_3D;
+		int textureID = texture != null ? texture.getTexture() : 0;
+		GLES20.glBindTexture(target, textureID);
+	}*/
 
 }

@@ -499,7 +499,7 @@ public final class TextureUtils {
 
     private static void subTexImage2D(int target, int width, int height, int level, int format, int type,  Object data){
         if(data == null){
-            GLES32.glTexSubImage2D(target, level, 0, 0, width, height, format, type, null);
+//            GLES32.glTexSubImage2D(target, level, 0, 0, width, height, format, type, null);
         }else if(data instanceof  Buffer){
             GLES32.glTexSubImage2D(target, level, 0, 0, width, height, format, type, (Buffer)data);
         }else{
@@ -1200,7 +1200,7 @@ public final class TextureUtils {
             case GLES32.GL_RGBA32I:			return GLES32.GL_INT;
             case GLES32.GL_RGBA32UI:			return GLES32.GL_UNSIGNED_INT;
             case GLES32.GL_DEPTH_COMPONENT16: return GLES32.GL_UNSIGNED_SHORT;
-            case GLES32.GL_DEPTH_COMPONENT24:
+            case GLES32.GL_DEPTH_COMPONENT24: return GLES32.GL_UNSIGNED_INT;
             case GLES32.GL_DEPTH24_STENCIL8:  return GLES32.GL_UNSIGNED_INT_24_8;
             case GLES32.GL_DEPTH_COMPONENT32F:return GLES32.GL_FLOAT;
             case GLES32.GL_DEPTH32F_STENCIL8: return GLES32.GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
@@ -1314,5 +1314,177 @@ public final class TextureUtils {
             default:
                 return "Unkown CompareMode(0x" + Integer.toHexString(mode) + ")";
         }
+    }
+
+    public static Texture3D createTexture3D(int target, int textureID){
+        return createTexture3D(target, textureID, null);
+    }
+
+    public static Texture3D createTexture3D(int target, int textureID, Texture3D out){
+        if(!GLES20.glIsTexture(textureID))
+            return null;
+
+        if(target != GLES30.GL_TEXTURE_3D)
+            throw new IllegalArgumentException("Invalid target: " + getTextureTargetName(target));
+
+        GLES20.glBindTexture(target, textureID);
+        Texture3D result = out != null ? out : new Texture3D();
+        result.width  = glGetTexLevelParameteri(target, 0, GLES32.GL_TEXTURE_WIDTH);
+        result.height = glGetTexLevelParameteri(target, 0, GLES32.GL_TEXTURE_HEIGHT);
+        result.depth    = glGetTexLevelParameteri(target, 0, GLES32.GL_TEXTURE_DEPTH);
+        result.format = glGetTexLevelParameteri(target, 0, GLES32.GL_TEXTURE_INTERNAL_FORMAT);
+        result.target = target;
+        result.textureID = textureID;
+
+        boolean immutableFormat         = glGetTexParameteri(target, GLES32.GL_TEXTURE_IMMUTABLE_FORMAT) != 0;
+        /*if(immutableFormat){
+            result.mipLevels    = gl.glGetTexParameteri(target, GLES32.GL_TEXTURE_VIEW_NUM_LEVELS);
+            if(result.mipLevels == 0){
+                result.mipLevels = gl.glGetTexParameteri(target, GLES32.GL_TEXTURE_IMMUTABLE_LEVELS);
+            }
+        }else*/{
+
+            if(result.width > 0){
+                int level = 1;
+                while(true){
+                    int width = glGetTexLevelParameteri(target, level, GLES32.GL_TEXTURE_WIDTH);
+                    if(width == 0){
+                        break;
+                    }
+
+                    level++;
+                }
+
+                result.mipLevels = level;
+            }
+        }
+        return result;
+    }
+
+    public static Texture3D createTexture3D(Texture3DDesc textureDesc, TextureDataDesc dataDesc){
+        return createTexture3D(textureDesc, dataDesc, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Texture3D createTexture3D(Texture3DDesc textureDesc, TextureDataDesc dataDesc, Texture3D out){
+        int textureID;
+        int target = GLES32.GL_TEXTURE_3D;
+        int format;
+        boolean isCompressed = false;
+        final boolean isDSA = false; // = GL.getCapabilities().GL_ARB_direct_state_access;
+        int mipLevels = Math.max(1, textureDesc.mipLevels);
+
+//        GLFuncProvider gl = GLFuncProviderFactory.getGLFuncProvider();
+//        GLAPIVersion version = gl.getGLAPIVersion();
+//        isDSA = version.major >= 4 && version.minor >= 5; /*gl.isSupportExt("GL_ARB_direct_state_access")*/;  // We only use the standrad profile.
+
+        // measure texture internal format
+        if(dataDesc != null){
+            isCompressed = Arrays.binarySearch(compressed_formats, dataDesc.format) >= 0;
+            if(isCompressed){
+                format = dataDesc.format;
+            }else{
+                format = textureDesc.format;
+            }
+        }else{
+            format = textureDesc.format;
+        }
+
+        {
+            boolean allocateStorage = false;
+
+            // 1. Generate texture ID
+            textureID = GLES.glGenTextures();
+
+            // 2. Allocate storage for Texture Object
+//			final GLCapabilities cap = GL.getCapabilities();
+            final boolean textureStorage = true; // version.ES && version.major >= 3 || gl.isSupportExt("GL_ARB_texture_storage");
+            GLES30.glBindTexture(target, textureID);
+            if(!isCompressed && textureStorage){
+                GLES30.glTexStorage3D(target, mipLevels, format, textureDesc.width, textureDesc.height, textureDesc.depth);
+                allocateStorage = true;
+            }
+
+            GLES30.glTexParameteri(target, GLES30.GL_TEXTURE_WRAP_R, GLES30.GL_CLAMP_TO_EDGE);
+            GLES30.glTexParameteri(target, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE);
+            GLES30.glTexParameteri(target, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);
+            GLES30.glTexParameteri(target, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR);
+            GLES30.glTexParameteri(target, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR);
+
+            // 3. Fill the texture Data�� Ignore the multisample texture.
+            if(dataDesc != null){
+                int width = textureDesc.width;
+                int height = textureDesc.height;
+                int depth = textureDesc.depth;
+                enablePixelStore(dataDesc);
+
+                int dataFormat = measureFormat(format);
+                int type = GLES30.GL_UNSIGNED_BYTE;
+                Object pixelData = null;
+                if(dataDesc != null){
+                    dataFormat = dataDesc.format;
+                    type = dataDesc.type;
+                    pixelData = dataDesc.data;
+                }
+
+                if(mipLevels > 1){
+                    int loop = mipLevels;
+                    List<Object> mipData = null;
+                    if(dataDesc != null){
+                        mipData = (List<Object>)dataDesc.data;
+                        loop = Math.min(mipData.size(), mipLevels);
+                    }
+
+                    for(int i = 0; i < loop; i++){
+                        Object mipmapData = null;
+                        if(mipData != null){
+                            mipmapData = mipData.get(i);
+                        }
+
+                        if(isCompressed){
+                            compressedTexImage3D(target, width, height, depth, i, dataFormat, dataDesc.type, dataDesc.imageSize, mipmapData);
+                        }else{
+                            if(allocateStorage){
+                                subTexImage3D(target, width, height, depth, i, dataFormat, type, mipmapData);
+                            }else{
+                                texImage3D(target, format, width, height, depth, i, dataFormat, type, mipmapData);
+                            }
+                        }
+
+                        width = Math.max(1, width >> 1);
+                        height = Math.max(1, height >> 1);
+                        depth = Math.max(1, depth >> 1);
+                    }
+
+                    GLES30.glTexParameteri(target, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR_MIPMAP_LINEAR);
+                }else{
+                    if(isCompressed){
+                        compressedTexImage3D(target, width, height, depth, 0, dataDesc.format, dataDesc.type, dataDesc.imageSize, dataDesc.data);
+                    }else{
+                        if(allocateStorage){
+                            subTexImage3D(target, width, height, depth, 0, dataFormat, type, pixelData);
+                        }else{
+                            texImage3D(target, format, width, height, depth, 0, dataFormat, type, pixelData);
+                        }
+                    }
+                }
+
+                disablePixelStore(dataDesc);
+            }
+
+
+            GLES30.glBindTexture(target, 0);  // unbind Texture
+        }
+
+        GLES.checkGLError();
+        Texture3D texture = out!=null ? out : new Texture3D();
+        texture.format = format;
+        texture.height = textureDesc.height;
+        texture.width  = textureDesc.width;
+        texture.depth  = textureDesc.depth;
+        texture.target = target;
+        texture.textureID = textureID;
+        texture.mipLevels = mipLevels;
+        return texture;
     }
 }

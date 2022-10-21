@@ -196,46 +196,6 @@ float ComputeInnerIntegral(float2 UV, float2 Angles, float2 ScreenDir, float3 Vi
 
     return AO;
 }
-
-float InterleavedGradientNoise(float2 iPos)
-{
-    return frac(52.9829189f * frac((iPos.x * 0.06711056) + (iPos.y * 0.00583715)));
-}
-
-float2 GetRandomAngleOffset(uint2 iPos)
-{
-    iPos.y = 4096u - iPos.y;
-    float Angle = InterleavedGradientNoise(float2(iPos));
-    float Offset = (1.0 / 4.0) * float((iPos.y - iPos.x) & 3u);
-    return float2(Angle, Offset);
-}
-
-float3 GetRandomVector(uint2 iPos)
-{
-    iPos.y = 16384u - iPos.y;
-
-    float3 RandomVec = float3(0, 0, 0);
-    float3 RandomTexVec = float3(0, 0, 0);
-    float ScaleOffset;
-
-    float TemporalCos = GTAOParams[0].x;
-    float TemporalSin = GTAOParams[0].y;
-
-    float GradientNoise = InterleavedGradientNoise(float2(iPos));
-
-    RandomTexVec.x = cos((GradientNoise * PI));
-    RandomTexVec.y = sin((GradientNoise * PI));
-
-    ScaleOffset = (1.0 / 4.0) * float((iPos.y - iPos.x) & 3u);
-    //	ScaleOffset = (1.0/5.0)  *  (( iPos.y - iPos.x) % 5);
-
-    RandomVec.x = dot(RandomTexVec.xy, float2(TemporalCos, -TemporalSin));
-    RandomVec.y = dot(RandomTexVec.xy, float2(TemporalSin, TemporalCos));
-    RandomVec.z = frac(ScaleOffset + GTAOParams[0].z);
-
-    return RandomVec;
-}
-
 /*
 *
 * HORIZON SEARCH AND INNER INTEGRATE COMBINED

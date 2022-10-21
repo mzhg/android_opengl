@@ -1,4 +1,7 @@
 #version 310 es
+#extension GL_EXT_shader_io_blocks : enable
+#extension GL_EXT_blend_func_extended : enable
+
 precision highp float;
 precision highp sampler2D;
 precision highp sampler2DArray;
@@ -15,6 +18,7 @@ precision highp image2DArray;
 #define PI_HALF (PI*0.5)
 #define USE_NORMALBUFFER 0
 
+#if 0
 uniform float4x4 Proj;
 uniform float4  ProjInfo;
 uniform float4 BufferSizeAndInvSize;
@@ -26,8 +30,37 @@ uniform float   AmbientOcclusionFadeRadius;
 uniform float   AmbientOcclusionFadeDistance;
 uniform float3  ProjDia;
 
+#else
+
+layout(std140,binding=0) uniform GTAOBuffer {
+    float4x4 Proj;
+    float4  ProjInfo;
+    float4 BufferSizeAndInvSize;
+    float4 GTAOParams[5];
+
+    float4  WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness;
+    float4  FadeRadiusMulAdd_FadeDistance_AttenFactor;
+    float4   ViewSizeAndInvSize;
+
+    float2  DepthUnpackConsts;
+    float   InvTanHalfFov;
+    float   AmbientOcclusionFadeRadius;
+
+    float3  ProjDia;
+    float   AmbientOcclusionFadeDistance;
+
+    float2  Power_Intensity_ScreenPixelsToSearch;
+    int2   ViewRectMin;
+};
+
+#endif
+
 const int SamplerPoint = 0;
 const int SamplerLinear = 1;
+
+#ifndef DEPTH_COMP
+#define DEPTH_COMP  a
+#endif
 
 #define Texture2DSampleLevel(T, S, UV, Lod) textureLod(T, UV, Lod)
 
@@ -74,4 +107,43 @@ uint EncodeAOZ(float AO, float Z)
 float2 DecodeAOZ(uint AOZ)
 {
     return unpackHalf2x16(AOZ);
+}
+
+float InterleavedGradientNoise(float2 iPos)
+{
+    return frac(52.9829189f * frac((iPos.x * 0.06711056) + (iPos.y * 0.00583715)));
+}
+
+float2 GetRandomAngleOffset(uint2 iPos)
+{
+    iPos.y = 4096u - iPos.y;
+    float Angle = InterleavedGradientNoise(float2(iPos));
+    float Offset = (1.0 / 4.0) * float((iPos.y - iPos.x) & 3u);
+    return float2(Angle, Offset);
+}
+
+float3 GetRandomVector(uint2 iPos)
+{
+    iPos.y = 16384u - iPos.y;
+
+    float3 RandomVec = float3(0, 0, 0);
+    float3 RandomTexVec = float3(0, 0, 0);
+    float ScaleOffset;
+
+    float TemporalCos = GTAOParams[0].x;
+    float TemporalSin = GTAOParams[0].y;
+
+    float GradientNoise = InterleavedGradientNoise(float2(iPos));
+
+    RandomTexVec.x = cos((GradientNoise * PI));
+    RandomTexVec.y = sin((GradientNoise * PI));
+
+    ScaleOffset = (1.0 / 4.0) * float((iPos.y - iPos.x) & 3u);
+    //	ScaleOffset = (1.0/5.0)  *  (( iPos.y - iPos.x) % 5);
+
+    RandomVec.x = dot(RandomTexVec.xy, float2(TemporalCos, -TemporalSin));
+    RandomVec.y = dot(RandomTexVec.xy, float2(TemporalSin, TemporalCos));
+    RandomVec.z = frac(ScaleOffset + GTAOParams[0].z);
+
+    return RandomVec;
 }

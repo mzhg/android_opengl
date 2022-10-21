@@ -22,23 +22,17 @@ int3 ImageToInterleave(int2 FullResPos)
     return int3(QuarterResPos, SliceId);
 }
 
-layout(binding = 0) uniform usampler2DArray GTAOSpatialFilterTexture;
+layout(binding = 0) uniform sampler2DArray GTAOSpatialFilterTexture;
 
 float2 LoadAOAndDepth(int2 ReadXYAO, int2 ReadXYZ)
 {
     int3 QuarterLocAO = ImageToInterleave(ReadXYAO);
     int3 QuarterLocZ  = ImageToInterleave(ReadXYZ);
 
-//    float AO = GTAOSpatialFilterTexture.Load(int4(QuarterLocAO, 0)).r;
-//    float  D = GTAOSpatialFilterTexture.Load(int4(QuarterLocZ, 0)).g;
-    uint AO = texelFetch(GTAOSpatialFilterTexture, QuarterLocAO, 0).r;
-    uint D = texelFetch(GTAOSpatialFilterTexture, QuarterLocZ, 0).g;
+    float AO = texelFetch(GTAOSpatialFilterTexture, QuarterLocAO, 0).r;
+    float D = texelFetch(GTAOSpatialFilterTexture, QuarterLocZ, 0).g;
 
-    /*const float Far = 100;
-    const float Near = 0.1;
-
-    float Z = Far * (D - Near) / (Far - Near);*/
-    return float2(DecodeAOZ(AO).x, DecodeAOZ(D).y);
+    return float2(AO, D);
 }
 
 #else

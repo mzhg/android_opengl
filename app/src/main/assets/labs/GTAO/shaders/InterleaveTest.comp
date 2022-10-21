@@ -1,0 +1,88 @@
+#version 310 es
+#extension GL_EXT_shader_io_blocks : enable
+#extension GL_EXT_blend_func_extended : enable
+
+precision highp float;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp sampler3D;
+
+precision highp image2D;
+precision highp image2DArray;
+precision highp image3D;
+
+ivec3 ImageToInterleave(ivec2 FullResPos)
+{
+    ivec2 Offset = FullResPos & 3;
+    //	Offset.y = 0;
+    int SliceId = Offset.y * 4 + Offset.x;
+    ivec2 QuarterResPos = FullResPos >> 2;
+
+    return ivec3(QuarterResPos, SliceId);
+}
+
+ivec2 InterleaveToImage(ivec2 QuarterResPos, int Slice)
+{
+    ivec2  Offset = ivec2(Slice % 4, Slice / 4);
+    return QuarterResPos * 4 + Offset;
+}
+
+#if InterleaveCS
+layout(binding = 0) uniform sampler2D SourceTex;
+
+#if USE_TEXTURE_ARRAY
+writeonly layout(rgba8, binding = 0) uniform image2DArray OutTexture;
+#else
+writeonly layout(rgba8, binding = 0) uniform image3D OutTexture;
+#endif
+
+//[numthreads(16, 8, 1)]
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+void /*GTAOSpatialFilterCS*/main(
+/*int   GroupIndex : SV_GroupIndex,
+uint2 GroupId : SV_GroupID,
+uint2 DispatchThreadId : SV_DispatchThreadID,
+uint2 GroupThreadId : SV_GroupThreadID*/)
+{
+    uint GroupIndex = gl_LocalInvocationIndex;
+    uvec3 GroupId = gl_WorkGroupID;
+    uvec3 DispatchThreadId = gl_GlobalInvocationID;
+    uvec3 GroupThreadId = gl_LocalInvocationID;
+    ivec2 PixelPos = ivec2(DispatchThreadId.xy);
+    ivec3 InterleavePos = ImageToInterleave(PixelPos);
+
+    vec4 Color = texelFetch(SourceTex, PixelPos, 0);
+    imageStore(OutTexture, InterleavePos, Color);
+}
+
+#endif
+
+#if DeinterleavePS
+in vec4 UVAndScreenPos;
+
+#if USE_TEXTURE_ARRAY
+layout(binding = 0) uniform sampler2DArray InputTexture;
+#else
+layout(binding = 0) uniform sampler3D InputTexture;
+#endif
+
+out vec4 OutColor;
+
+void main()
+{
+    ivec2 PixelPos = ivec2(gl_FragCoord.xy);
+    ivec3 InterleavePos = ImageToInterleave(PixelPos);
+    ivec3 TextureSize = textureSize(InputTexture, 0);
+
+    #if USE_TEXTURE_ARRAY
+    vec3 arrayLoc = vec3(vec2(InterleavePos.xy) + 0.5,InterleavePos.z) / vec3(TextureSize.xy, 1);
+    #else
+    vec3 arrayLoc = vec3(vec2(InterleavePos.xy) + 0.5,InterleavePos.z) / vec3(TextureSize);
+    #endif
+
+    vec4 AO = textureLod(InputTexture,arrayLoc, 0.0);
+//    vec4 AO = texelFetch(InputTexture, InterleavePos, 0);
+    OutColor = AO;
+}
+#endif
+

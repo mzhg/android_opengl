@@ -407,6 +407,8 @@ public class NvGLSLProgram implements NvDisposeable{
 
 	    int i;
 	    for (i = 0; i < count; i++) {
+	    	if(src[i] == null)
+	    		continue;
 	        int shader = GLES20.glCreateShader(src[i].type);
 	        String shaderSource = constructSourceImpl(src[i]);
 	        GLES20.glShaderSource(shader, shaderSource);
@@ -1041,6 +1043,7 @@ public class NvGLSLProgram implements NvDisposeable{
 	@Override
 	public void dispose() {
 		GLES20.glDeleteProgram(m_program);
+		m_program = 0;
 	}
 
 	public void printOnce(){

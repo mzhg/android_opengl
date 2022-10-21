@@ -2,12 +2,11 @@ package jet.learning.opengl.gtao;
 
 import android.opengl.GLES20;
 import android.opengl.GLES30;
-
+import android.opengl.GLES32;
 
 import com.nvidia.developer.opengl.app.NvInputTransformer;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
-import com.nvidia.developer.opengl.utils.Glut;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
 import com.nvidia.developer.opengl.utils.NvUtils;
 
@@ -34,12 +33,13 @@ public class CubeScene {
 
     private static final int UBO_SCENE = 0;
 
-    static final int        grid = 32;
+    static final int        grid = 16;
     static final float      globalscale = 16.0f;
 
     private int m_FrameBuffer;
     private Texture2D m_SceneColorTex;
     private Texture2D m_SceneDepthTex;
+    private Texture2D m_SceneDepthReadTex;
     private NvGLSLProgram m_Program;
     private NvGLSLProgram m_ApplyAO;
     private final Buffers m_Buffers = new Buffers();
@@ -293,6 +293,7 @@ public class CubeScene {
 
     public void resoveMultisampleTexture(){
         GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER, m_FrameBuffer);
+        GLES32.glReadBuffer(GLES30.GL_COLOR_ATTACHMENT0);
         GLES30.glBindFramebuffer(GLES30.GL_DRAW_FRAMEBUFFER, 0);
         GLES30.glBlitFramebuffer(0,0,m_SceneColorTex.getWidth(),m_SceneColorTex.getHeight(),
                 0,0,m_SceneColorTex.getWidth(),m_SceneColorTex.getHeight(),
@@ -309,7 +310,7 @@ public class CubeScene {
         Texture2DDesc desc = new Texture2DDesc();
         desc.width = width;
         desc.height = height;
-        desc.format = GLES30.GL_RGBA8;
+        desc.format = GLES30.GL_RGBA32F;
         desc.mipLevels = 1;
         desc.arraySize = 1;
         desc.sampleCount = sampples;
@@ -317,14 +318,23 @@ public class CubeScene {
         m_SceneColorTex = TextureUtils.createTexture2D(desc, null);
         m_SceneColorTex.setName("SceneColor");
 
+//        desc.format = GLES30.GL_R32F;
+//        m_SceneDepthReadTex = TextureUtils.createTexture2D(desc, null);
+//        m_SceneDepthReadTex.setName("SceneDepth");
+
         desc.format = GLES30.GL_DEPTH24_STENCIL8;
         m_SceneDepthTex = TextureUtils.createTexture2D(desc, null);
         m_SceneDepthTex.setName("SceneDepth");
 
+
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, m_FrameBuffer);
         {
             GLES30.glFramebufferTexture2D(GLES30.GL_FRAMEBUFFER, GLES30.GL_COLOR_ATTACHMENT0, m_SceneColorTex.getTarget(),m_SceneColorTex.getTexture(), 0);
+//            GLES30.glFramebufferTexture2D(GLES30.GL_FRAMEBUFFER, GLES30.GL_COLOR_ATTACHMENT1, m_SceneDepthReadTex.getTarget(),m_SceneDepthReadTex.getTexture(), 0);
             GLES30.glFramebufferTexture2D(GLES30.GL_FRAMEBUFFER, GLES30.GL_DEPTH_STENCIL_ATTACHMENT, m_SceneDepthTex.getTarget(),m_SceneDepthTex.getTexture(), 0);
+
+            int[] drawbuffers = {GLES30.GL_COLOR_ATTACHMENT0, GLES30.GL_COLOR_ATTACHMENT1};
+//            GLES32.glDrawBuffers(2, drawbuffers,0);
         }
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0);
     }
@@ -352,6 +362,23 @@ public class CubeScene {
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,0);
     }
 
+    public void blitTexToScreen(Texture2D texture){
+        GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,0);
+        int width = m_SceneColorTex.getWidth();
+        int height = m_SceneColorTex.getHeight();
+        {
+            GLES30.glViewport(0, 0, width, height);
+            GLES30.glDisable(GLES30.GL_DEPTH_TEST);
+            GLES30.glDisable(GLES30.GL_BLEND);
+
+            m_ApplyAO.enable();
+            GLES.glBindTextureUnit(0, texture);
+
+            GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, 3);
+            GLES.glBindTextureUnit(0, null);
+        }
+    }
+
     public void draw() {
         GLES.checkGLError();
         GLES30.glUseProgram(0);
@@ -362,7 +389,6 @@ public class CubeScene {
         m_Projection.orthoheight = /*m_control.m_sceneOrthoZoom*/1;
         m_Projection.update(width,height);
 
-
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,m_FrameBuffer);
         {
 //	      NV_PROFILE_SECTION("Scene");
@@ -372,6 +398,7 @@ public class CubeScene {
             GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT | GLES30.GL_DEPTH_BUFFER_BIT);
 
             GLES30.glEnable(GLES30.GL_DEPTH_TEST);
+            GLES30.glColorMask(true, true, true, true);
 
 //	      sceneUbo.viewport = uvec2(width,height);
             m_SceneUbo.viewportX = width;
@@ -409,7 +436,7 @@ public class CubeScene {
 
     public void getViewProjMatrix(Matrix4f out){ Matrix4f.mul(m_Projection.matrix, m_SceneUbo.viewMatrix, out);}
     public Texture2D getSceneColor() {return m_SceneColorTex;}
-    public Texture2D getSceneDepth() {return m_SceneDepthTex;}
+    public Texture2D getSceneDepth() {return m_SceneColorTex;}
     public Matrix4f getProjMat()    { return m_Projection.matrix;}
     public Matrix4f getViewMat(){ return m_SceneUbo.viewMatrix;}
     public float getSceneNearPlane() { return m_Projection.nearplane;}

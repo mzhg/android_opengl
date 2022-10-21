@@ -30,7 +30,7 @@
 
 layout(binding = 0) uniform sampler2DArray DepthInterleaveTexture;
 //Texture2D<float>      DepthLinearTexture : register(t1);
-layout(binding = 1) uniform usampler2D     ViewNormalTexture;
+layout(binding = 1) uniform sampler2D     ViewNormalTexture;
 
 /*SamplerState SamplerLinear : register(s0);
 SamplerState SamplerPoint : register(s1);*/
@@ -151,45 +151,6 @@ float ComputeInnerIntegral(float2 UV, float2 Angles, float2 ScreenDir, float3 Vi
     return AO;
 }
 
-float InterleavedGradientNoise(float2 iPos)
-{
-    return frac(52.9829189f * frac((iPos.x * 0.06711056) + (iPos.y * 0.00583715)));
-}
-
-float2 GetRandomAngleOffset(uint2 iPos)
-{
-    iPos.y = 4096u - iPos.y;
-    float Angle = InterleavedGradientNoise(float2(iPos));
-    float Offset = (1.0 / 4.0) * float((iPos.y - iPos.x) & 3u);
-    return float2(Angle, Offset);
-}
-
-float3 GetRandomVector(uint2 iPos)
-{
-    iPos.y = 16384u - iPos.y;
-
-    float3 RandomVec = float3(0, 0, 0);
-    float3 RandomTexVec = float3(0, 0, 0);
-    float ScaleOffset;
-
-    float TemporalCos = GTAOParams[0].x;
-    float TemporalSin = GTAOParams[0].y;
-
-    float GradientNoise = InterleavedGradientNoise(float2(iPos));
-
-    RandomTexVec.x = cos((GradientNoise * PI));
-    RandomTexVec.y = sin((GradientNoise * PI));
-
-    ScaleOffset = (1.0 / 4.0) * float((iPos.y - iPos.x) & 3u);
-    //	ScaleOffset = (1.0/5.0)  *  (( iPos.y - iPos.x) % 5);
-
-    RandomVec.x = dot(RandomTexVec.xy, float2(TemporalCos, -TemporalSin));
-    RandomVec.y = dot(RandomTexVec.xy, float2(TemporalSin, TemporalCos));
-    RandomVec.z = frac(ScaleOffset + GTAOParams[0].z);
-
-    return RandomVec;
-}
-
 /*
 *
 * HORIZON SEARCH AND INNER INTEGRATE COMBINED
@@ -221,7 +182,8 @@ void GTAOCombinedPSandCS(in float2 UV, in uint3 iPos, out float OutColor, out fl
     float3 ViewSpacePos = ScreenToViewPos(TexUV, SceneDepth);
     #if 1
     //	float3 ViewSpaceNormal = ViewNormalTexture.Load(int3(iPos.xy, 0)) * 2 - 1;
-    float3 ViewSpaceNormal = DecodeNormal(texelFetch(ViewNormalTexture, int2(iPos.xy), 0).x);  // SamplerLinear
+//    float3 ViewSpaceNormal = DecodeNormal(texelFetch(ViewNormalTexture, int2(iPos.xy), 0).x);  // SamplerLinear
+    float3 ViewSpaceNormal = texelFetch(ViewNormalTexture, int2(iPos.xy), 0).xyz * 2.0 - 1.0;  // SamplerLinear
     /*float3 ViewSpaceNormal1 = ViewNormalTexture.SampleLevel(SamplerPoint, UV, 0, int2(-1,0)) * 2 - 1;
     float3 ViewSpaceNormal2 = ViewNormalTexture.SampleLevel(SamplerPoint, UV, 0, int2(1, 0)) * 2 - 1;
     float3 ViewSpaceNormal3 = ViewNormalTexture.SampleLevel(SamplerPoint, UV, 0, int2(0, -1)) * 2 - 1;
@@ -294,7 +256,7 @@ void GTAOCombinedPSandCS(in float2 UV, in uint3 iPos, out float OutColor, out fl
 #define THREADGROUP_SIZEY 4
 #endif
 
-writeonly layout(OUT_FORMAT, binding = 0) uniform uimage2DArray OutTexture;
+writeonly layout(OUT_FORMAT, binding = 0) uniform image2DArray OutTexture;
 layout(local_size_x = THREADGROUP_SIZEX, local_size_y = THREADGROUP_SIZEY, local_size_z = 1) in;
 void /*GTAOCombinedCS*/main()
 {
@@ -316,5 +278,6 @@ void /*GTAOCombinedCS*/main()
     GTAOCombinedPSandCS(BufferUV, uint3(Base, PixelPos.z), OutColor, ViewDepth);
 
 //    OutTexture[PixelPos] = float2(pow(OutColor, 1), ViewDepth);
-    imageStore(OutTexture, PixelPos, uint4(EncodeAOZ(pow(OutColor, 1.0), ViewDepth),0,0,0));
+//    imageStore(OutTexture, PixelPos, uint4(EncodeAOZ(pow(OutColor, 1.0), ViewDepth),0,0,0));
+    imageStore(OutTexture, PixelPos, float4(OutColor, ViewDepth,0,0));
 }

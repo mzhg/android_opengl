@@ -1,9 +1,9 @@
-#version 310 es
+#version 320 es
 
 #extension GL_EXT_shader_io_blocks : enable
 #extension GL_EXT_blend_func_extended : enable
 
-precision mediump float;
+precision highp float;
 
 #define VERTEX_POS    0
 #define VERTEX_NORMAL 1
@@ -32,13 +32,15 @@ in Interpolants {
   flat vec4 color;
 } IN;
 
-layout(location=0,index=0) out vec4 out_Color;
+layout(location=0) out vec4 out_Color;
+//layout(location=1) out vec4 out_Depth;
 
 void main()
 {
   vec3  light = normalize(vec3(-1,2,1));
   float intensity = dot(normalize(IN.normal),light) * 0.5 + 0.5;
   vec4  color = IN.color * mix(vec4(0,0.25,0.75,0),vec4(1,1,1,0),intensity);
-  
+
   out_Color = color;
+  out_Color.w = gl_FragCoord.z;
 }

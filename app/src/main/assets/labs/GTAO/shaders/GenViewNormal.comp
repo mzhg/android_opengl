@@ -46,7 +46,7 @@ layout(binding = 0) uniform sampler2D SceneDepthTexture;
 
 float2 GetLinearDepthProj(float2 ScreenUV)
 {
-    float DeviceZ = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, ScreenUV, 0.0).r;
+    float DeviceZ = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, ScreenUV, 0.0).a;
     //	return  1.0f / (DeviceZ * View.InvDeviceZToWorldZTransform[2] - View.InvDeviceZToWorldZTransform[3]);
     float SceneDepth = ScreenSpaceToViewSpaceDepth(DeviceZ);
 
@@ -81,7 +81,7 @@ int3 ImageToInterleave(int2 FullResPos)
     return QuarterResPos * 4 + Offset;
 }*/
 
-writeonly layout(r32ui, binding = 0) uniform uimage2D OutTexture;
+writeonly layout(rgba8, binding = 0) uniform image2D OutTexture;
 writeonly layout(OUT_FORMAT, binding = 1) uniform image2DArray OutDepthTexture;
 
 //[numthreads(8, 8, 1)]
@@ -101,10 +101,10 @@ uint2 GroupThreadId : SV_GroupThreadID*/)
     float2 BufferUV = PixelCenter.xy * BufferSizeAndInvSize.zw;
 
     float2 DeviceZAndSceneDepth = GetLinearDepthProj(BufferUV);
-    float DeviceZRight = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(BufferSizeAndInvSize.z, 0), 0.0).r;
-    float DeviceZBottom = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(0, BufferSizeAndInvSize.w), 0.0).r;
-    float DeviceZLeft = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(-BufferSizeAndInvSize.z, 0), 0.0).r;
-    float DeviceZTop = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(0, -BufferSizeAndInvSize.w), 0.0).r;
+    float DeviceZRight = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(BufferSizeAndInvSize.z, 0), 0.0).a;
+    float DeviceZBottom = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(0, BufferSizeAndInvSize.w), 0.0).a;
+    float DeviceZLeft = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(-BufferSizeAndInvSize.z, 0), 0.0).a;
+    float DeviceZTop = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(0, -BufferSizeAndInvSize.w), 0.0).a;
 
     float DeviceZDdx = TakeSmallerAbsDelta(DeviceZLeft, DeviceZAndSceneDepth.x, DeviceZRight);
     float DeviceZDdy = TakeSmallerAbsDelta(DeviceZTop, DeviceZAndSceneDepth.x, DeviceZBottom);
@@ -116,6 +116,6 @@ uint2 GroupThreadId : SV_GroupThreadID*/)
 //    OutTexture[PixelPos] = Normal * 0.5 + 0.5;
 //    OutDepthTexture[ImageToInterleave(PixelPos)] = DeviceZAndSceneDepth.y;
 
-    imageStore(OutTexture, PixelPos, uint4(EncodeNormal(Normal),0,0,0));
+    imageStore(OutTexture, PixelPos, float4(Normal * 0.5 + 0.5,0));
     imageStore(OutDepthTexture, ImageToInterleave(PixelPos), float4(DeviceZAndSceneDepth.y, 0,0,0));
 }
