@@ -207,7 +207,8 @@ void GTAOCombinedPSandCS(in float2 UV, in uint3 iPos, out float OutColor, out fl
     float AttenFactor = 2.0 / (WorldRadius * WorldRadius);
 
     // Get the randomized Direction to sample and the step offset
-    float3 RandomAndOffset = GetRandomVector(iPos.xy);
+//    float3 RandomAndOffset = GetRandomVector(iPos.xy);
+    float3 RandomAndOffset = GetJitter(int(iPos.z));
     float2 RandomVec = RandomAndOffset.xy;
     float  Offset = RandomAndOffset.z;
 

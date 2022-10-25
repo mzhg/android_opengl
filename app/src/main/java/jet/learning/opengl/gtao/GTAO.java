@@ -5,6 +5,7 @@ import android.opengl.GLES31;
 import android.opengl.GLES32;
 
 import com.nvidia.developer.opengl.utils.BufferUtils;
+import com.nvidia.developer.opengl.utils.CommonUtil;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.Macro;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
@@ -43,7 +44,7 @@ public class GTAO {
     private int mSamplerLinear;
     private int mUBO;
 
-    GTAOMethod mMethod = GTAOMethod.GTAO_Mobile;
+    GTAOMethod mMethod = GTAOMethod.HBAO_Mobile;
     private int mFrameIndex;
 
     private ByteBuffer mBufCache;
@@ -66,6 +67,19 @@ public class GTAO {
         GLES30.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, mUBO);
         GLES30.glBufferData(GLES30.GL_UNIFORM_BUFFER, FGTAOShaderParameters.SIZE, null, GLES30.GL_DYNAMIC_DRAW);
         GLES30.glBindBuffer(GLES30.GL_UNIFORM_BUFFER, 0);
+
+        // initlize jitters
+        for (int i = 0; i < 16; i++) {
+            float Rand1 = NvUtils.random();
+            float Rand2 = NvUtils.random(-1, 1);
+
+            // Use random rotation angles in [0,2PI/NUM_DIRECTIONS)
+            double Angle = 2.0 * Math.PI * Rand1;
+            shaderParameters.Jitters[i].x = (float)Math.cos(Angle);
+            shaderParameters.Jitters[i].y = (float)Math.sin(Angle);
+            shaderParameters.Jitters[i].z = Rand2;
+            shaderParameters.Jitters[i].w = 0;
+        }
     }
 
     public void RenderAO(SSAOParameters parameters) {
@@ -116,12 +130,14 @@ public class GTAO {
             {
                 AddMobileHorizonIntegratePass(parameters);
                 AddGTAOMobileSpatialFilter(parameters, MobileHorizonIntegratePass.Output);
+//                AddGTAOSpatialFilter(parameters, false, true);
             }
             break;
             case HBAO_Mobile:
             {
                 AddMobileHBAOPass(parameters);
                 AddGTAOMobileSpatialFilter(parameters, MobileHBAOPass.Output);
+//                AddGTAOSpatialFilter(parameters, false, true);
             }
             break;
             default:
@@ -526,7 +542,7 @@ public class GTAO {
     }
 
     protected void AddGTAOSpatialFilterOpt(SSAOParameters parameters){
-        AddGTAOSpatialFilter(parameters, true);
+        AddGTAOSpatialFilter(parameters, true, false);
     }
 
     // Defualt method
@@ -635,7 +651,7 @@ public class GTAO {
     }
 
     protected void AddGTAOMobileSpatialFilter(SSAOParameters parameters, Texture2D inputAO){
-        final int THREADGROUP_SIZEX = 8;
+        final int THREADGROUP_SIZEX = 16;
         final int THREADGROUP_SIZEY = 8;
         int shaderQuality = NvUtils.clamp(parameters.GTAOQuality, 0, 4);
 
@@ -668,24 +684,29 @@ public class GTAO {
     }
 
     protected void AddGTAOSpatialFilter(SSAOParameters parameters){
-        AddGTAOSpatialFilter(parameters, false);
+        AddGTAOSpatialFilter(parameters, false, false);
     }
 
-    protected void AddGTAOSpatialFilter(SSAOParameters parameters, boolean useArray){
-        final int AOFormat = GLES32.GL_R32F;
-        if (SpatialFilterPass.CSShader == null) {
+    protected void AddGTAOSpatialFilter(SSAOParameters parameters, boolean useArray, boolean useMobile){
+        final int AOFormat = useMobile ? parameters.ResultAO.getFormat() : GLES32.GL_R32F;
+        if (SpatialFilterPass.CSShader == null || SpatialFilterPass.UseArray != useArray || SpatialFilterPass.UseMobile != useMobile) {
             final Macro[] macros = {
                     new Macro("OUT_FORMAT", TextureUtils.getImageFormat(AOFormat)),
                     new Macro("USE_ARRAY_TEXTURE", useArray ? 1 : 0 ),
+                    new Macro("USE_MOBILE_TEXTURE", useMobile ? 1 : 0 ),
             };
 
+            CommonUtil.safeRelease(SpatialFilterPass.CSShader);
             SpatialFilterPass.CSShader = NvGLSLProgram.createProgram(shaderPath + "GTAOSpatialFilterCS.comp", macros);
+            SpatialFilterPass.UseMobile = useMobile;
+            SpatialFilterPass.UseArray = useArray;
         }
 
 		final int outputWidth = parameters.SceneWidth / parameters.DownscaleFactor;
         final int outputHeight = parameters.SceneHeight / parameters.DownscaleFactor;
 
-        SpatialFilterPass.Output = ReCreateTex2D(SpatialFilterPass.Output, outputWidth,outputHeight, use32Floating ? GLES32.GL_R32F : GLES32.GL_R16F);
+        if(!useMobile)
+            SpatialFilterPass.Output = ReCreateTex2D(SpatialFilterPass.Output, outputWidth,outputHeight, use32Floating ? GLES32.GL_R32F : GLES32.GL_R16F);
 
         class ShaderParameters
         {
@@ -730,12 +751,16 @@ public class GTAO {
         GLSLUtil.setFloat(SpatialFilterPass.CSShader, "AmbientOcclusionPower", shaderUniformData.AmbientOcclusionPower);
 
         Texture2D inputAO = useArray ? InterleavePass.Output : HorizonSearchIntegratePass.Output;
+        if(useMobile)
+            inputAO = mMethod == GTAOMethod.HBAO_Mobile ? MobileHBAOPass.Output : MobileHorizonIntegratePass.Output;
+
+        Texture2D outputAO = useMobile ? parameters.ResultAO : SpatialFilterPass.Output;
 
         GLES.glBindTextureUnit(0, inputAO);
         GLES31.glBindSampler(0, mSamplerPoint);
         GLES.glBindTextureUnit(1, parameters.SceneDepth);
         GLES31.glBindSampler(1, mSamplerPoint);
-        GLES31.glBindImageTexture(0, SpatialFilterPass.Output.getTexture(),0, false, 0, GLES32.GL_WRITE_ONLY, SpatialFilterPass.Output.getFormat());
+        GLES31.glBindImageTexture(0, outputAO.getTexture(),0, false, 0, GLES32.GL_WRITE_ONLY, outputAO.getFormat());
         GLES31.glDispatchCompute(NvUtils.divideAndRoundUp(outputWidth, 8), NvUtils.divideAndRoundUp(outputHeight, 8), 1);
 
         GLES.glBindTextureUnit(0, null);
@@ -911,6 +936,9 @@ public class GTAO {
     private final class FSpatialFilterPass {
         NvGLSLProgram CSShader = null;
         Texture2D Output;
+
+        boolean UseArray;
+        boolean UseMobile;
     };
 
     private final class FUpsamplePass {

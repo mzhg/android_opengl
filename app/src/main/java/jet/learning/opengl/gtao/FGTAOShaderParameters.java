@@ -10,12 +10,13 @@ import org.lwjgl.util.vector.Vector4f;
 import java.nio.ByteBuffer;
 
 final class FGTAOShaderParameters {
-    static final int SIZE = Matrix4f.SIZE + Vector4f.SIZE * (9 + 4 + 2);
+    static final int SIZE = Matrix4f.SIZE + Vector4f.SIZE * (9 + 4 + 2 + 16);
 
     final Matrix4f ProjInverse = new Matrix4f();
     final Vector4f ProjInfo = new Vector4f();
     final Vector4f BufferSizeAndInvSize = new Vector4f();
     final Vector4f[] GTAOParams = new Vector4f[5];
+    final Vector4f[] Jitters = new Vector4f[16];
 
     final Vector4f  WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness = new Vector4f();
     final Vector4f  FadeRadiusMulAdd_FadeDistance_AttenFactor = new Vector4f();
@@ -35,6 +36,7 @@ final class FGTAOShaderParameters {
 
     FGTAOShaderParameters() {
         CommonUtil.initArray(GTAOParams);
+        CommonUtil.initArray(Jitters);
     }
 
     void store(ByteBuffer buf){
@@ -43,6 +45,10 @@ final class FGTAOShaderParameters {
         BufferSizeAndInvSize.store(buf);
         for (int i = 0; i < GTAOParams.length; i++){
             GTAOParams[i].store(buf);
+        }
+
+        for (int i = 0; i < Jitters.length; i++){
+            Jitters[i].store(buf);
         }
 
         WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.store(buf);

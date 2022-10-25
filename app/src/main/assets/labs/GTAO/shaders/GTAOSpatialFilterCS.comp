@@ -10,6 +10,10 @@ uniform float AmbientOcclusionPower;
 #define USE_ARRAY_TEXTURE 0
 #endif
 
+#ifndef USE_MOBILE_TEXTURE
+#define USE_MOBILE_TEXTURE 0
+#endif
+
 #if USE_ARRAY_TEXTURE
 
 int3 ImageToInterleave(int2 FullResPos)
@@ -33,6 +37,22 @@ float2 LoadAOAndDepth(int2 ReadXYAO, int2 ReadXYZ)
     float D = texelFetch(GTAOSpatialFilterTexture, QuarterLocZ, 0).g;
 
     return float2(AO, D);
+}
+#elif USE_MOBILE_TEXTURE
+layout(binding = 0) uniform sampler2D GTAOSpatialFilterTexture;
+
+float DecodeFloatRGBA(float4 rgba)
+{
+    return dot(rgba, float4(1.0, 0.0039215686275f, 1.53787e-5f, 6.03086294e-8f));
+}
+
+float2 LoadAOAndDepth(int2 ReadXYAO, int2 ReadXYZ)
+{
+    float AO = texelFetch(GTAOSpatialFilterTexture, ReadXYAO, 0).a;
+    float4 D = texelFetch(GTAOSpatialFilterTexture, ReadXYZ, 0);
+    D.a = 0.0;
+
+    return float2(AO, DecodeFloatRGBA(D));
 }
 
 #else
@@ -166,8 +186,8 @@ uint2 GroupThreadId : SV_GroupThreadID*/)
 
     float2 ZDiff;
 
-    int FilterMin = int(GTAOSpatialFilterWidth.x);
-    int FilterMax = int(GTAOSpatialFilterWidth.y);
+    const int FilterMin = -2; //int(GTAOSpatialFilterWidth.x);
+    const int FilterMax = +2; //int(GTAOSpatialFilterWidth.y);
     int LDSBase = GetLDSLocation(GTId.x + FilterMin, GTId.y + FilterMin);
 
     //Get X Delta
@@ -221,7 +241,6 @@ uint2 GroupThreadId : SV_GroupThreadID*/)
     int x, y;
 
     // Get the Z Value to compare against
-
     float DepthBase = ThisZ + (ZDiff.x * float(FilterMin)) + (ZDiff.y * float(FilterMin));
 
     float SimpleBlur = 0.0;
@@ -264,5 +283,5 @@ uint2 GroupThreadId : SV_GroupThreadID*/)
     SumAO = 1.0 - (1.0 - pow(abs(SumAO), AmbientOcclusionPower)) * AmbientOcclusionIntensity;
 
 //    OutTexture[PixelPos] = SumAO;
-    imageStore(OutTexture, PixelPos, float4(SumAO, 0,0,0));
+    imageStore(OutTexture, PixelPos, float4(SumAO));
 }

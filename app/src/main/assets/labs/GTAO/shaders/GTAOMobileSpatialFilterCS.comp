@@ -165,7 +165,7 @@ void GTAOSpatialFilter(int2 ThreadPos, int2 PixelPos)
             // Get value and see how much it compares to the centre with the gradients
             float XDiff = float(abs(x));
 
-        #if 0 //SPATIALFILTER_PIXEL_SHADER || HORIZONSEARCH_INTEGRAL_PIXEL_SHADER
+        #if SPATIALFILTER_PIXEL_SHADER || HORIZONSEARCH_INTEGRAL_PIXEL_SHADER
             float2 CurrentTextureUV = TextureUV + float2(x, y) * BufferSizeAndInvSize.zw;
             float2 SampleZAndAO = GetDeviceZAndAO(CurrentTextureUV);
         #else
@@ -187,7 +187,7 @@ void GTAOSpatialFilter(int2 ThreadPos, int2 PixelPos)
                 // MW: AO Edge Improve 20220728
                 #if 1 // Original UE4.26
                 float SampleZDiff = abs(PlaneZ - SampleZAndAO.x);
-                Weight = 1.0f - saturate(SampleZDiff * 10.0f);
+                Weight = 1.0f - saturate(SampleZDiff * 100.0f);
                 #else
                 float SampleZDiff = (SampleZAndAO.x - PlaneZ) * 20.0f;
                 Weight = 1.0f - saturate(abs(SampleZDiff));

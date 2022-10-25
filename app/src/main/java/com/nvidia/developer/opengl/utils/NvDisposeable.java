@@ -16,7 +16,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 package com.nvidia.developer.opengl.utils;
 
-public interface NvDisposeable {
+import jet.learning.opengl.common.Disposeable;
 
-	public void dispose();
+public interface NvDisposeable extends Disposeable {
 }

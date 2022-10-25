@@ -38,6 +38,8 @@ layout(std140,binding=0) uniform GTAOBuffer {
     float4 BufferSizeAndInvSize;
     float4 GTAOParams[5];
 
+    float4 Jitters[16];
+
     float4  WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness;
     float4  FadeRadiusMulAdd_FadeDistance_AttenFactor;
     float4   ViewSizeAndInvSize;
@@ -114,14 +116,6 @@ float InterleavedGradientNoise(float2 iPos)
     return frac(52.9829189f * frac((iPos.x * 0.06711056) + (iPos.y * 0.00583715)));
 }
 
-float2 GetRandomAngleOffset(uint2 iPos)
-{
-    iPos.y = 4096u - iPos.y;
-    float Angle = InterleavedGradientNoise(float2(iPos));
-    float Offset = (1.0 / 4.0) * float((iPos.y - iPos.x) & 3u);
-    return float2(Angle, Offset);
-}
-
 float3 GetRandomVector(uint2 iPos)
 {
     iPos.y = 16384u - iPos.y;
@@ -146,4 +140,14 @@ float3 GetRandomVector(uint2 iPos)
     RandomVec.z = frac(ScaleOffset + GTAOParams[0].z);
 
     return RandomVec;
+}
+
+float3 GetJitter(int arraySlice){
+    return Jitters[arraySlice & 15].xyz;
+}
+
+float3 GetJitter(int2 PixelPos){
+    int2 LocalPos = PixelPos & int2(3);
+    int index = LocalPos.x * 4 + LocalPos.y;
+    return Jitters[index].xyz;
 }

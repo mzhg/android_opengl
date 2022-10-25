@@ -5,7 +5,8 @@ float Falloff(float DistanceSquare)
 {
     // fade radius inverse.
     // 1 scalar mad instruction
-    float RadiusSq = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.w;
+//    float RadiusSq = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.w;
+    float RadiusSq = 1.0;
     return DistanceSquare / (-RadiusSq) + 1.0;
 }
 //----------------------------------------------------------------------------------
@@ -20,8 +21,10 @@ float ComputeAO(float3 P, float3 N, float3 S)
     float NdotV = dot(N, V) * rsqrt(VdotV);
     // Todo : NDotVBias should be parameter
     float NDotVBias = FadeRadiusMulAdd_FadeDistance_AttenFactor.w;
-    return clamp(NdotV - NDotVBias, 0.0, 1.0) * clamp(Falloff(VdotV), 0.0, 1.0);
+//    return clamp(NdotV - NDotVBias, 0.0, 1.0) * clamp(Falloff(VdotV), 0.0, 1.0);
     //        return clamp((NdotV - NDotVBias) * Falloff(VdotV), 0, 1);
+    float AO = max(NdotV - NDotVBias, 0.0) * max(Falloff(VdotV), 0.0);
+    return min(AO, 1.0);
 }
 //----------------------------------------------------------------------------------
 float2 RotateDirection(float2 Dir, float2 CosSin)
@@ -94,11 +97,17 @@ float HBAOCombinedPSandCS(in float2 UV, in int2 iPos, int2 ThreadPos)
     // Get Radius in ScreenSpace (in pixels)
     float WorldRadiusAdj = WorldRadius * FOVScale;
 #else
-    float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x /* SearchRadius*/;
+     //	float InvTanHalfFov = ScreenSpaceAOParams[3].w;
+    float FOVScale = BufferSizeAndInvSize.y * InvTanHalfFov; // TODO
+
+    // Get Radius in ScreenSpace (in pixels)
+    float WorldRadiusAdj = WorldRadius * FOVScale;
+//    float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x /* SearchRadius*/;
 #endif
-    float RadiusPixels = max(min(WorldRadiusAdj / ViewPosition.z, GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
+    float RadiusPixels = max(min(WorldRadiusAdj / abs(ViewPosition.z), GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
     // Get jitter vector for the current full-res pixel
-    float3 Rand = GetRandomVector(uint2(iPos));
+//    float3 Rand = GetRandomVector(uint2(iPos));
+    float3 Rand = GetJitter(iPos);
     float AO = ComputeCoarseAO(UV, RadiusPixels, Rand, ViewPosition, ViewNormal);
     return AO;
 //        return float4(ViewNormal * 0.5 + 0.5,AO);

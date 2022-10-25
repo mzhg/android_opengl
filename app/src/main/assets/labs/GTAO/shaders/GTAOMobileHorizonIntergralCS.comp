@@ -117,17 +117,22 @@ float4 CalculateGTAO(float2 TextureUV, int2 TexturePos, int2 ThreadPos)
         float3 ViewSpaceNormal = GetNormal(TextureUV, ThreadPos, ViewSpacePos);
         float3 ViewDir = -normalize(ViewSpacePos.xyz);
 
-        float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x;
+        //	float InvTanHalfFov = ScreenSpaceAOParams[3].w;
+        float FOVScale = BufferSizeAndInvSize.y * InvTanHalfFov; // TODO
+        float WorldRadius = 1.0;
+        // Get Radius in ScreenSpace (in pixels)
+        float WorldRadiusAdj = WorldRadius * FOVScale;
+//        float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x;
 
         // MW: GTAO_MAX_PIXEL_SCREEN_RADIUS is changed to world radius 0729
     #if 0
-        float PixelRadius = max(min(WorldRadiusAdj / ViewSpacePos.z, GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
+        float PixelRadius = max(min(WorldRadiusAdj / abs(ViewSpacePos.z), GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
     #else
         // Improvement 1: Consider Depth Difference of pixels
         // float PixelRadius = max(min(WorldRadiusAdj / ViewSpacePos.z, GTAO_MAX_PIXEL_SCREEN_RADIUS / (SceneDepth * 0.05 + 0.00001)), (float)GTAO_NUMTAPS);
 
         // Improvement 2: Consider Depth Buffer Size then Change Screen Resolution
-        float PixelRadius = max(min(WorldRadiusAdj / ViewSpacePos.z,
+        float PixelRadius = max(min(WorldRadiusAdj / abs(ViewSpacePos.z),
         GTAO_MAX_PIXEL_SCREEN_RADIUS * BufferSizeAndInvSize.x / (SceneDepth * 24.0 + 0.00001)), float(GTAO_NUMTAPS));
     #endif
     // MW: GTAO_MAX_PIXEL_SCREEN_RADIUS is changed to world radius 0729 ~end
@@ -135,7 +140,8 @@ float4 CalculateGTAO(float2 TextureUV, int2 TexturePos, int2 ThreadPos)
         float StepRadius = PixelRadius / float(GTAO_NUMTAPS + 1);
         float AttenFactor = FadeRadiusMulAdd_FadeDistance_AttenFactor.w;
 
-        float3 RandomAndOffset = GetRandomVector(uint2(TexturePos));
+//        float3 RandomAndOffset = GetRandomVector(uint2(TexturePos));
+        float3 RandomAndOffset = GetJitter(TexturePos);
         float2 RandomVec = RandomAndOffset.xy;
         float  Offset = RandomAndOffset.z;
 

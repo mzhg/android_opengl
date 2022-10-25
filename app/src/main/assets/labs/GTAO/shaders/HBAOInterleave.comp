@@ -72,7 +72,7 @@ float ComputeAO(float3 P, float3 N, float3 S)
     float NdotV = dot(N, V) * rsqrt(VdotV);
     // Todo : NDotVBias should be parameter
     const float NDotVBias = 0.1;
-    return clamp(NdotV - NDotVBias, 0.0, 1.0) * clamp(Falloff(VdotV), 0.0, 1.0);
+//    return clamp(NdotV - NDotVBias, 0.0, 1.0) * clamp(Falloff(VdotV), 0.0, 1.0);
     //        return clamp((NdotV - NDotVBias) * Falloff(VdotV), 0, 1);
 
     float AO = max(NdotV - NDotVBias, 0.0) * max(Falloff(VdotV), 0.0);
@@ -166,7 +166,8 @@ float HBAOCombinedPSandCS(in float2 UV, in uint3 iPos, float ViewDepth)
 #endif
     float RadiusPixels = max(min(WorldRadiusAdj / abs(ViewPosition.z), GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
     // Get jitter vector for the current full-res pixel
-    float3 Rand = GetRandomVector(iPos.xy);
+//    float3 Rand = GetRandomVector(iPos.xy);
+    float3 Rand = GetJitter(int(iPos.z));
     float AO = ComputeCoarseAO(UV, RadiusPixels, Rand, ViewPosition, ViewNormal, iPos.z);
     return AO;
     //        return float4(ViewNormal * 0.5 + 0.5,AO);
