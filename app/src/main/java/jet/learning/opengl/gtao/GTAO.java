@@ -83,7 +83,7 @@ public class GTAO {
     }
 
     public void RenderAO(SSAOParameters parameters) {
-        parameters.GTAOQuality = 3;
+//        parameters.GTAOQuality = 3;
 
         BuildAOConstantBuffer( parameters);
         switch (mMethod)
@@ -315,9 +315,9 @@ public class GTAO {
     }
     protected void AddInterleavePass(SSAOParameters parameters, boolean hbao){
         final int OutFormat = GLES32.GL_RGBA16F;
-        if (InterleavePass.Shader == null || InterleavePass.IsHBAO == hbao) {
-            if(InterleavePass.Shader != null)
-                InterleavePass.Shader.dispose();
+        if (InterleavePass.Shader == null || InterleavePass.IsHBAO != hbao || InterleavePass.Quality != parameters.GTAOQuality) {
+            CommonUtil.safeRelease(InterleavePass.Shader);
+
             final Macro[] macros = new Macro[]{
 //                    new Macro("OUT_FORMAT", use32Floating ? "rg32f" : "rg16f"),
                     new Macro("OUT_FORMAT", TextureUtils.getImageFormat(OutFormat) ),
@@ -329,10 +329,11 @@ public class GTAO {
                 InterleavePass.Shader = NvGLSLProgram.createProgram(shaderPath + "HBAOInterleave.comp", macros);
             }
             InterleavePass.IsHBAO = hbao;
+            InterleavePass.Quality = parameters.GTAOQuality;
         }
 
-		final int outputWidth = parameters.SceneWidth / 4;
-        final int outputHeight = parameters.SceneHeight / 4;
+		final int outputWidth = NvUtils.divideAndRoundUp((int)shaderParameters.BufferSizeAndInvSize.x, 4);
+        final int outputHeight = NvUtils.divideAndRoundUp((int)shaderParameters.BufferSizeAndInvSize.y, 4);
 
         InterleavePass.Output = ReCreateTex2DArray(InterleavePass.Output, outputWidth, outputHeight, OutFormat);
 
@@ -448,17 +449,16 @@ public class GTAO {
             ViewNormalPass.Shader = NvGLSLProgram.createProgram(shaderPath + "GenViewNormal.comp", macros);
         }
 
-        assert(parameters.DownscaleFactor == 1);
         {
-            final int outputWidth = parameters.SceneWidth / parameters.DownscaleFactor;
-            final int outputHeight = parameters.SceneHeight / parameters.DownscaleFactor;
+            final int outputWidth = (int)shaderParameters.BufferSizeAndInvSize.x;
+            final int outputHeight = (int)shaderParameters.BufferSizeAndInvSize.y;
 
             ViewNormalPass.Output = ReCreateTex2D(ViewNormalPass.Output, outputWidth,outputHeight, NormalFormat);
         }
 
         {
-			final int outputWidth = parameters.SceneWidth / 4;
-            final int outputHeight = parameters.SceneHeight / 4;
+			final int outputWidth = NvUtils.divideAndRoundUp((int)shaderParameters.BufferSizeAndInvSize.x, 4);
+            final int outputHeight = NvUtils.divideAndRoundUp((int)shaderParameters.BufferSizeAndInvSize.y, 4);
 
             DeinterleavePass.Output = ReCreateTex2DArray(DeinterleavePass.Output, outputWidth, outputHeight,DepthFormat);
         }
@@ -583,7 +583,7 @@ public class GTAO {
         final int THREADGROUP_SIZEX = 16;
         final int THREADGROUP_SIZEY = 8;
 
-        int shaderQuality = NvUtils.clamp(parameters.GTAOQuality, 0, 4);
+        int shaderQuality = NvUtils.clamp(parameters.GTAOQuality, 1, 4);
         if (MobileHorizonIntegratePass.CSShader[shaderQuality] == null) {
             final Macro[] macros = {
                     new Macro("THREADGROUP_SIZEX", THREADGROUP_SIZEX),
@@ -619,7 +619,7 @@ public class GTAO {
         final int THREADGROUP_SIZEX = 16;
         final int THREADGROUP_SIZEY = 8;
 
-        int shaderQuality = NvUtils.clamp(parameters.GTAOQuality, 0, 4);
+        int shaderQuality = NvUtils.clamp(parameters.GTAOQuality, 1, 4);
         if (MobileHBAOPass.CSShader[shaderQuality] == null) {
             final Macro[] macros = {
                     new Macro("THREADGROUP_SIZEX", THREADGROUP_SIZEX),
@@ -653,13 +653,11 @@ public class GTAO {
     protected void AddGTAOMobileSpatialFilter(SSAOParameters parameters, Texture2D inputAO){
         final int THREADGROUP_SIZEX = 16;
         final int THREADGROUP_SIZEY = 8;
-        int shaderQuality = NvUtils.clamp(parameters.GTAOQuality, 0, 4);
 
         if (MobileSpatialFilterPass.CSShader == null) {
             final Macro[] macros = {
                     new Macro("THREADGROUP_SIZEX", THREADGROUP_SIZEX),
                     new Macro("THREADGROUP_SIZEY", THREADGROUP_SIZEY),
-                    new Macro("SHADER_QUALITY", shaderQuality),
             };
             MobileSpatialFilterPass.CSShader = NvGLSLProgram.createProgram(shaderPath + "GTAOMobileSpatialFilterCS.comp", macros);
         }
@@ -667,7 +665,7 @@ public class GTAO {
         final int outputWidth = parameters.SceneWidth / parameters.DownscaleFactor;
         final int outputHeight = parameters.SceneHeight / parameters.DownscaleFactor;
 
-        MobileSpatialFilterPass.Output = ReCreateTex2D(MobileSpatialFilterPass.Output, outputWidth,outputHeight, GLES30.GL_RGBA8);
+//        MobileSpatialFilterPass.Output = ReCreateTex2D(MobileSpatialFilterPass.Output, outputWidth,outputHeight, GLES30.GL_RGBA8);
 
         MobileSpatialFilterPass.CSShader.enable();
 
@@ -687,6 +685,11 @@ public class GTAO {
         AddGTAOSpatialFilter(parameters, false, false);
     }
 
+    // private data for AddGTAOSpatialFilter.
+    final Vector4f GTAOSpatialFilterParams = new Vector4f();
+    final Vector4f GTAOSpatialFilterWidth = new Vector4f();
+    final Vector2i GTAOSpatialFilterExtents = new Vector2i();
+
     protected void AddGTAOSpatialFilter(SSAOParameters parameters, boolean useArray, boolean useMobile){
         final int AOFormat = useMobile ? parameters.ResultAO.getFormat() : GLES32.GL_R32F;
         if (SpatialFilterPass.CSShader == null || SpatialFilterPass.UseArray != useArray || SpatialFilterPass.UseMobile != useMobile) {
@@ -702,25 +705,15 @@ public class GTAO {
             SpatialFilterPass.UseArray = useArray;
         }
 
-		final int outputWidth = parameters.SceneWidth / parameters.DownscaleFactor;
-        final int outputHeight = parameters.SceneHeight / parameters.DownscaleFactor;
+        final int outputWidth = (int)shaderParameters.BufferSizeAndInvSize.x;
+        final int outputHeight = (int)shaderParameters.BufferSizeAndInvSize.y;
 
         if(!useMobile)
             SpatialFilterPass.Output = ReCreateTex2D(SpatialFilterPass.Output, outputWidth,outputHeight, use32Floating ? GLES32.GL_R32F : GLES32.GL_R16F);
 
-        class ShaderParameters
-        {
-            final Vector4f GTAOSpatialFilterParams = new Vector4f();
-            final Vector4f GTAOSpatialFilterWidth = new Vector4f();
-            final Vector2i GTAOSpatialFilterExtents = new Vector2i();
-            float AmbientOcclusionIntensity;
-            float AmbientOcclusionPower;
-        };
+        GTAOSpatialFilterExtents.set(outputWidth, outputHeight);
 
-        ShaderParameters shaderUniformData = new ShaderParameters();
-        shaderUniformData.GTAOSpatialFilterExtents.set(outputWidth, outputHeight);
-
-        final Vector4f FilterWidthParamsValue = shaderUniformData.GTAOSpatialFilterWidth;
+        final Vector4f FilterWidthParamsValue = GTAOSpatialFilterWidth;
         if (parameters.GTAOFilterWidth == 3)
         {
             FilterWidthParamsValue.x = -1.0f;
@@ -737,18 +730,16 @@ public class GTAO {
             FilterWidthParamsValue.y = 2.0f;
         }
 //         = FilterWidthParamsValue;
-        shaderUniformData.GTAOSpatialFilterParams.set((float)parameters.DownscaleFactor, 0.0f, 0.0f, 0.0f);
-        shaderUniformData.AmbientOcclusionIntensity = parameters.AmbientOcclusionIntensity;
-        shaderUniformData.AmbientOcclusionPower = parameters.AmbientOcclusionPower;
+        GTAOSpatialFilterParams.set((float)parameters.DownscaleFactor, 0.0f, 0.0f, 0.0f);
 
         SpatialFilterPass.CSShader.enable();
 //        UpdateConstantBuffer(pDeviceContext, mConstantBuffer, shaderUniformData);
-        GLSLUtil.setFloat4(SpatialFilterPass.CSShader, "GTAOSpatialFilterParams", shaderUniformData.GTAOSpatialFilterParams);
-        GLSLUtil.setFloat4(SpatialFilterPass.CSShader, "GTAOSpatialFilterWidth", shaderUniformData.GTAOSpatialFilterWidth);
-        GLSLUtil.setInt2(SpatialFilterPass.CSShader, "GTAOSpatialFilterExtents", shaderUniformData.GTAOSpatialFilterExtents);
+        GLSLUtil.setFloat4(SpatialFilterPass.CSShader, "GTAOSpatialFilterParams", GTAOSpatialFilterParams);
+        GLSLUtil.setFloat4(SpatialFilterPass.CSShader, "GTAOSpatialFilterWidth", GTAOSpatialFilterWidth);
+        GLSLUtil.setInt2(SpatialFilterPass.CSShader, "GTAOSpatialFilterExtents", GTAOSpatialFilterExtents);
 
-        GLSLUtil.setFloat(SpatialFilterPass.CSShader, "AmbientOcclusionIntensity", shaderUniformData.AmbientOcclusionIntensity);
-        GLSLUtil.setFloat(SpatialFilterPass.CSShader, "AmbientOcclusionPower", shaderUniformData.AmbientOcclusionPower);
+        GLSLUtil.setFloat(SpatialFilterPass.CSShader, "AmbientOcclusionIntensity", parameters.AmbientOcclusionIntensity);
+        GLSLUtil.setFloat(SpatialFilterPass.CSShader, "AmbientOcclusionPower", parameters.AmbientOcclusionPower);
 
         Texture2D inputAO = useArray ? InterleavePass.Output : HorizonSearchIntegratePass.Output;
         if(useMobile)
@@ -809,7 +800,7 @@ public class GTAO {
         // Frame X = number , Y = Thickness param,
         float ThicknessBlend = parameters.ThicknessBlend;
         ThicknessBlend = NvUtils.clamp(1.0f - (ThicknessBlend * ThicknessBlend), 0.0f, 0.99f);
-        Result.GTAOParams[1].set( frame, ThicknessBlend, 0.0f, 0.0f );
+        Result.GTAOParams[1].set( frame, ThicknessBlend, parameters.DownscaleFactor, 0.0f );
 
         // Destination buffer Size and InvSize
         int outputWidth = parameters.SceneWidth / parameters.DownscaleFactor;
@@ -842,7 +833,8 @@ public class GTAO {
 
         Result.AmbientOcclusionFadeDistance = parameters.AmbientOcclusionFadeDistance;
         Result.AmbientOcclusionFadeRadius = parameters.AmbientOcclusionFadeRadius;
-        Result.BufferSizeAndInvSize.set( (float)parameters.SceneWidth, (float)parameters.SceneHeight, 1.0f / (float)parameters.SceneWidth, 1.0f / (float)parameters.SceneHeight );
+//        Result.BufferSizeAndInvSize.set( (float)parameters.SceneWidth, (float)parameters.SceneHeight, 1.0f / (float)parameters.SceneWidth, 1.0f / (float)parameters.SceneHeight );
+        Result.DepthBufferSizeAndInvSize.set( (float)parameters.SceneWidth, (float)parameters.SceneHeight, 1.0f / (float)parameters.SceneWidth, 1.0f / (float)parameters.SceneHeight );
 
         // projection
 
@@ -878,10 +870,10 @@ public class GTAO {
         Result.ViewRectMinX = 0;
         Result.ViewRectMinY = 0;
 
-        Result.ViewSizeAndInvSize.x = parameters.SceneWidth / parameters.DownscaleFactor;
-        Result.ViewSizeAndInvSize.y = parameters.SceneHeight / parameters.DownscaleFactor;
-        Result.ViewSizeAndInvSize.z = 1.0f / Result.ViewSizeAndInvSize.x;
-        Result.ViewSizeAndInvSize.w = 1.0f / Result.ViewSizeAndInvSize.y;
+        Result.BufferSizeAndInvSize.x = parameters.SceneWidth / parameters.DownscaleFactor;
+        Result.BufferSizeAndInvSize.y = parameters.SceneHeight / parameters.DownscaleFactor;
+        Result.BufferSizeAndInvSize.z = 1.0f / Result.BufferSizeAndInvSize.x;
+        Result.BufferSizeAndInvSize.w = 1.0f / Result.BufferSizeAndInvSize.y;
 
         Vector4f FallOffStartEndScaleBias = Result.GTAOParams[3];
 
@@ -919,6 +911,7 @@ public class GTAO {
         NvGLSLProgram Shader = null;
         Texture2D Output;
 
+        int Quality = 0;
         boolean IsHBAO;
     }
 

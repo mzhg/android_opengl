@@ -353,6 +353,7 @@ public class CubeScene {
 
             m_ApplyAO.enable();
             GLES.glBindTextureUnit(0, textureAO);
+            GLES30.glBindSampler(0,0);  // use texture sampler
 
             GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, 3);
             GLES.glBindTextureUnit(0, null);

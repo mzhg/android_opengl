@@ -84,8 +84,8 @@ float AttenFactor, uint Slice)
     float2 SceneDepths = float2(0);
 
     float2 BestAng = float2(-1, -1);
-    float Thickness = GTAOParams[1].y;
-
+//    float Thickness = GTAOParams[1].y;
+    float Thickness = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.w;
     for (uint i = 0u; i < NumSteps; i++)
     {
         float fi = float(i);
@@ -201,10 +201,12 @@ void GTAOCombinedPSandCS(in float2 UV, in uint3 iPos, out float OutColor, out fl
     float FOVScale = AOSceneViewport_Extent.y * InvTanHalfFov; // TODO
 
     // Get Radius in ScreenSpace (in pixels)
-    float WorldRadiusAdj = WorldRadius * FOVScale;
+//    float WorldRadiusAdj = WorldRadius * FOVScale;
+    float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x;
     float PixelRadius = max(min(WorldRadiusAdj / abs(ViewSpacePos.z), GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
     float StepRadius = PixelRadius / (float(GTAO_NUMTAPS) + 1.0);
-    float AttenFactor = 2.0 / (WorldRadius * WorldRadius);
+//    float AttenFactor = 2.0 / (WorldRadius * WorldRadius);
+    float AttenFactor = FadeRadiusMulAdd_FadeDistance_AttenFactor.w;
 
     // Get the randomized Direction to sample and the step offset
 //    float3 RandomAndOffset = GetRandomVector(iPos.xy);
@@ -214,10 +216,15 @@ void GTAOCombinedPSandCS(in float2 UV, in uint3 iPos, out float OutColor, out fl
 
     float Sum = 0.0;
 
+#if 0
     int NumAngles = int(GTAOParams[4].y);
     float SinDeltaAngle = GTAOParams[4].z;
     float CosDeltaAngle = GTAOParams[4].w;
-
+#else
+    const int NumAngles = 2;
+    float SinDeltaAngle = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.y;
+    float CosDeltaAngle = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.z;
+#endif
     float2 ScreenDir = float2(RandomVec.x, RandomVec.y);
 
     for (int Angle = 0; Angle < NumAngles; Angle++)
@@ -235,7 +242,7 @@ void GTAOCombinedPSandCS(in float2 UV, in uint3 iPos, out float OutColor, out fl
     }
 
     float AO = Sum;
-
+#if 0
     AO = AO / float(NumAngles);
     AO *= 2.0 / PI;
 
@@ -247,7 +254,11 @@ void GTAOCombinedPSandCS(in float2 UV, in uint3 iPos, out float OutColor, out fl
     float Mul = InvFadeRadius;
     float Add = -(AmbientOcclusionFadeDistance - FadeRadius) * InvFadeRadius;
     AO = lerp(AO, 1.0, saturate(SceneDepth * Mul + Add));
-
+#else
+    AO = AO * 0.5f;
+    AO *= 2.0 * 0.3183098861f;
+    AO = lerp(AO, 1.0, saturate(SceneDepth * FadeRadiusMulAdd_FadeDistance_AttenFactor.x + FadeRadiusMulAdd_FadeDistance_AttenFactor.y));
+#endif
     OutColor = AO;
     return;
 }

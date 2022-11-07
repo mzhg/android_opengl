@@ -5,8 +5,13 @@ import android.opengl.GLES32;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.ui.NvTweakEnumi;
+import com.nvidia.developer.opengl.ui.NvTweakVarBase;
+import com.nvidia.developer.opengl.ui.NvUIReaction;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import jet.learning.opengl.common.GLSLUtil;
 import jet.learning.opengl.common.Texture2D;
@@ -20,24 +25,50 @@ public class GTAODemo extends NvSampleApp {
     private NvGLSLProgram m_BlitProg;
     private NvGLSLProgram m_VisualNormal;
 
-    boolean m_EnableGTAO = true;
     int m_TextureIndex = 0;
-    int m_ArraySlice = 0;
+    int m_Downsample = 1;
+    int m_GTAOMethod = 0;
+
+    SSAOParameters parameters = new SSAOParameters();
+
+    private static final int ACTION_AO_METHOD = 1;
+
+    private final List<NvTweakVarBase> m_HBAOParameters = new ArrayList<>();
 
     @Override
     public void initUI() {
-        mTweakBar.addValue("Enable GTAO", createControl("m_EnableGTAO"));
-
-        NvTweakEnumi objectIndex[] =
+        NvTweakEnumi GTAOMethods[] =
         {
-                new NvTweakEnumi( "None", 0 ),
-                new NvTweakEnumi( "Normal", 1 ),
-                new NvTweakEnumi( "InterleaveDepth", 2 ),
-                new NvTweakEnumi( "InterleaveAO", 3 ),
+            new NvTweakEnumi( "Disbaled", 0 ),
+            new NvTweakEnumi( "InterleaveGTAO", 1 ),
+            new NvTweakEnumi( "InterleaveHBAO", 2 ),
+            new NvTweakEnumi( "GTAO", 3 ),
+            new NvTweakEnumi( "HBAO", 4 ),
         };
 
-        mTweakBar.addEnum("Visual Texture:", NvSampleApp.createControl(this,"m_TextureIndex"), objectIndex, 0x55);
-        mTweakBar.addValue("Array Slice", createControl("m_ArraySlice"), 0, 15);
+        mTweakBar.addMenu("AO Method:", createControl("m_GTAOMethod"), GTAOMethods, ACTION_AO_METHOD);
+
+//        NvTweakEnumi objectIndex[] =
+//        {
+//                new NvTweakEnumi( "None", 0 ),
+//                new NvTweakEnumi( "Normal", 1 ),
+//                new NvTweakEnumi( "InterleaveDepth", 2 ),
+//                new NvTweakEnumi( "InterleaveAO", 3 ),
+//        };
+//
+//        mTweakBar.addEnum("Visual Texture:", NvSampleApp.createControl(this,"m_TextureIndex"), objectIndex, 0x55);
+        mTweakBar.addValue("Downsample", createControl("m_Downsample"), 1, 3);
+        mTweakBar.addValue("Quality", createControl(parameters,"GTAOQuality"), 0, 3);
+        mTweakBar.addValue("Intensity", createControl(parameters,"AmbientOcclusionIntensity"), 0.1f, 3.0f, 0.05f);
+        mTweakBar.addValue("Power", createControl(parameters,"AmbientOcclusionPower"), 0.01f, 2.0f, 0.01f);
+
+        NvTweakVarBase hbaoParam;
+        hbaoParam = mTweakBar.addValue("WorldRadius", createControl(m_GTAO.shaderParameters, "HBAO_WorldRadius"),0.5f, 5.0f, 0.1f);
+        m_HBAOParameters.add(hbaoParam);
+        hbaoParam = mTweakBar.addValue("NDotVBiase", createControl(m_GTAO.shaderParameters, "HBAO_NDotVBiase"),-0.7f, 0.7f, 0.05f);
+        m_HBAOParameters.add(hbaoParam);
+        hbaoParam = mTweakBar.addValue("Multiplier", createControl(m_GTAO.shaderParameters, "HBAO_Multiplier"),0.1f, 5.0f, 0.1f);
+        m_HBAOParameters.add(hbaoParam);
     }
 
     @Override
@@ -57,16 +88,19 @@ public class GTAODemo extends NvSampleApp {
         m_VisualNormal = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "labs/GTAO/shaders/VisualNormal.frag");
     }
 
+    @Override
+    protected int handleReaction(NvUIReaction react) {
+        return super.handleReaction(react);
+    }
 
     @Override
     protected void draw() {
 //        if(m_TextureAO == null || )
         m_Scene.draw();
 
-        if(m_EnableGTAO){
-            m_TextureAO = TextureUtils.resizeTexture2D(m_TextureAO, m_Scene.getWidth(), m_Scene.getHeight(), GLES30.GL_RGBA8);
+        if(isGTAOEnabled()){
+            m_TextureAO = TextureUtils.resizeTexture2D(m_TextureAO, m_Scene.getWidth()/m_Downsample, m_Scene.getHeight()/m_Downsample, GLES30.GL_RGBA8);
 
-            SSAOParameters parameters = new SSAOParameters();
             parameters.Projection.load(m_Scene.getProjMat());
             parameters.SceneDepth = m_Scene.getSceneDepth();
             parameters.ResultAO = m_TextureAO;
@@ -74,7 +108,9 @@ public class GTAODemo extends NvSampleApp {
             parameters.SceneHeight = m_Scene.getSceneDepth().getHeight();
             parameters.CameraFar = m_Scene.getSceneFarPlane();
             parameters.CameraNear = m_Scene.getSceneNearPlane();
+            parameters.DownscaleFactor = m_Downsample;
 
+            m_GTAO.SetMethod(getAOMethod());
             m_GTAO.RenderAO(parameters);
 
             if(m_TextureIndex == 0){
@@ -82,21 +118,9 @@ public class GTAODemo extends NvSampleApp {
             }
         }
 
-
-//        m_BlitProg.enable();
-//        GLES.glBindTextureUnit(0, m_TextureAO);
-        /*GLES31.glBindImageTexture(0, m_Scene.getSceneColor().getTexture(), 0, false, 0, GLES31.GL_READ_WRITE, m_Scene.getSceneColor().getFormat());
-        GLES31.glDispatchCompute(m_TextureAO.getWidth() / 16, m_TextureAO.getHeight() / 16, 1);
-
-        GLES.glBindTextureUnit(0, null);
-        GLES31.glBindImageTexture(0, 0,0, false, 0, GLES31.GL_WRITE_ONLY, GLES31.GL_RGBA8);
-
-        GLES31.glMemoryBarrier(GLES31.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);*/
-
-
         m_Scene.resoveMultisampleTexture();
 
-        if(m_EnableGTAO){
+        /*if(isGTAOEnabled()){
             if(m_TextureIndex == 1){
                 blitTexToScreen(m_GTAO.getMobileGTAO(), 0,false, 0);
 //                blitTexToScreen(m_Scene.getSceneDepth(), 0,false, 0);
@@ -105,7 +129,15 @@ public class GTAODemo extends NvSampleApp {
             }else  if(m_TextureIndex == 3){
                 blitTexToScreen(m_GTAO.getInterleaveAO(), m_ArraySlice,false, 0);
             }
-        }
+        }*/
+    }
+
+    private GTAOMethod getAOMethod(){
+        return GTAOMethod.values()[m_GTAOMethod];
+    }
+
+    private boolean isGTAOEnabled(){
+        return m_GTAOMethod != 0;
     }
 
     private void blitTexToScreen(Texture2D texture, int arraySlice, boolean normalize, float value){

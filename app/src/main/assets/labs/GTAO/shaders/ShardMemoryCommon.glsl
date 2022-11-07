@@ -68,31 +68,40 @@ float GetAOValueFromSharedMemory(int2 ThreadPos)
 //RWTexture2D<float4> OutTexture;
 writeonly layout(rgba8, binding = 0) uniform image2D OutTexture;
 
+#ifndef SHADER_QUALITY
+#define SHADER_QUALITY 2
+#endif
+
 #if SHADER_QUALITY == 0
 // very low
 #define GTAO_NUMTAPS 4
 #define GTAO_BIASMIPLEVEL 2
 #define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#define HBAO_NUMANGLES 2
 #elif SHADER_QUALITY == 1
 // low
 #define GTAO_NUMTAPS 6
 #define GTAO_BIASMIPLEVEL 1
 #define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#define HBAO_NUMANGLES 4
 #elif SHADER_QUALITY == 2
 // medium
 #define GTAO_NUMTAPS 8
 #define GTAO_BIASMIPLEVEL 0
 #define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#define HBAO_NUMANGLES 6
 #elif SHADER_QUALITY == 3
 // high
 #define GTAO_NUMTAPS 12
 #define GTAO_BIASMIPLEVEL 0
 #define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#define HBAO_NUMANGLES 8
 #else // SHADER_QUALITY == 4
 // very high
 #define GTAO_NUMTAPS 20
 #define GTAO_BIASMIPLEVEL 0
 #define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+#define HBAO_NUMANGLES 10
 #endif
 
 const float PI_float = (PI*0.5);

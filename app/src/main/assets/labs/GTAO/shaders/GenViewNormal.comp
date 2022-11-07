@@ -100,11 +100,14 @@ uint2 GroupThreadId : SV_GroupThreadID*/)
     float2 PixelCenter = float2(PixelPos) + float2(0.5, 0.5);
     float2 BufferUV = PixelCenter.xy * BufferSizeAndInvSize.zw;
 
+    float2 XOffset = float2(BufferSizeAndInvSize.z, 0);
+    float2 YOffset = float2(0, BufferSizeAndInvSize.w);
+
     float2 DeviceZAndSceneDepth = GetLinearDepthProj(BufferUV);
-    float DeviceZRight = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(BufferSizeAndInvSize.z, 0), 0.0).a;
-    float DeviceZBottom = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(0, BufferSizeAndInvSize.w), 0.0).a;
-    float DeviceZLeft = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(-BufferSizeAndInvSize.z, 0), 0.0).a;
-    float DeviceZTop = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + float2(0, -BufferSizeAndInvSize.w), 0.0).a;
+    float DeviceZRight = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + XOffset, 0.0).a;
+    float DeviceZBottom = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV + YOffset, 0.0).a;
+    float DeviceZLeft = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV - XOffset, 0.0).a;
+    float DeviceZTop = Texture2DSampleLevel(SceneDepthTexture, SamplerPoint, BufferUV - YOffset, 0.0).a;
 
     float DeviceZDdx = TakeSmallerAbsDelta(DeviceZLeft, DeviceZAndSceneDepth.x, DeviceZRight);
     float DeviceZDdy = TakeSmallerAbsDelta(DeviceZTop, DeviceZAndSceneDepth.x, DeviceZBottom);

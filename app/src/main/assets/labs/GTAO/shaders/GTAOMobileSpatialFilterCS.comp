@@ -26,7 +26,7 @@ void CacheAOVal(int2 FullGroupOriginAO, int pixIdx)
 
     float2 DeviceZAndAO = GetDeviceZAndAO(TextureUV);
     SetAOVal(DeviceZAndAO.y, pixIdx);
-    SetZVal(DeviceZAndAO.x, pixIdx);
+    SetZVal(ScreenSpaceToViewSpaceDepth(DeviceZAndAO.x), pixIdx);
 }
 
  /*   #if SPATIALFILTER_PIXEL_SHADER || HORIZONSEARCH_INTEGRAL_PIXEL_SHADER
@@ -36,7 +36,7 @@ void GTAOSpatialFilter(int2 ThreadPos, int2 PixelPos)
 //#endif
 {
 //    if (any(PixelPos >= (int2)ViewSizeAndInvSize.xy))
-    if(PixelPos.x >= int(ViewSizeAndInvSize.x) || PixelPos.y >= int(ViewSizeAndInvSize.y))
+    if(PixelPos.x >= int(BufferSizeAndInvSize.x) || PixelPos.y >= int(BufferSizeAndInvSize.y))
     {
 //    #if SPATIALFILTER_PIXEL_SHADER || HORIZONSEARCH_INTEGRAL_PIXEL_SHADER
 //    return 1.0f;
@@ -187,7 +187,7 @@ void GTAOSpatialFilter(int2 ThreadPos, int2 PixelPos)
                 // MW: AO Edge Improve 20220728
                 #if 1 // Original UE4.26
                 float SampleZDiff = abs(PlaneZ - SampleZAndAO.x);
-                Weight = 1.0f - saturate(SampleZDiff * 100.0f);
+                Weight = 1.0f - saturate(SampleZDiff * 10.0f);
                 #else
                 float SampleZDiff = (SampleZAndAO.x - PlaneZ) * 20.0f;
                 Weight = 1.0f - saturate(abs(SampleZDiff));

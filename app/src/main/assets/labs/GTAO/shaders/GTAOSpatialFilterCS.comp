@@ -262,7 +262,7 @@ uint2 GroupThreadId : SV_GroupThreadID*/)
             // Compare the Z at this sample with the gradients
             float SampleZDiff = abs(PlaneZ - SampleZ);
 
-            const float SpatialFilterWeight = 1.0;
+            const float SpatialFilterWeight = 0.75;
             float Weight = 1.0f - saturate(SampleZDiff * SpatialFilterWeight);
 
             SumAO += Sample_AO * Weight;

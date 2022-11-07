@@ -1,52 +1,16 @@
 #include "ShardMemoryCommon.glsl"
 
-/// ----------------------- HBAO Code ----------------------------
-float Falloff(float DistanceSquare)
-{
-    // fade radius inverse.
-    // 1 scalar mad instruction
-//    float RadiusSq = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.w;
-    float RadiusSq = 1.0;
-    return DistanceSquare / (-RadiusSq) + 1.0;
-}
-//----------------------------------------------------------------------------------
-// P = view-space position at the kernel center
-// N = view-space normal at the kernel center
-// S = view-space position of the current sample
-//----------------------------------------------------------------------------------
-float ComputeAO(float3 P, float3 N, float3 S)
-{
-    float3 V = S - P;
-    float VdotV = dot(V, V);
-    float NdotV = dot(N, V) * rsqrt(VdotV);
-    // Todo : NDotVBias should be parameter
-    float NDotVBias = FadeRadiusMulAdd_FadeDistance_AttenFactor.w;
-//    return clamp(NdotV - NDotVBias, 0.0, 1.0) * clamp(Falloff(VdotV), 0.0, 1.0);
-    //        return clamp((NdotV - NDotVBias) * Falloff(VdotV), 0, 1);
-    float AO = max(NdotV - NDotVBias, 0.0) * max(Falloff(VdotV), 0.0);
-    return min(AO, 1.0);
-}
-//----------------------------------------------------------------------------------
-float2 RotateDirection(float2 Dir, float2 CosSin)
-{
-    return float2(Dir.x*CosSin.x - Dir.y*CosSin.y, Dir.x*CosSin.y + Dir.y*CosSin.x);
-}
-float2 _round(float2 v)
-{
-    int2 t = int2(v + 0.5);
-    return float2(t);
-}
 // ---------------------------------------------   No interleave version
 float ComputeCoarseAO(float2 FullResUV, float RadiusPixels, float3 Rand, float3 ViewPosition, float3 ViewNormal)
 {
     // Divide by NUM_STEPS+1 so that the farthest samples are not fully attenuated
-    const int HBAO_NUMTAPS = GTAO_NUMTAPS;
+    const int HBAO_NUMTAPS = GTAO_NUMTAPS / 2;
     float StepSizePixels = RadiusPixels / float(HBAO_NUMTAPS + 1);
-    const int NUM_DIRECTIONS = 2;
-    const float Alpha = 2.0 * 3.1415926 / float(NUM_DIRECTIONS);
+    const int NUM_DIRECTIONS = HBAO_NUMANGLES;
+    const float Alpha = 3.1415926 / float(NUM_DIRECTIONS);
     float AO = 0.0;
-    float SinDeltaAngle = 0.0; //WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.y;
-    float CosDeltaAngle = -1.0; //WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.z;
+    float SinDeltaAngle = sin(Alpha); //WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.y;
+    float CosDeltaAngle = cos(Alpha); //WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.z;
     float2 Direction = Rand.xy;
     for (int DirectionIndex = 0; DirectionIndex < NUM_DIRECTIONS; ++DirectionIndex)
     {
@@ -72,9 +36,10 @@ float ComputeCoarseAO(float2 FullResUV, float RadiusPixels, float3 Rand, float3 
         Direction.x = (TempScreenDir.x *  CosDeltaAngle) + (TempScreenDir.y * -SinDeltaAngle);
         Direction.y = (TempScreenDir.x *  SinDeltaAngle) + (TempScreenDir.y * CosDeltaAngle);
     }
-    // TODO: AOMultiplier should be a paramter
-    float AOMultiplier = FadeRadiusMulAdd_FadeDistance_AttenFactor.x;
+
+    float AOMultiplier = HBAO_Multiplier;
     AO *= AOMultiplier / float(NUM_DIRECTIONS * HBAO_NUMTAPS);
+
     return clamp(1.0 - AO * 2.0, 0.0, 1.0);
 }
 
@@ -89,22 +54,8 @@ float HBAOCombinedPSandCS(in float2 UV, in int2 iPos, int2 ThreadPos)
     //        float3 ViewPosition = GetViewSpacePosFromAOInput(UV);
     // Reconstruct view-space normal from nearest neighbors
     float3 ViewNormal = GetNormal(UV, ThreadPos, ViewPosition);
-    // Compute projection of disk of radius R into screen space
-    const float WorldRadius = 1.0;
-    //        float InvTanHalfFov = ScreenSpaceAOParams[3].w;
-//    float FOVScale = BufferSizeAndInvSize.y * View.ClipToView[1][1];
-#if 0
-    // Get Radius in ScreenSpace (in pixels)
-    float WorldRadiusAdj = WorldRadius * FOVScale;
-#else
-     //	float InvTanHalfFov = ScreenSpaceAOParams[3].w;
-    float FOVScale = BufferSizeAndInvSize.y * InvTanHalfFov; // TODO
+    float RadiusPixels = GetSearchingPixelRadiusHBAO(SceneDepth, false,GTAO_MAX_PIXEL_SCREEN_RADIUS,GTAO_NUMTAPS);
 
-    // Get Radius in ScreenSpace (in pixels)
-    float WorldRadiusAdj = WorldRadius * FOVScale;
-//    float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x /* SearchRadius*/;
-#endif
-    float RadiusPixels = max(min(WorldRadiusAdj / abs(ViewPosition.z), GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
     // Get jitter vector for the current full-res pixel
 //    float3 Rand = GetRandomVector(uint2(iPos));
     float3 Rand = GetJitter(iPos);

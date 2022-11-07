@@ -117,12 +117,7 @@ float4 CalculateGTAO(float2 TextureUV, int2 TexturePos, int2 ThreadPos)
         float3 ViewSpaceNormal = GetNormal(TextureUV, ThreadPos, ViewSpacePos);
         float3 ViewDir = -normalize(ViewSpacePos.xyz);
 
-        //	float InvTanHalfFov = ScreenSpaceAOParams[3].w;
-        float FOVScale = BufferSizeAndInvSize.y * InvTanHalfFov; // TODO
-        float WorldRadius = 1.0;
-        // Get Radius in ScreenSpace (in pixels)
-        float WorldRadiusAdj = WorldRadius * FOVScale;
-//        float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x;
+        float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x;
 
         // MW: GTAO_MAX_PIXEL_SCREEN_RADIUS is changed to world radius 0729
     #if 0
@@ -147,10 +142,8 @@ float4 CalculateGTAO(float2 TextureUV, int2 TexturePos, int2 ThreadPos)
 
         float Sum = 0.0;
 
-//        const uint NumAngles = 2;
-
-        float SinDeltaAngle = 0.0f; //WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.y;
-        float CosDeltaAngle = -1.0f; //WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.z;
+        float SinDeltaAngle = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.y;
+        float CosDeltaAngle = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.z;
 
         float3 ScreenDir = float3(RandomVec.x, RandomVec.y, 0.0);
 
