@@ -877,7 +877,8 @@ public class GTAO {
 
         Vector4f FallOffStartEndScaleBias = Result.GTAOParams[3];
 
-        Result.WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.set(FallOffStartEndScaleBias.y *parameters.SceneHeight * Result.ProjInverse.m00, SinDeltaAngle, CosDeltaAngle, ThicknessBlend);
+        float ScaleFactor = (mMethod == GTAOMethod.InterleaveOpt) ? 4 : 1;
+        Result.WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.set(FallOffStartEndScaleBias.y *parameters.SceneHeight * Result.ProjInverse.m00 / ScaleFactor, SinDeltaAngle, CosDeltaAngle, ThicknessBlend);
         Result.FadeRadiusMulAdd_FadeDistance_AttenFactor.set(InvFadeRadius, -(parameters.AmbientOcclusionFadeDistance - FadeRadius) * InvFadeRadius,
                 parameters.AmbientOcclusionFadeDistance, 2.0f / (FallOffStartEndScaleBias.y * FallOffStartEndScaleBias.y));
         Result.Power_Intensity_ScreenPixelsToSearch.x = parameters.AmbientOcclusionPower;

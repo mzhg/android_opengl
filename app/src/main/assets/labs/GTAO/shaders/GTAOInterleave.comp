@@ -203,8 +203,8 @@ void GTAOCombinedPSandCS(in float2 UV, in uint3 iPos, out float OutColor, out fl
     // Get Radius in ScreenSpace (in pixels)
 //    float WorldRadiusAdj = WorldRadius * FOVScale;
     float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x;
-    float PixelRadius = max(min(WorldRadiusAdj / abs(ViewSpacePos.z), GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS));
-    float StepRadius = PixelRadius / (float(GTAO_NUMTAPS) + 1.0);
+    float PixelRadius = max(min(WorldRadiusAdj / abs(ViewSpacePos.z), GTAO_MAX_PIXEL_SCREEN_RADIUS), float(GTAO_NUMTAPS) / 2.0);
+    float StepRadius = PixelRadius / (float(GTAO_NUMTAPS) / 2.0 + 1.0);
 //    float AttenFactor = 2.0 / (WorldRadius * WorldRadius);
     float AttenFactor = FadeRadiusMulAdd_FadeDistance_AttenFactor.w;
 
@@ -256,7 +256,7 @@ void GTAOCombinedPSandCS(in float2 UV, in uint3 iPos, out float OutColor, out fl
     AO = lerp(AO, 1.0, saturate(SceneDepth * Mul + Add));
 #else
     AO = AO * 0.5f;
-    AO *= 2.0 * 0.3183098861f;
+    AO *= 2.0 * 0.3183098861f * 1.5;
     AO = lerp(AO, 1.0, saturate(SceneDepth * FadeRadiusMulAdd_FadeDistance_AttenFactor.x + FadeRadiusMulAdd_FadeDistance_AttenFactor.y));
 #endif
     OutColor = AO;
