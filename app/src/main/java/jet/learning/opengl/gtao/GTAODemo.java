@@ -73,10 +73,17 @@ public class GTAODemo extends NvSampleApp {
 
     @Override
     protected void initRendering() {
+        // Testing shader compiling
+        String root = "labs/GTAO/shaders/";
+        NvGLSLProgram.createProgram(root+"GTAO1_Pass1.comp", null);
+        NvGLSLProgram.createProgram(root+"GTAO1_Pass2.comp", null);
+
         m_Scene = new CubeScene(m_transformer);
         m_Scene.onCreate();
 
         GLES32.glDepthRangef(0.0f, 1);
+
+
 
         m_GTAO = new GTAO();
         m_GTAO.Create();
@@ -84,8 +91,13 @@ public class GTAODemo extends NvSampleApp {
 //        m_transformer.setMotionMode(NvCameraMotionType.FIRST_PERSON);
 //        m_transformer.setTranslation(0, -4, 0);
 
-        m_BlitProg = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "labs/GTAO/shaders/VisualTex2DArray.frag");
-        m_VisualNormal = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "labs/GTAO/shaders/VisualNormal.frag");
+//        m_BlitProg = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "labs/GTAO/shaders/VisualTex2DArray.frag");
+//        m_VisualNormal = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "labs/GTAO/shaders/VisualNormal.frag");
+//
+//        m_BlitProg.enable();
+//        GLSLUtil.setInt(m_BlitProg, "InputTexture", 0);
+//        m_VisualNormal.enable();
+//        GLSLUtil.setInt(m_VisualNormal, "TextureNormal", 0);
     }
 
     @Override
@@ -113,9 +125,12 @@ public class GTAODemo extends NvSampleApp {
             m_GTAO.SetMethod(getAOMethod());
             m_GTAO.RenderAO(parameters);
 
+            GLES.checkGLError();
             if(m_TextureIndex == 0){
                 m_Scene.applyAO(m_TextureAO);
             }
+
+            GLES.checkGLError();
         }
 
         m_Scene.resoveMultisampleTexture();

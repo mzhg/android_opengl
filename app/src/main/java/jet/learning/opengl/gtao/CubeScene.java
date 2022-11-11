@@ -8,6 +8,7 @@ import com.nvidia.developer.opengl.app.NvInputTransformer;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
+import com.nvidia.developer.opengl.utils.NvShapes;
 import com.nvidia.developer.opengl.utils.NvUtils;
 
 import org.lwjgl.util.vector.Matrix4f;
@@ -19,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import jet.learning.opengl.common.Disposeable;
+import jet.learning.opengl.common.GLSLUtil;
 import jet.learning.opengl.common.Texture2D;
 import jet.learning.opengl.common.Texture2DDesc;
 import jet.learning.opengl.common.TextureUtils;
@@ -49,6 +51,9 @@ public class CubeScene {
     private NvInputTransformer m_Transformer;
     private int m_SampleCount = 1; // MSAA count.
     private int m_SampleLastCount = 1; // MSAA count.
+    private int m_DummyVAO;
+
+    private int posLoc, texLoc;
 
     public CubeScene(NvInputTransformer transformer){
         m_Transformer = transformer;
@@ -73,7 +78,16 @@ public class CubeScene {
             initScene();
         }
 
+//        m_ApplyAO = NvGLSLProgram.createFromFiles("labs/GTAO/shaders/quad_es3.vert", "labs/GTAO/shaders/ApplyAO.frag");
         m_ApplyAO = NvGLSLProgram.createFromFiles("shaders/Quad_VS.vert", "labs/GTAO/shaders/ApplyAO.frag");
+        m_ApplyAO.enable();
+        GLSLUtil.setInt(m_ApplyAO, "TextureAO", 0);
+        posLoc = GLES20.glGetAttribLocation(m_ApplyAO.getProgram(), "PosAttribute");
+        texLoc = GLES20.glGetAttribLocation(m_ApplyAO.getProgram(), "TexAttribute");
+        m_ApplyAO.disable();
+
+        m_DummyVAO = GLES.glGenVertexArray();
+
     }
 
     int cube_instance_count;
@@ -310,7 +324,7 @@ public class CubeScene {
         Texture2DDesc desc = new Texture2DDesc();
         desc.width = width;
         desc.height = height;
-        desc.format = GLES30.GL_RGBA32F;
+        desc.format = GLES30.GL_RGBA8;
         desc.mipLevels = 1;
         desc.arraySize = 1;
         desc.sampleCount = sampples;
@@ -325,6 +339,11 @@ public class CubeScene {
         desc.format = GLES30.GL_DEPTH24_STENCIL8;
         m_SceneDepthTex = TextureUtils.createTexture2D(desc, null);
         m_SceneDepthTex.setName("SceneDepth");
+
+        GLES.glBindTextureUnit(0, m_SceneDepthTex);
+        // Note: Depth texture doesn't support linear filter.
+        GLES32.glTexParameteri(m_SceneDepthTex.getTarget(), GLES32.GL_TEXTURE_MAG_FILTER, GLES32.GL_NEAREST);
+        GLES32.glTexParameteri(m_SceneDepthTex.getTarget(), GLES32.GL_TEXTURE_MIN_FILTER, GLES32.GL_NEAREST);
 
 
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, m_FrameBuffer);
@@ -351,16 +370,25 @@ public class CubeScene {
             GLES30.glBlendEquation(GLES30.GL_FUNC_ADD);
             GLES30.glBlendFunc(GLES30.GL_DST_COLOR, GLES30.GL_ZERO);
 
+            GLES.checkGLError();
+
             m_ApplyAO.enable();
             GLES.glBindTextureUnit(0, textureAO);
             GLES30.glBindSampler(0,0);  // use texture sampler
 
+//            GLES.drawFullscreenTriangle();
+//            NvShapes.drawQuad(posLoc,texLoc);
+            GLES30.glBindVertexArray(m_DummyVAO);
             GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, 3);
+            GLES.checkGLError();
+            GLES30.glBindVertexArray(0);
+
             GLES.glBindTextureUnit(0, null);
             GLES30.glDisable(GLES30.GL_BLEND);
         }
 
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,0);
+        GLES.checkGLError();
     }
 
     public void blitTexToScreen(Texture2D texture){
@@ -437,7 +465,7 @@ public class CubeScene {
 
     public void getViewProjMatrix(Matrix4f out){ Matrix4f.mul(m_Projection.matrix, m_SceneUbo.viewMatrix, out);}
     public Texture2D getSceneColor() {return m_SceneColorTex;}
-    public Texture2D getSceneDepth() {return m_SceneColorTex;}
+    public Texture2D getSceneDepth() {return m_SceneDepthTex;}
     public Matrix4f getProjMat()    { return m_Projection.matrix;}
     public Matrix4f getViewMat(){ return m_SceneUbo.viewMatrix;}
     public float getSceneNearPlane() { return m_Projection.nearplane;}
@@ -456,6 +484,9 @@ public class CubeScene {
         }
 
         m_Buffers.dispose();
+
+        GLES.glDeleteVertexArrays(m_DummyVAO);
+        m_DummyVAO = 0;
     }
 
     private final class Buffers implements Disposeable {

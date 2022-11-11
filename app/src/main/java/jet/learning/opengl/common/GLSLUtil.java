@@ -111,4 +111,17 @@ public final  class GLSLUtil {
         if(index >=0)
             GLES32.glUniform1ui(index, v);
     }
+
+    public static String getShaderTypeName(int shader){
+        switch (shader){
+            case GLES32.GL_VERTEX_SHADER: return "Vertex";
+            case GLES32.GL_FRAGMENT_SHADER: return "Fragment";
+            case GLES32.GL_COMPUTE_SHADER: return "Compute";
+            case GLES32.GL_TESS_EVALUATION_SHADER: return "Tess_Evaluation";
+            case GLES32.GL_TESS_CONTROL_SHADER: return "Tess_Control";
+            case GLES32.GL_GEOMETRY_SHADER: return "Geometry";
+        }
+
+        throw new IllegalArgumentException("Invalid shader type: " + Integer.toHexString(shader));
+    }
 }

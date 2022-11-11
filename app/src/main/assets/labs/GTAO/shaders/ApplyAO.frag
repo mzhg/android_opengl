@@ -1,9 +1,11 @@
 #version 300 es
+
 precision highp float;
 
 in vec4 UVAndScreenPos;
 
-layout(binding = 0) uniform sampler2D TextureAO;
+// TODO: Opengl ES 300 doesn't support the 'binding' qualifier
+/*layout(binding = 0)*/ uniform sampler2D TextureAO;
 
 layout(location = 0) out vec4 OutColor;
 

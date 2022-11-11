@@ -17,6 +17,7 @@
 package com.nvidia.developer.opengl.utils;
 
 import android.opengl.GLES20;
+import android.opengl.GLES30;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -112,6 +113,8 @@ public final class NvShapes {
 	}
 	
 	public static void drawQuad(int positionAttrib, int texcoordAttrib){
+		GLES30.glBindVertexArray(0);
+		GLES30.glBindBuffer(GLES20.GL_ARRAY_BUFFER,0);
 		GLES.glVertexAttribPointer(positionAttrib, 4,  false, 6 * 4, fullScreenQuadDataBuffer);
 		GLES20.glEnableVertexAttribArray(positionAttrib);
 
@@ -119,7 +122,10 @@ public final class NvShapes {
 			GLES.glVertexAttribPointer(texcoordAttrib, 2,  false, 6 * 4, fullScreenQuadDataTexBuffer);
 			GLES20.glEnableVertexAttribArray(texcoordAttrib);
 		}
+
+		GLES.checkGLError();
 		GLES20.glDrawArrays(GL11.GL_TRIANGLE_STRIP, 0, 4);
+		GLES.checkGLError();
 
 		GLES20.glDisableVertexAttribArray(positionAttrib);
 		if(texcoordAttrib > 0) {

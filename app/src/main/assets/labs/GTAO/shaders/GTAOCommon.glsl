@@ -1,6 +1,6 @@
 #version 310 es
 #extension GL_EXT_shader_io_blocks : enable
-#extension GL_EXT_blend_func_extended : enable
+//#extension GL_EXT_blend_func_extended : enable
 
 precision highp float;
 precision highp sampler2D;
@@ -67,7 +67,7 @@ const int SamplerPoint = 0;
 const int SamplerLinear = 1;
 
 #ifndef DEPTH_COMP
-#define DEPTH_COMP  a
+#define DEPTH_COMP  x
 #endif
 
 #define Texture2DSampleLevel(T, S, UV, Lod) textureLod(T, UV, Lod)

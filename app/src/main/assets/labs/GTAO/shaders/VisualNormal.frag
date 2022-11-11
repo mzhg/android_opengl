@@ -3,7 +3,7 @@ precision highp float;
 
 in vec4 UVAndScreenPos;
 
-layout(binding = 0) uniform usampler2D TextureNormal;
+/*layout(binding = 0)*/ uniform usampler2D TextureNormal;
 
 out vec4 OutColor;
 

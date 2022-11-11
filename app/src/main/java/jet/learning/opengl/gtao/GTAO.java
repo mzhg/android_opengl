@@ -466,7 +466,7 @@ public class GTAO {
         ViewNormalPass.Shader.enable();
         SetupUniforms(ViewNormalPass.Shader);
         GLES.glBindTextureUnit(0, parameters.SceneDepth);
-        GLES31.glBindSampler(0, mSamplerPoint);
+        GLES31.glBindSampler(0, 0);  // disbale smapler
         GLES31.glBindImageTexture(0, ViewNormalPass.Output.getTexture(),0, false, 0, GLES32.GL_WRITE_ONLY, ViewNormalPass.Output.getFormat());
         GLES31.glBindImageTexture(1, DeinterleavePass.Output.getTexture(),0, true, 0, GLES32.GL_WRITE_ONLY, DeinterleavePass.Output.getFormat());
         GLES31.glDispatchCompute(NvUtils.divideAndRoundUp(parameters.SceneWidth, 8), NvUtils.divideAndRoundUp(parameters.SceneHeight, 8), 1);
@@ -638,7 +638,7 @@ public class GTAO {
         MobileHBAOPass.CSShader[shaderQuality].enable();
         SetupUniforms(MobileHBAOPass.CSShader[shaderQuality]);
         GLES.glBindTextureUnit(0, parameters.SceneDepth);
-        GLES31.glBindSampler(0, mSamplerLinear);
+        GLES31.glBindSampler(0, mSamplerPoint);
         GLES31.glBindImageTexture(0, MobileHBAOPass.Output.getTexture(),0, false, 0, GLES32.GL_WRITE_ONLY, MobileHBAOPass.Output.getFormat());
         GLES31.glDispatchCompute(NvUtils.divideAndRoundUp(outputWidth, THREADGROUP_SIZEX), NvUtils.divideAndRoundUp(outputHeight, THREADGROUP_SIZEY), 1);
 

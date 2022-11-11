@@ -1,4 +1,4 @@
-#version 320 es
+#version 310 es
 
 #extension GL_EXT_shader_io_blocks : enable
 #extension GL_EXT_blend_func_extended : enable

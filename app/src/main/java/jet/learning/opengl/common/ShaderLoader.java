@@ -82,18 +82,18 @@ public final class ShaderLoader {
                 StringBuilder sb = (StringBuilder)result;
                 sb.ensureCapacity(sb.length() + defaultHeader.length());
                 sb.insert(0, defaultHeader);
-                return sb;
+                return StringUtils.trimFirst(sb, " \n");
             }else{
                 StringBuilder sb = new StringBuilder(result.length() + defaultHeader.length());
                 sb.append(defaultHeader).append(result);
-                return sb;
+                return StringUtils.trimFirst(sb, " \n");
             }
         }
 
         if(DEBUG)
             System.out.println("Included Tags: " + processing.toString());
 
-        return result;
+        return StringUtils.trimFirst(result, " \n");
     }
 
     public static CharSequence loadShaderFile(LoaderParameters params)throws IOException{

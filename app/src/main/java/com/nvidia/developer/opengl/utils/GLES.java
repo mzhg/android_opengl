@@ -462,4 +462,15 @@ public class GLES {
 		GLES20.glBindTexture(target, textureID);
 	}*/
 
+	public static void drawFullscreenTriangle(){
+		GLES30.glBindVertexArray(0);
+		GLES30.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+		FloatBuffer dummyVertex = GLUtil.getCachedFloatBuffer(20);  // three vertex
+		GLES30.glVertexAttribPointer(0, 3, GLES30.GL_FLOAT, false, 9, dummyVertex);
+		GLES30.glEnableVertexAttribArray(0);
+		GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
+		GLES20.glDisableVertexAttribArray(0);
+
+		GLES.checkGLError();
+	}
 }

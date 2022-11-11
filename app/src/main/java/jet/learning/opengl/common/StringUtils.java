@@ -415,4 +415,60 @@ public class StringUtils {
 
         return -1;
     }
+
+    public static CharSequence trimFirst(CharSequence src, String charset){
+        int offset = 0;
+        for(;offset < src.length(); offset++){
+            char c = src.charAt(offset);
+            if(charset.indexOf(c) < 0){
+                break;
+            }
+        }
+
+        if(offset > 0){
+            if(src instanceof String){
+                return ((String) src).substring(offset);
+            }else if(src instanceof StringBuilder){
+                StringBuilder sb = (StringBuilder)src;
+                sb.delete(0, offset);
+                return sb;
+            }else if(src instanceof  StringBuffer){
+                StringBuffer sb = (StringBuffer)src;
+                sb.delete(0, offset);
+                return sb;
+            }else {
+                return src.subSequence(offset, src.length());
+            }
+        }else{
+            return src;
+        }
+    }
+
+    public static CharSequence trimEnd(CharSequence src, String charset){
+        int offset = src.length() - 1;
+        for(;offset >= 0; offset--){
+            char c = src.charAt(offset);
+            if(charset.indexOf(c) < 0){
+                break;
+            }
+        }
+
+        if(offset < src.length() - 1){
+            if(src instanceof String){
+                return ((String) src).substring(0, offset + 1);
+            }else if(src instanceof StringBuilder){
+                StringBuilder sb = (StringBuilder)src;
+                sb.delete(offset + 1, src.length());
+                return sb;
+            }else if(src instanceof  StringBuffer){
+                StringBuffer sb = (StringBuffer)src;
+                sb.delete(offset + 1, src.length());
+                return sb;
+            }else {
+                return src.subSequence(0, offset + 1);
+            }
+        }else{
+            return src;
+        }
+    }
 }

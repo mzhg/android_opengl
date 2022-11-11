@@ -1,5 +1,7 @@
 #version 300 es
 precision highp float;
+precision highp sampler2DArray;
+precision highp sampler3D;
 
 in vec4 UVAndScreenPos;
 
@@ -8,9 +10,9 @@ in vec4 UVAndScreenPos;
 #endif
 
 #if USE_TEXTURE_ARRAY
-layout(binding = 0) uniform sampler2DArray InputTexture;
+/*layout(binding = 0)*/ uniform sampler2DArray InputTexture;
 #else
-layout(binding = 0) uniform sampler3D InputTexture;
+/*layout(binding = 0)*/ uniform sampler3D InputTexture;
 #endif
 
 // x: normalized ; y : normalizd data; z: array slice

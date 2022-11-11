@@ -25,7 +25,9 @@ import java.io.IOException;
 
 import javax.microedition.khronos.opengles.GL11;
 
+import jet.learning.opengl.common.GLSLUtil;
 import jet.learning.opengl.common.ShaderLoader;
+import jet.learning.opengl.common.TextureUtils;
 
 public class NvGLSLProgram implements NvDisposeable{
 
@@ -251,18 +253,16 @@ public class NvGLSLProgram implements NvDisposeable{
 		
 		if(compiled == 0 || m_strict){
 			if (compiled == 0) {
-				String targetSrc = target == GLES20.GL_VERTEX_SHADER ? "Vertex " : "Fragment ";
-	            NvLogger.e(targetSrc + "Error compiling shader");
-	        }
-	        int infoLen = GLES.glGetShaderi(shader, GLES20.GL_INFO_LOG_LENGTH);
-	        if (infoLen > 0) {
-                String buf = GLES20.glGetShaderInfoLog(shader/*, infoLen*/);
-                NvLogger.ef("Shader log:\n%s\n", buf);
-	        }
-	        if (compiled == 0) {
-	            GLES20.glDeleteShader(shader);
-	            shader = 0;
-	            return false;
+				String targetSrc = GLSLUtil.getShaderTypeName(target);
+				int infoLen = GLES.glGetShaderi(shader, GLES20.GL_INFO_LOG_LENGTH);
+				if (infoLen > 0) {
+					String buf = GLES20.glGetShaderInfoLog(shader/*, infoLen*/);
+					GLES20.glDeleteShader(shader);
+
+					String outputMsg = targetSrc + ", Error: " + buf;
+					NvLogger.e(outputMsg);
+					throw new RuntimeException(outputMsg);
+				}
 	        }
 		}
 		
