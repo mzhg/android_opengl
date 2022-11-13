@@ -20,7 +20,6 @@ import android.opengl.GLES11;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
-import android.opengl.GLES32;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -30,7 +29,6 @@ import java.nio.ShortBuffer;
 import javax.microedition.khronos.opengles.GL11;
 
 import jet.learning.opengl.common.Texture2D;
-import jet.learning.opengl.common.Texture3D;
 
 public class GLES {
 	
@@ -103,16 +101,22 @@ public class GLES {
 	 *
 	 */
 	public static void checkGLError() {
+		checkGLError(NvGLSLProgram.ms_ThrowException);
+	}
+
+	public static void checkGLError(boolean throwExcep) {
 		int err;
 		if(useES2){
 			err = GLES20.glGetError();
 		}else{
 			err = GLES10.glGetError();
 		}
-		
+
 		if ( err != GL11.GL_NO_ERROR ) {
 			NvLogger.e("GL err:%s.\n", translateGLErrorString(err));
-			throw new RuntimeException("GL err: " + translateGLErrorString(err));
+
+			if(throwExcep)
+				throw new RuntimeException("GL err: " + translateGLErrorString(err));
 		}
 	}
 

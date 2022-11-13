@@ -2,13 +2,12 @@ package jet.learning.opengl.gtao;
 
 import android.opengl.GLES20;
 import android.opengl.GLES30;
-import android.opengl.GLES32;
 
 import com.nvidia.developer.opengl.app.NvInputTransformer;
+import com.nvidia.developer.opengl.utils.BufferUtils;
 import com.nvidia.developer.opengl.utils.GLES;
 import com.nvidia.developer.opengl.utils.GLUtil;
 import com.nvidia.developer.opengl.utils.NvGLSLProgram;
-import com.nvidia.developer.opengl.utils.NvShapes;
 import com.nvidia.developer.opengl.utils.NvUtils;
 
 import org.lwjgl.util.vector.Matrix4f;
@@ -100,7 +99,8 @@ public class CubeScene {
         //   color  | translate | scale
         //  R,G,B,A |   X,Y,Z   | X,Y,Z
         cube_instance_count = grid * grid * LEVELS;
-        FloatBuffer buf = GLUtil.getCachedFloatBuffer(cube_instance_count * (4 + 3 + 3));
+//        FloatBuffer buf = GLUtil.getCachedFloatBuffer(cube_instance_count * (4 + 3 + 3));
+        FloatBuffer buf = BufferUtils.createFloatBuffer(cube_instance_count * (4 + 3 + 3));
 
         final Vector4f color = new Vector4f();
         final Vector2f posxy = new Vector2f();
@@ -307,7 +307,7 @@ public class CubeScene {
 
     public void resoveMultisampleTexture(){
         GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER, m_FrameBuffer);
-        GLES32.glReadBuffer(GLES30.GL_COLOR_ATTACHMENT0);
+        GLES30.glReadBuffer(GLES30.GL_COLOR_ATTACHMENT0);
         GLES30.glBindFramebuffer(GLES30.GL_DRAW_FRAMEBUFFER, 0);
         GLES30.glBlitFramebuffer(0,0,m_SceneColorTex.getWidth(),m_SceneColorTex.getHeight(),
                 0,0,m_SceneColorTex.getWidth(),m_SceneColorTex.getHeight(),
@@ -342,8 +342,8 @@ public class CubeScene {
 
         GLES.glBindTextureUnit(0, m_SceneDepthTex);
         // Note: Depth texture doesn't support linear filter.
-        GLES32.glTexParameteri(m_SceneDepthTex.getTarget(), GLES32.GL_TEXTURE_MAG_FILTER, GLES32.GL_NEAREST);
-        GLES32.glTexParameteri(m_SceneDepthTex.getTarget(), GLES32.GL_TEXTURE_MIN_FILTER, GLES32.GL_NEAREST);
+        GLES20.glTexParameteri(m_SceneDepthTex.getTarget(), GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
+        GLES20.glTexParameteri(m_SceneDepthTex.getTarget(), GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
 
 
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, m_FrameBuffer);

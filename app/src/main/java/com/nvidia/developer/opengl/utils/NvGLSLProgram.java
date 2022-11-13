@@ -16,7 +16,7 @@
 package com.nvidia.developer.opengl.utils;
 
 import android.opengl.GLES20;
-import android.opengl.GLES32;
+import android.opengl.GLES31;
 import android.opengl.GLException;
 
 import org.lwjgl.util.vector.Matrix4f;
@@ -26,12 +26,17 @@ import java.io.IOException;
 import javax.microedition.khronos.opengles.GL11;
 
 import jet.learning.opengl.common.GLSLUtil;
+import jet.learning.opengl.common.GLenum;
 import jet.learning.opengl.common.ShaderLoader;
-import jet.learning.opengl.common.TextureUtils;
 
 public class NvGLSLProgram implements NvDisposeable{
 
 	protected static boolean ms_logAllMissing;
+
+	/**
+	 *
+	 */
+	public static boolean ms_ThrowException = true;
 	
 	protected boolean m_strict;
 	protected int m_program;
@@ -237,10 +242,13 @@ public class NvGLSLProgram implements NvDisposeable{
 	/** Binds the given shader program as current in the GL context */
 	public void enable(){
 		GLES20.glUseProgram(m_program);
-		
-		if(m_program == 0) throw new RuntimeException("program is 0");
-		if(!GLES20.glIsProgram(m_program))throw new RuntimeException("program is not a valid program!!!");
-		GLES.checkGLError();
+
+		if(ms_ThrowException){
+			if(m_program == 0) throw new RuntimeException("program is 0");
+			if(!GLES20.glIsProgram(m_program))throw new RuntimeException("program is not a valid program!!!");
+		}
+
+		GLES.checkGLError(ms_ThrowException);
 	}
 	
 	/** Unbinds the given shader program from the GL context (binds shader 0) */
@@ -261,8 +269,11 @@ public class NvGLSLProgram implements NvDisposeable{
 
 					String outputMsg = targetSrc + ", Error: " + buf;
 					NvLogger.e(outputMsg);
-					throw new RuntimeException(outputMsg);
+					if(ms_ThrowException)
+						throw new RuntimeException(outputMsg);
 				}
+
+				return false;
 	        }
 		}
 		
@@ -276,8 +287,8 @@ public class NvGLSLProgram implements NvDisposeable{
 	    	if(bufLength > 0){
 	    		String buf = GLES20.glGetProgramInfoLog(program/*, bufLength*/);
 				NvLogger.ef("compileProgram::Could not link program:\n%s\n", buf);
-//	    		NvAppBase.throwExp();
-				throw new  GLException(0, String.format("compileProgram::Could not link program:\n%s\n", buf));
+				if(ms_ThrowException)
+					throw new  GLException(0, String.format("compileProgram::Could not link program:\n%s\n", buf));
 	    	}
 	    	
 	    	return false;
@@ -1059,13 +1070,13 @@ public class NvGLSLProgram implements NvDisposeable{
 				e.printStackTrace();
 			}
 			cs_item.macros = macros;
-			cs_item.type = GLES32.GL_COMPUTE_SHADER;
+			cs_item.type = GLES31.GL_COMPUTE_SHADER;
 		}
 
 		NvGLSLProgram program = new NvGLSLProgram();
 		program.setSourceFromStrings(cs_item);
 
-		GLES.checkGLError();
+		GLES.checkGLError(ms_ThrowException);
 		return program;
 	}
 
@@ -1105,7 +1116,7 @@ public class NvGLSLProgram implements NvDisposeable{
 			}
 //			tc_item.compileVersion = Integer.parseInt(GLSLUtil.getGLSLVersion());
 			tc_item.macros = macros;
-			tc_item.type = GLES32.GL_TESS_CONTROL_SHADER;
+			tc_item.type = GLenum.GL_TESS_CONTROL_SHADER;
 		}
 
 		ShaderSourceItem te_item = null;
@@ -1118,7 +1129,7 @@ public class NvGLSLProgram implements NvDisposeable{
 			}
 //			te_item.compileVersion = Integer.parseInt(GLSLUtil.getGLSLVersion());
 			te_item.macros = macros;
-			te_item.type = GLES32.GL_TESS_EVALUATION_SHADER;
+			te_item.type = GLenum.GL_TESS_EVALUATION_SHADER;
 		}
 
 		ShaderSourceItem gs_item = null;
@@ -1131,7 +1142,7 @@ public class NvGLSLProgram implements NvDisposeable{
 			}
 //			gs_item.compileVersion = Integer.parseInt(GLSLUtil.getGLSLVersion());
 			gs_item.macros = macros;
-			gs_item.type = GLES32.GL_GEOMETRY_SHADER;
+			gs_item.type = GLenum.GL_GEOMETRY_SHADER;
 		}
 
 		ShaderSourceItem ps_item = null;

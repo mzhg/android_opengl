@@ -116,6 +116,8 @@ float4 CalculateGTAO(float2 TextureUV, int2 TexturePos, int2 ThreadPos)
         float3 ViewSpacePos = ScreenToViewPos(TextureUV, SceneDepth);
         float3 ViewSpaceNormal = GetNormal(TextureUV, ThreadPos, ViewSpacePos);
         float3 ViewDir = -normalize(ViewSpacePos.xyz);
+        // TODO : use below code could reduce the dark effect that by camera view.
+//        float3 ViewDir = ViewSpaceNormal;
 
         float WorldRadiusAdj = WorldRadiusAdj_SinDeltaAngle_CosDeltaAngle_Thickness.x;
 

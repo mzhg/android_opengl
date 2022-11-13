@@ -1,7 +1,6 @@
 package jet.learning.opengl.gtao;
 
 import android.opengl.GLES30;
-import android.opengl.GLES32;
 
 import com.nvidia.developer.opengl.app.NvSampleApp;
 import com.nvidia.developer.opengl.ui.NvTweakEnumi;
@@ -73,15 +72,12 @@ public class GTAODemo extends NvSampleApp {
 
     @Override
     protected void initRendering() {
-        // Testing shader compiling
-        String root = "labs/GTAO/shaders/";
-        NvGLSLProgram.createProgram(root+"GTAO1_Pass1.comp", null);
-        NvGLSLProgram.createProgram(root+"GTAO1_Pass2.comp", null);
+        NvGLSLProgram.ms_ThrowException = false;
 
         m_Scene = new CubeScene(m_transformer);
         m_Scene.onCreate();
 
-        GLES32.glDepthRangef(0.0f, 1);
+//        GLES32.glDepthRangef(0.0f, 1);
 
 
 

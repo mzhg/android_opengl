@@ -494,6 +494,17 @@
                 <category android:name="jet.learning.opengl.category.es31" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="jet.learning.opengl.gtao.GTAOShaderTest"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="landscape"
+            android:label="GTAOShaderTest" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="jet.learning.opengl.category.es31" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

@@ -1,0 +1,278 @@
+#version 310 es
+
+
+#ifdef GL_EXT_texture_buffer
+#extension GL_EXT_texture_buffer : enable
+
+#endif
+#define INTERFACE_BLOCK(Pos, Interp, Modifiers, Semantic, PreType, PostType) layout(location=Pos) Modifiers Semantic { PreType PostType; }
+
+
+// end extensions
+precision highp float;
+precision highp int;
+layout( local_size_x = 16, local_size_y = 8, local_size_z = 1 ) in;
+uniform vec4 cc0_h[3];
+uniform vec4 cu_h[5];
+uniform highp sampler3D cs0;
+uniform highp sampler2D cs1;
+uniform writeonly layout(rgba32f,binding=0) highp image2D ci0;
+shared float DeviceZArray[256];
+void main()
+{
+    const vec4 t0[16] = vec4[16](vec4(-4.809690e-01,8.767380e-01,7.665000e-03,0.000000e+00),vec4(8.128250e-01,5.825080e-01,-2.097400e-02,0.000000e+00),vec4(9.234930e-01,3.836150e-01,-6.338180e-01,0.000000e+00),vec4(6.136510e-01,7.895780e-01,-4.189560e-01,0.000000e+00),vec4(6.645250e-01,7.472660e-01,2.840370e-01,0.000000e+00),vec4(-1.781010e-01,9.840120e-01,-9.820970e-01,0.000000e+00),vec4(-9.340700e-01,-3.570900e-01,3.919360e-01,0.000000e+00),vec4(-8.564320e-01,-5.162590e-01,7.703100e-02,0.000000e+00),vec4(-3.389820e-01,9.407930e-01,-1.748920e-01,0.000000e+00),vec4(3.678450e-01,-9.298870e-01,3.295090e-01,0.000000e+00),vec4(-1.727300e-01,-9.849690e-01,-1.381300e-01,0.000000e+00),vec4(7.003220e-01,7.138270e-01,-1.614480e-01,0.000000e+00),vec4(9.965220e-01,8.333000e-02,3.239730e-01,0.000000e+00),vec4(-7.311960e-01,-6.821680e-01,5.055570e-01,0.000000e+00),vec4(9.910890e-01,-1.332050e-01,4.881600e-02,0.000000e+00),vec4(-6.272690e-01,7.788020e-01,-6.439300e-01,0.000000e+00));
+
+    vec4 v1;
+    ivec2 v2;
+    ivec2 v3;
+    v3.x = int((gl_WorkGroupID.x*16u));
+    v3.y = int((gl_WorkGroupID.y*8u));
+    ivec2 v4;
+    v4.xy = (v3+ivec2(-1,-1));
+    int i5;
+    i5 = (int(gl_LocalInvocationIndex)*2);
+    if ((i5<180))
+    {
+        uint u6;
+        u6 = uint(i5);
+        ivec2 v7;
+        v7.x = int(((u6)%(18u)));
+        v7.y = int((u6/18u));
+        int i8;
+        i8 = int(u6);
+        DeviceZArray[i8] = textureLod(cs1,((((vec2((v4+v7))+vec2(5.000000e-01,5.000000e-01))+cu_h[4].xy)*cu_h[3].zw)+(cu_h[2].zw*vec2(1.250000e-01,1.250000e-01))),0.000000e+00).x;
+        uint u9;
+        u9 = uint((i5+1));
+        ivec2 v10;
+        v10.x = int(((u9)%(18u)));
+        v10.y = int((u9/18u));
+        int i11;
+        i11 = int(u9);
+        DeviceZArray[i11] = textureLod(cs1,((((vec2((v4+v10))+vec2(5.000000e-01,5.000000e-01))+cu_h[4].xy)*cu_h[3].zw)+(cu_h[2].zw*vec2(1.250000e-01,1.250000e-01))),0.000000e+00).x;
+    }
+    memoryBarrierShared();
+    barrier();
+    ivec2 v12;
+    v12.xy = ivec2(gl_LocalInvocationID.xy);
+    ivec2 v13;
+    v13.xy = ivec2(gl_GlobalInvocationID.xy);
+    v2.xy = v13;
+    float f14;
+    vec2 v15;
+    v15.xy = ((((vec2(v13)+vec2(5.000000e-01,5.000000e-01))+cu_h[4].xy)*cu_h[3].zw)+(cu_h[2].zw*vec2(1.250000e-01,1.250000e-01)));
+    ivec2 v16;
+    v16.xy = (v12+ivec2(1,1));
+    float f17;
+    f17 = DeviceZArray[(v16.x+(v16.y*18))];
+    float f18;
+    f18 = (((f17*cc0_h[0].x)+cc0_h[0].y)+(1.0/(((f17*cc0_h[0].z)+(-cc0_h[0].w)))));
+    if ((f18>cu_h[0].z))
+    {
+        f14 = 1.000000e+00;
+    }
+    else
+    {
+        vec3 v19;
+        float f20;
+        float f21;
+        vec2 v22;
+        v22.x = ((v15.x*cc0_h[2].x)+cc0_h[2].z);
+        v22.y = ((v15.y*cc0_h[2].y)+cc0_h[2].w);
+        vec3 v23;
+        v23.xy = (v22*vec2(f18));
+        v23.z = f18;
+        vec2 v24;
+        v24.y = 0.000000e+00;
+        v24.x = cu_h[3].z;
+        vec2 v25;
+        v25.x = 0.000000e+00;
+        v25.y = cu_h[3].w;
+        ivec2 v26;
+        v26.xy = (v12+ivec2(1,1));
+        float f27;
+        f27 = DeviceZArray[(v26.x+(v26.y*18))];
+        ivec2 v28;
+        v28.xy = (v26+ivec2(-1,0));
+        float f29;
+        ivec2 v30;
+        v30.xy = (v26+ivec2(0,-1));
+        f29 = DeviceZArray[(v30.x+(v30.y*18))];
+        ivec2 v31;
+        v31.xy = (v26+ivec2(1,0));
+        float f32;
+        ivec2 v33;
+        v33.xy = (v26+ivec2(0,1));
+        f32 = DeviceZArray[(v33.x+(v33.y*18))];
+        float f34;
+        f34 = (f27+(-DeviceZArray[(v28.x+(v28.y*18))]));
+        float f35;
+        f35 = (DeviceZArray[(v31.x+(v31.y*18))]+(-f27));
+        float f36;
+        f36 = abs(f34);
+        float f37;
+        f37 = abs(f35);
+        float f38;
+        f38 = ((f36<f37))?(f34):(f35);
+        float f39;
+        f39 = (f27+(-f29));
+        float f40;
+        f40 = (f32+(-f27));
+        float f41;
+        f41 = abs(f39);
+        float f42;
+        f42 = abs(f40);
+        float f43;
+        f43 = ((f41<f42))?(f39):(f40);
+        float f44;
+        float f45;
+        f45 = (f27+f38);
+        f44 = (((f45*cc0_h[0].x)+cc0_h[0].y)+(1.0/(((f45*cc0_h[0].z)+(-cc0_h[0].w)))));
+        float f46;
+        float f47;
+        f47 = (f27+f43);
+        f46 = (((f47*cc0_h[0].x)+cc0_h[0].y)+(1.0/(((f47*cc0_h[0].z)+(-cc0_h[0].w)))));
+        vec2 v48;
+        v48.xy = (v15+v24);
+        vec2 v49;
+        v49.x = ((v48.x*cc0_h[2].x)+cc0_h[2].z);
+        v49.y = ((v48.y*cc0_h[2].y)+cc0_h[2].w);
+        vec3 v50;
+        v50.xy = (v49*vec2(f44));
+        v50.z = f44;
+        vec2 v51;
+        v51.xy = (v15+v25);
+        vec2 v52;
+        v52.x = ((v51.x*cc0_h[2].x)+cc0_h[2].z);
+        v52.y = ((v51.y*cc0_h[2].y)+cc0_h[2].w);
+        vec3 v53;
+        v53.xy = (v52*vec2(f46));
+        v53.z = f46;
+        vec3 v54;
+        v54.xyz = normalize(cross((v50+(-v23)),(v53+(-v23))));
+        vec3 v55;
+        v55.xyz = (-normalize(v23));
+        float f56;
+        f56 = (max(min((cu_h[1].x/f18),((2.560000e+02*cu_h[2].x)/((f18*2.400000e+01)+1.000000e-05))),6.000000e+00)/7.000000e+00);
+        float f57;
+        f57 = cu_h[0].w;
+        vec3 v58;
+        ivec2 v59;
+        v59.xy = (v13&ivec2(3,3));
+        int i60;
+        i60 = ((v59.x*4)+v59.y);
+        v58.xyz = t0[i60].xyz;
+        f21 = v58.z;
+        f20 = 0.000000e+00;
+        float f61;
+        f61 = cu_h[1].y;
+        float f62;
+        f62 = cu_h[1].z;
+        vec3 v63;
+        v63.z = 0.000000e+00;
+        v63.x = v58.x;
+        v63.y = v58.y;
+        v19.xyz = v63;
+        uint u64;
+        u64 = 0u;
+        for (;u64<2u;)
+        {
+            vec2 v65;
+            v65.xy = (v19.xy*cc0_h[1].zw);
+            vec2 v66;
+            vec2 v67;
+            v67.xy = vec2(0.000000e+00,0.000000e+00);
+            v66.xy = vec2(-1.000000e+00,-1.000000e+00);
+            float f68;
+            f68 = cu_h[1].w;
+            uint u69;
+            u69 = 0u;
+            for (;u69<6u;)
+            {
+                vec2 v70;
+                float f71;
+                f71 = float(u69);
+                vec2 v72;
+                v72.xy = (v65*vec2(max((f56*(f71+f21)),(f71+1.000000e+00))));
+                v70.xy = v72;
+                v70.y = (v72.y*-1.000000e+00);
+                vec4 v73;
+                v73.xy = v70;
+                v73.zw = (-v70);
+                vec4 v74;
+                v74.xyzw = (v15.xyxy+v73);
+                vec4 v75;
+                v75.xyzw = textureLod(cs1,v74.xy,0.000000e+00);
+                float f76;
+                f76 = (((v75.x*cc0_h[0].x)+cc0_h[0].y)+(1.0/(((v75.x*cc0_h[0].z)+(-cc0_h[0].w)))));
+                v67.x = f76;
+                vec4 v77;
+                v77.xyzw = textureLod(cs1,v74.zw,0.000000e+00);
+                v67.y = (((v77.x*cc0_h[0].x)+cc0_h[0].y)+(1.0/(((v77.x*cc0_h[0].z)+(-cc0_h[0].w)))));
+                vec2 v78;
+                v78.x = ((v74.x*cc0_h[2].x)+cc0_h[2].z);
+                v78.y = ((v74.y*cc0_h[2].y)+cc0_h[2].w);
+                vec3 v79;
+                v79.xy = (v78*vec2(f76));
+                v79.z = f76;
+                vec3 v80;
+                v80.xyz = (v79+(-v23));
+                float f81;
+                f81 = dot(v80,v80);
+                float f82;
+                f82 = mix((dot(v80,v55)*inversesqrt((f81+1.000000e-04))),v66.x,clamp((f81*f57),0.000000e+00,1.000000e+00));
+                float f83;
+                f83 = mix(f82,v66.x,f68);
+                float f84;
+                f84 = ((f82>v66.x))?(f82):(f83);
+                v66.x = f84;
+                vec2 v85;
+                v85.x = ((v74.z*cc0_h[2].x)+cc0_h[2].z);
+                v85.y = ((v74.w*cc0_h[2].y)+cc0_h[2].w);
+                vec3 v86;
+                v86.xy = (v85*v67.yy);
+                v86.z = v67.y;
+                vec3 v87;
+                v87.xyz = (v86+(-v23));
+                float f88;
+                f88 = dot(v87,v87);
+                float f89;
+                f89 = mix((dot(v87,v55)*inversesqrt((f88+1.000000e-04))),v66.y,clamp((f88*f57),0.000000e+00,1.000000e+00));
+                float f90;
+                f90 = mix(f89,v66.y,f68);
+                float f91;
+                f91 = ((f89>v66.y))?(f89):(f90);
+                v66.y = f91;
+                u69 = (u69+1u);
+            }
+            vec3 v92;
+            v92.xyz = normalize(cross(v19,v55));
+            vec3 v93;
+            v93.xyz = cross(v55,v92);
+            vec3 v94;
+            v94.xyz = (v54+(-(v92*vec3(dot(v54,v92)))));
+            float f95;
+            f95 = length(v94);
+            float f96;
+            f96 = (f95+1.000000e-06);
+            vec3 v97;
+            v97.xy = v66;
+            v97.z = (dot(v94,v93)*(1.0/(f96)));
+            f20 = (f20+(f96*textureLod(cs0,((v97*vec3(5.000000e-01,5.000000e-01,5.000000e-01))+vec3(5.000000e-01,5.000000e-01,5.000000e-01)),0.000000e+00).x));
+            vec2 v98;
+            v98.xy = v19.xy;
+            v19.x = ((v19.x*f62)+(v19.y*(-f61)));
+            v19.y = ((v98.x*f61)+(v98.y*f62));
+            f21 = fract((f21+6.170000e-01));
+            u64 = (u64+1u);
+        }
+        f14 = mix((3.183099e-01*f20),1.000000e+00,clamp(((f18*cu_h[0].x)+cu_h[0].y),0.000000e+00,1.000000e+00));
+    }
+    ivec2 v99;
+    v99.xy = (v12+ivec2(1,1));
+    vec4 v100;
+    v100.xyzw = fract((vec4(1.000000e+00,2.550000e+02,6.502500e+04,1.658138e+07)*vec4(DeviceZArray[(v99.x+(v99.y*18))])));
+    v1.xyzw = (v100+(-(v100.yzww*vec4(3.921569e-03,3.921569e-03,3.921569e-03,0.000000e+00))));
+    v1.w = f14;
+    imageStore( ci0, ivec2(v2), v1.xyzw);
+}
+

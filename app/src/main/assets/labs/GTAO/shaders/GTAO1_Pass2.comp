@@ -1,0 +1,192 @@
+#version 310 es
+
+
+#ifdef GL_EXT_texture_buffer
+#extension GL_EXT_texture_buffer : enable
+
+#endif
+#define INTERFACE_BLOCK(Pos, Interp, Modifiers, Semantic, PreType, PostType) layout(location=Pos) Modifiers Semantic { PreType PostType; }
+
+
+// end extensions
+precision highp float;
+precision highp int;
+layout( local_size_x = 16, local_size_y = 8, local_size_z = 1 ) in;
+uniform vec4 cu_h[4];
+uniform highp sampler2D cs0;
+uniform writeonly layout(rgba32f,binding=0) highp image2D ci0;
+shared float AOArray[256];
+shared float DeviceZArray[256];
+void main()
+{
+    ivec2 v0;
+    v0.x = int((gl_WorkGroupID.x*16u));
+    v0.y = int((gl_WorkGroupID.y*8u));
+    ivec2 v1;
+    v1.xy = (v0+ivec2(-2,-2));
+    uint u2;
+    u2 = uint((int(gl_LocalInvocationIndex)*2));
+    if ((u2<240u))
+    {
+        ivec2 v3;
+        v3.x = int(((u2)%(20u)));
+        v3.y = int((u2/20u));
+        vec4 v4;
+        vec2 v5;
+        vec4 v6;
+        v6.xyzw = textureLod(cs0,(((vec2((v1+v3))+vec2(5.000000e-01,5.000000e-01))+cu_h[3].xy)*cu_h[1].zw),0.000000e+00);
+        v4.xyzw = v6;
+        v5.y = v6.w;
+        v4.w = 0.000000e+00;
+        v5.x = dot(v4,vec4(1.000000e+00,3.921569e-03,1.537870e-05,6.030863e-08));
+        int i7;
+        i7 = int(u2);
+        AOArray[i7] = v6.w;
+        int i8;
+        i8 = int(u2);
+        DeviceZArray[i8] = v5.x;
+        uint u9;
+        u9 = (u2+1u);
+        ivec2 v10;
+        v10.x = int(((u9)%(20u)));
+        v10.y = int((u9/20u));
+        vec4 v11;
+        vec2 v12;
+        vec4 v13;
+        v13.xyzw = textureLod(cs0,(((vec2((v1+v10))+vec2(5.000000e-01,5.000000e-01))+cu_h[3].xy)*cu_h[1].zw),0.000000e+00);
+        v11.xyzw = v13;
+        v12.y = v13.w;
+        v11.w = 0.000000e+00;
+        v12.x = dot(v11,vec4(1.000000e+00,3.921569e-03,1.537870e-05,6.030863e-08));
+        int i14;
+        i14 = int(u9);
+        AOArray[i14] = v13.w;
+        int i15;
+        i15 = int(u9);
+        DeviceZArray[i15] = v12.x;
+    }
+    memoryBarrierShared();
+    barrier();
+    ivec2 v16;
+    v16.xy = ivec2(gl_LocalInvocationID.xy);
+    ivec2 v17;
+    v17.xy = ivec2(gl_GlobalInvocationID.xy);
+    float f18;
+    int i19;
+    int i20;
+    float f21;
+    float f22;
+    vec2 v23;
+    if (!(any(greaterThanEqual(v17,ivec2(cu_h[2].xy)))))
+    {
+        ivec2 v24;
+        v24.xy = (v16+ivec2(2,2));
+        float f25;
+        f25 = DeviceZArray[(v24.x+(v24.y*20))];
+        float f26;
+        ivec2 v27;
+        v27.xy = (v24+ivec2(-2,0));
+        f26 = DeviceZArray[(v27.x+(v27.y*20))];
+        float f28;
+        ivec2 v29;
+        v29.xy = (v24+ivec2(-1,0));
+        f28 = DeviceZArray[(v29.x+(v29.y*20))];
+        float f30;
+        ivec2 v31;
+        v31.xy = (v24+ivec2(1,0));
+        f30 = DeviceZArray[(v31.x+(v31.y*20))];
+        float f32;
+        ivec2 v33;
+        v33.xy = (v24+ivec2(2,0));
+        f32 = DeviceZArray[(v33.x+(v33.y*20))];
+        float f34;
+        f34 = abs(((f28+(f28+(-f26)))+(-f25)));
+        float f35;
+        f35 = abs(((f30+(f30+(-f32)))+(-f25)));
+        if ((f34<f35))
+        {
+            v23.x = (f28+(-f26));
+        }
+        else
+        {
+            v23.x = (f32+(-f30));
+        }
+        float f36;
+        ivec2 v37;
+        v37.xy = (v24+ivec2(0,-2));
+        f36 = DeviceZArray[(v37.x+(v37.y*20))];
+        float f38;
+        ivec2 v39;
+        v39.xy = (v24+ivec2(0,-1));
+        f38 = DeviceZArray[(v39.x+(v39.y*20))];
+        float f40;
+        ivec2 v41;
+        v41.xy = (v24+ivec2(0,1));
+        f40 = DeviceZArray[(v41.x+(v41.y*20))];
+        float f42;
+        ivec2 v43;
+        v43.xy = (v24+ivec2(0,2));
+        f42 = DeviceZArray[(v43.x+(v43.y*20))];
+        float f44;
+        f44 = abs(((f38+(f38+(-f36)))+(-f25)));
+        float f45;
+        f45 = abs(((f40+(f40+(-f42)))+(-f25)));
+        if ((f44<f45))
+        {
+            v23.y = (f38+(-f36));
+        }
+        else
+        {
+            v23.y = (f42+(-f40));
+        }
+        f22 = 0.000000e+00;
+        f21 = 0.000000e+00;
+        f18 = ((f25+(-(v23.x*2.000000e+00)))+(-(v23.y*2.000000e+00)));
+        i19 = -2;
+        for (;i19<=2;)
+        {
+            float f46;
+            f46 = f18;
+            i20 = -2;
+            for (;i20<=2;)
+            {
+                vec2 v47;
+                ivec2 v48;
+                v48.x = i20;
+                v48.y = i19;
+                ivec2 v49;
+                v49.xy = (v16+v48);
+                float f50;
+                ivec2 v51;
+                v51.xy = (v49+ivec2(2,2));
+                f50 = AOArray[(v51.x+(v51.y*20))];
+                v47.y = f50;
+                ivec2 v52;
+                v52.xy = (v49+ivec2(2,2));
+                v47.x = DeviceZArray[(v52.x+(v52.y*20))];
+                float f53;
+                f53 = ((v47.x+(-f46))*2.048000e+03);
+                float f54;
+                f54 = (1.000000e+00+(-clamp(abs(f53),0.000000e+00,1.000000e+00)));
+                float f55;
+                f55 = smoothstep(1.200000e-01,4.000000e-01,f53);
+                float f56;
+                f56 = smoothstep(1.200000e-01,0.000000e+00,f53);
+                float f57;
+                f57 = ((f53>1.200000e-01))?(f55):(f56);
+                v47.y = (f50*f57);
+                f22 = (f22+(v47.y*f54));
+                f21 = (f21+f54);
+                f46 = (f46+v23.x);
+                i20 = (i20+1);
+            }
+            f18 = (f18+v23.y);
+            i19 = (i19+1);
+        }
+        float f58;
+        f58 = (1.000000e+00+(-((1.000000e+00+(-pow(abs(((f22/f21)*1.570796e+00)),cu_h[0].x)))*cu_h[0].y)));
+        f22 = f58;
+        imageStore( ci0, ivec2(v17), vec4(f58).xyzw);
+    }
+}
+

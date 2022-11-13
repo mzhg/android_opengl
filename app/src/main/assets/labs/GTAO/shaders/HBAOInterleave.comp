@@ -160,5 +160,5 @@ void /*GTAOCombinedCS*/main()
 
 //    OutTexture[PixelPos] = float2(pow(OutColor, 1), ViewDepth);
 //    imageStore(OutTexture, PixelPos, uint4(EncodeAOZ(pow(OutColor, 1.0), ViewDepth),0,0,0));
-    imageStore(OutTexture, PixelPos, float4(OutColor, ViewDepth,0,0));
+    imageStore(OutTexture, PixelPos, float4(OutColor, 0,0,0));
 }
